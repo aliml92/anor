@@ -1,8 +1,8 @@
-<img src="./assets/logo.svg" alt="anor" width="100" height="100">
+<img src="./assets/logo.svg" alt="anor" style="width: 150px; height: auto;">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/aliml92/anor/blob/master/LICENSE)
 
-**Anor** is a fullstack ecommerce app built with *go/htmx* (in heavy development process).
+**Anor** is a fullstack ecommerce app built with *go/htmx* (***still in heavy development process***).
 
 * The project uses:
     * [go](https://github.com/golang/go) for backend
