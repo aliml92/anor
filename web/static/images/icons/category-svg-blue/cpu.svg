@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="48px" height="48px" viewBox="0 0 48 48" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>Icons/icons-category/cpu</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Icons/icons-category/cpu" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="icon-workstation" transform="translate(2.000000, 8.000000)" fill="#0D6EFD">
+            <path d="M0,0 L0,29.6875 L12.5,29.6875 L12.5,0 L0,0 Z M14.0625,0 L14.0625,3.125 L37.5,3.125 L37.5,20.3125 L14.0625,20.3125 L14.0625,23.4375 L21.875,23.4375 L21.875,26.5625 L15.625,26.5625 L15.625,29.6875 L31.25,29.6875 L31.25,26.5625 L25,26.5625 L25,23.4375 L40.625,23.4375 L40.625,0 L14.0625,0 Z M3.125,3.125 L9.375,3.125 L9.375,26.5625 L3.125,26.5625 L3.125,3.125 Z M6.25,21.875 C5.38940469,21.875 4.6875,22.5769047 4.6875,23.4375 C4.6875,24.2980953 5.38940469,25 6.25,25 C7.11059531,25 7.8125,24.2980953 7.8125,23.4375 C7.8125,22.5769047 7.11059531,21.875 6.25,21.875 Z" id="Shape"></path>
+        </g>
+    </g>
+</svg>

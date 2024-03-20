@@ -1,0 +1,33 @@
+
+
+/* ================== header main ==================  */
+.header-top-light{
+	.nav-link{  font-weight:normal;
+		&:hover{ color:$dark; }
+	}
+}
+
+.header-top-dark{
+	color:rgba($white, .75);
+	.nav-link{ color:inherit;  font-weight:normal;
+		&:hover{ color:$white;  }
+	}
+}
+
+
+.brand-wrap{ 
+    .logo{ margin-right:7px; max-height:42px; display:inline-block;}
+    &:hover{  opacity:0.75;  }
+}
+
+
+.widget-header{ display:inline-block; vertical-align: middle; position:relative;
+	a{ text-decoration:none; color:inherit }
+	i{ color:$gray-600; }
+	form { min-width: 280px; }
+	.notify{ position:absolute; top:-6px; right:-12px}
+	&:hover{
+		i{color:$dark; }
+	}
+}
+

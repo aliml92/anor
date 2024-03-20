@@ -1,0 +1,15 @@
+
+.btn-icon{ width: 2.4rem; padding-left:4px; padding-right:4px; }
+.btn-icon.btn-sm{ width: 2rem; }
+.btn-icon.btn-lg{ width: 2.8rem; }
+
+.btn-light{ background-color:#fff; border-color:$border-color;  color:$dark;
+	i{ opacity:.6; color:inherit  }
+	&:hover{ border-color:darken($border-color, 10%);  color:$primary;  
+		i{ opacity:1 }
+	}
+	&.active{ border-color:darken($border-color, 10%); box-shadow: $btn-active-box-shadow;  }
+}
+
+.btn-primary-light{ color:$primary; }
+

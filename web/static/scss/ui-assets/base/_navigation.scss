@@ -1,0 +1,19 @@
+
+.dropdown-large{ width:340px;  padding:0.6rem;}
+
+/// override bootstrap nav-pills
+.nav-pills{
+	.nav-link:not(.active){ 
+		&:hover{ background-color:rgba($primary, .1); }
+	}
+}
+
+
+/* ============ desktop view ============ */
+@media all and (min-width: 993px) {
+	// dropdown
+	.dropdown-large{min-width:520px; padding:1rem;}
+
+}
+/* ============ desktop view .end// ============ */
+

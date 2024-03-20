@@ -1,0 +1,67 @@
+.form-control:not(:focus):hover, .form-select:not(:focus):hover {
+    border-color:$input-focus-border-color;
+}
+
+.input-spinner{ max-width: 140px;  flex-wrap: nowrap; display:inline-flex;
+  input.form-control{ 
+  	text-align: center;
+	border-color:$border-color; 
+	padding-left:3px; padding-right:3px;
+   }
+  .btn{ width: 42px; text-align: center; padding-left: 0.5rem; padding-right: 0.5rem; }
+}
+
+.checkbox-btn{ position:relative;
+	input {
+	    position: absolute;
+	    z-index: -1;
+	    opacity: 0;
+	}
+	input:checked ~ .btn{
+		 border-color:$primary; background-color:$gray-200; 
+	}
+}
+
+.box-check{
+	position: relative; margin-right:5px;
+	border-radius:$border-radius;
+	&:hover{ background-color:$light}
+	&:hover:not(.active){ border-color:$blue-300; }
+
+	.border-oncheck{
+		position:absolute; width: 100%; height:100%; top:0; left:0; 
+		border:1px solid $border-color; border-radius:$border-radius;
+		z-index:1;  mix-blend-mode: darken;
+	}
+	input:checked ~ .border-oncheck{
+		 border-color:$primary; 
+		 background-color:rgba($blue-100, .5);
+	}
+}
+
+
+
+.gallery-uploader-wrap{
+	.uploader-img{ 
+		position:relative;
+		display:inline-flex; width:110px; height:110px; margin-right:5px; margin-bottom:5px; 
+		vertical-align: middle; 
+		text-align: center;
+	    justify-content: center;
+	    align-items: center;
+		border-radius:$border-radius; 
+		border:1px dashed $gray-400;
+		overflow:hidden; background-color:$gray-100; 
+		&:hover{
+			border-color:$primary;  
+			background-color:rgba($blue-100, .5);
+		}
+	}
+	input{ width: 0; height:0; visibility: hidden; }
+	img{ width:100%; height:100%; object-fit: contain; mix-blend-mode:multiply  }
+}
+
+
+.done-wrap{ text-align: center; margin-bottom:30px; 
+	img{ width: 140px; height:140px; margin-bottom:20px; }
+}

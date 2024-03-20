@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="48px" height="48px" viewBox="0 0 48 48" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>Icons/icons-category/desktop_windows</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Icons/icons-category/desktop_windows" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="icon-windows-client" transform="translate(3.000000, 5.000000)" fill="#FFFFFF">
+            <path d="M0,0 L0,28.125 L20.3125,28.125 L20.3125,31.25 L12.5,31.25 L12.5,34.375 L31.25,34.375 L31.25,31.25 L23.4375,31.25 L23.4375,28.125 L43.75,28.125 L43.75,0 L0,0 Z M3.125,3.125 L40.625,3.125 L40.625,25 L3.125,25 L3.125,3.125 Z M28.125,7.56835938 L21.2402344,8.54492188 L21.2402344,14.0625 L28.125,14.0625 L28.125,7.56835938 Z M19.6777344,8.984375 L14.0625,9.765625 L14.0625,14.0625 L19.6777344,14.0625 L19.6777344,8.984375 Z M14.0625,15.625 L14.0625,19.921875 L19.6777344,20.703125 L19.6777344,15.625 L14.0625,15.625 Z M21.2402344,15.625 L21.2402344,21.1425781 L28.125,22.1191406 L28.125,15.625 L21.2402344,15.625 Z" id="Shape"></path>
+        </g>
+    </g>
+</svg>

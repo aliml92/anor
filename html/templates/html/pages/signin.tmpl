@@ -1,0 +1,47 @@
+{{ define "title" }} Signin {{ end }}
+
+{{ define "main" }}
+<section class="padding-y bg-light" style="min-height:90vh">
+    <div class="container">
+    
+        <div class="card shadow mx-auto border border-danger mb-2 invisible" style="max-width:400px;">
+            <div class="card-body" id="err-msg">
+                
+            </div>
+        </div> 
+        <div class="card shadow mx-auto" style="max-width:400px;">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Sign in</h4>
+                <form id="signin-form">	
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input class="form-control" placeholder="" name="email" type="text">
+                    </div> 
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input class="form-control" placeholder="" name="password" type="password">
+                    </div>
+                    <div class="mb-4">
+                    <button type="submit" class="btn btn-primary w-100"
+                        hx-post="/signin"
+                        hx-target-error="#err-msg"
+
+                    >Signin</button>
+                    </div> 
+                </form>
+                <hr>
+                <p class="text-center mb-2">
+                    New to Anor? 
+                    <a href=""
+                        hx-get="/signup"
+                        hx-target="#main"
+                        hx-push-url="true"
+                    >Create Account</a></p>
+            
+            </div> 
+        </div>
+    
+        <br><br>
+    </div> 
+</section>
+{{ end }}

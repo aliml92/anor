@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16.1
+    environment:
+      POSTGRES_DB: anordb16
+      POSTGRES_USER: anordb16user
+      POSTGRES_PASSWORD: anordb16password
+      PGDATA: /data/postgres
+    volumes:
+       - anor_data:/data/postgres
+    ports:
+      - 5432:5432
+    expose:
+      - 5432
+    networks:
+      - anor_net               
+    restart: unless-stopped  
+
+  typesense:
+    image: typesense/typesense:0.25.1
+    ports:
+      - "8108:8108"
+    volumes:
+      - ./typesense-data:/data
+    command: '--data-dir /data --api-key=xyz --enable-cors'
+    networks:
+      - anor_net
+    restart: unless-stopped  
+
+networks:
+  anor_net:
+    driver: bridge
+
+volumes:
+    anor_data:

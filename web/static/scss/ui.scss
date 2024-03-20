@@ -1,0 +1,31 @@
+
+/* ============ INCLUDE STYLES AND COMPONENTS ======= */
+
+@import "variables-custom";
+
+/* ================== BASE =================== */
+@import "ui-assets/base/helpers";
+@import "ui-assets/base/layout";
+@import "ui-assets/base/navigation";
+@import "ui-assets/base/typography"; 
+
+/* ================== SECTIONS =================== */
+@import "ui-assets/sections/header";
+@import "ui-assets/sections/footer";
+@import "ui-assets/sections/sidebar";
+
+/* ================== COMPONENTS =================== */
+@import "ui-assets/components/buttons";
+@import "ui-assets/components/product";
+@import "ui-assets/components/banners";
+@import "ui-assets/components/elements.scss";
+@import "ui-assets/components/forms"; 
+@import "ui-assets/components/lists";
+
+/* ================== PAGES =================== */
+@import "ui-assets/pages/page-common";
+@import "ui-assets/pages/page-home";
+@import "ui-assets/pages/page-listing";
+@import "ui-assets/pages/page-detail";
+@import "ui-assets/pages/page-order";
+@import "ui-assets/pages/page-account";

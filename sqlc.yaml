@@ -1,0 +1,123 @@
+version: "2"
+overrides:
+  go:
+    overrides:
+      - db_type: pg_catalog.numeric
+        go_type:
+          import: github.com/shopspring/decimal
+          type: Decimal
+sql:
+  - queries: "./postgres/queries/product"
+    schema: "./postgres/migrations"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "product"
+        sql_package: "pgx/v5"
+        out: "./postgres/store/product"
+        emit_interface: true
+        emit_json_tags: false
+        json_tags_id_uppercase: false
+        emit_db_tags: false
+        emit_prepared_queries: false
+        emit_exact_table_names: false
+        emit_empty_slices: false
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_methods_with_db_argument: false
+        emit_pointers_for_null_types: true
+        json_tags_case_style: none
+        output_batch_file_name: batch.go
+        output_db_file_name: db.go
+        output_models_file_name: models.go
+        output_querier_file_name: querier.go
+        query_parameter_limit: 9
+        omit_unused_structs: false
+        overrides:
+        - column: "products.image_urls"
+          go_type:
+            type: ImageUrls
+        - column: "products.specs"
+          go_type:
+            type: Specs
+
+  - queries: "./postgres/queries/category"
+    schema: "./postgres/migrations"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "category"
+        sql_package: "pgx/v5"
+        out: "./postgres/store/category"
+        emit_interface: true
+        emit_json_tags: false
+        json_tags_id_uppercase: false
+        emit_db_tags: false
+        emit_prepared_queries: false
+        emit_exact_table_names: false
+        emit_empty_slices: false
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_methods_with_db_argument: false
+        emit_pointers_for_null_types: true
+        json_tags_case_style: none
+        output_batch_file_name: batch.go
+        output_db_file_name: db.go
+        output_models_file_name: models.go
+        output_querier_file_name: querier.go
+        query_parameter_limit: 9
+        omit_unused_structs: false
+
+  - queries: "./postgres/queries/sellerstore"
+    schema: "./postgres/migrations"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "sellerstore"
+        sql_package: "pgx/v5"
+        out: "./postgres/store/sellerstore"
+        emit_interface: true
+        emit_json_tags: false
+        json_tags_id_uppercase: false
+        emit_db_tags: false
+        emit_prepared_queries: false
+        emit_exact_table_names: false
+        emit_empty_slices: false
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_methods_with_db_argument: false
+        emit_pointers_for_null_types: true
+        json_tags_case_style: none
+        output_batch_file_name: batch.go
+        output_db_file_name: db.go
+        output_models_file_name: models.go
+        output_querier_file_name: querier.go
+        query_parameter_limit: 9
+        omit_unused_structs: false
+
+  - queries: "./postgres/queries/user"
+    schema: "./postgres/migrations"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "user"
+        sql_package: "pgx/v5"
+        out: "./postgres/store/user"
+        emit_interface: true
+        emit_json_tags: false
+        json_tags_id_uppercase: false
+        emit_db_tags: false
+        emit_prepared_queries: false
+        emit_exact_table_names: false
+        emit_empty_slices: false
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_methods_with_db_argument: false
+        emit_pointers_for_null_types: true
+        json_tags_case_style: none
+        output_batch_file_name: batch.go
+        output_db_file_name: db.go
+        output_models_file_name: models.go
+        output_querier_file_name: querier.go
+        query_parameter_limit: 9
+        omit_unused_structs: false

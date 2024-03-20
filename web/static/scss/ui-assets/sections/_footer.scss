@@ -1,0 +1,20 @@
+
+/* ================ SECTION-FOOTER ==================  */
+.section-footer{
+	.logo-footer{ max-height:40px; }
+	.title{ margin-bottom:10px; }
+}
+
+.footer-dark{
+	color:#fff;
+	.icon{ color:#fff!important; opacity:0.7; } 
+	.title{ color:#fff; }
+	.list-menu{
+		a{color:rgba(#fff, .7);}
+		a:hover{ color:#fff; }
+	}
+}
+
+.footer-bottom{ 
+	padding-top:20px; padding-bottom:20px;
+}

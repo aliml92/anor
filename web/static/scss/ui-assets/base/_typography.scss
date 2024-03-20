@@ -1,0 +1,14 @@
+/* --------------------- titles ---------------------- */
+.section-heading{ margin-bottom:1.5rem; }
+
+.title-text{margin-top:30px; margin-bottom:10px; font-weight:bold;  }
+
+.b{font-weight:600;}
+
+.text-lg{ font-size: $font-size-lg; }
+
+// p:last-child{ margin-bottom:0  }
+
+/* ==================  title helpers ================ */
+.rtl{direction:rtl;}
+.ltr{direction:ltr;}

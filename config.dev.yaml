@@ -1,0 +1,17 @@
+server:
+  Host: localhost
+  Port: 8008
+
+email:
+  APIKey: <YOUR-SENDINBLUE-API-KEY>
+  FromEmail: <YOUR-EMAIL>
+  SignupVerificationTemplateName: account-confirmation.tmpl
+
+database:
+  Host: localhost
+  Port: 5432
+  User: anordb16user
+  Password: anordb16password
+  Database: anordb16
+  SSLMode: disable
+  PgDriver: postgres

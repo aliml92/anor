@@ -1,0 +1,126 @@
+.tag, .chips{
+  display: inline-flex; align-items:center; padding:4px 12px; margin:4px 2px;
+  border:1px solid $border-color; border-radius:20px; 
+  font-size: 90%;
+  .btn-close{
+    width: 0.4rem; height: 0.4rem; margin-right:-4px; margin-left:16px; opacity:0.2;
+    &:hover{ opacity:.6; }
+  }
+}
+
+strong.price, b.price, .b.price, .fw-bold.price{ color:$dark; }
+
+.notify{
+  position: absolute;
+  top: -4px;  right: -10px;
+  display: inline-block;
+  padding: .25em .6em;
+  font-size: 12px;  line-height: 1;  text-align: center;
+  border-radius: 3rem;  color: #fff;  background-color:$red;
+}
+
+.img-avatar{ border-radius:100%; border:1px solid rgba($dark, .2);  }
+
+/* ======== text with line divider ======= */
+.text-divider{
+  text-align: center;
+  display:flex;
+  font-size:$font-size-sm;
+  color:$text-muted;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  &:after, &:before{
+      content: '';
+      height:1px;
+      background: $border-color;
+      flex: 1;
+      margin:0 7px;
+  }
+}
+
+
+/* ======== Rating ======== */
+.label-rating{margin-left:5px; margin-right:5px; display:inline-block; vertical-align: middle}
+
+/* ======== rating-list ======== */
+.rating-stars{display:inline-block; list-style:none; margin:0; padding:0; position:relative; 
+    white-space: nowrap; clear:both;
+    i{ font-size:14px; color:#ccc; display:inline;}
+    img{ height: 16px; max-width:none;}
+    li{display:block;  text-overflow:clip;  white-space:nowrap; z-index:1; }
+  
+    li.stars-active{z-index:2; position:absolute; top:0; left:0; overflow: hidden;
+        i{color:orange;}
+    }
+
+    &.stars-lg{
+      img{ height:20px; max-width:none;}
+    }
+}
+
+.form-check{
+  .rating-stars{ transform: translateY(-2px);}
+}
+
+
+.dot{font-style:normal;opacity:0.5;
+  &:after{content:"•";display:inline-block}
+}
+
+
+
+.bg-loading{
+  position: static; 
+  margin-right:10px;
+  overflow: hidden;
+  margin-bottom:10px;
+  border-radius:5px;
+  animation: placeholderSkeleton 2s linear;
+  animation-iteration-count: infinite;
+  background-image: linear-gradient(to right,rgba(0,0,0,.08) 0,rgba(0,0,0,.15) 15%,rgba(0,0,0,.08) 30%);
+  background-size: 800px 100%;
+  max-width: 30rem;
+}
+
+@keyframes placeholderSkeleton{
+  0% {  background-position: -800px 0; }
+  100% { background-position: 800px 0; }
+}
+
+
+/* =====  TIMER  ===== */
+.timer > div {
+  display: inline-block;
+  text-align: center;
+  margin-right: 5px;
+}
+.timer .num {
+  padding: 7px 3px;
+  display: block;
+  background-color: $gray-700;
+  min-width: 44px;
+  color: #fff;
+  font-size: 22px;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+
+
+/* =====  BREADCRUMB STEP   ===== */
+.breadcrumb.steps{ 
+  margin-bottom:0; 
+  color:$primary;
+  a{ color:inherit; }
+  .breadcrumb-item.active{ font-weight: 600; color:$dark; }
+  .breadcrumb-item.active ~ .breadcrumb-item{ color:$gray-500; opacity:.8; }
+  
+}
+
+.breadcrumb.steps.ondark{
+  .breadcrumb-item.active{ color:$white; }
+  .breadcrumb-item.active ~ .breadcrumb-item{ color:$white; opacity:.5; }
+} 
+
+

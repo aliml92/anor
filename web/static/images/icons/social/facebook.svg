@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="20px" height="20px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <g id="⚙️-Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Icons/icons-ui/logo-facebook" transform="translate(-2.000000, -2.000000)">
+            <g id="Group" transform="translate(2.000000, 2.000000)">
+                <path d="M17.5,0 L2.5,0 C1.12125,0 0,1.12125 0,2.5 L0,17.5 C0,18.8787008 1.12125,20 2.5,20 L17.5,20 C18.8787008,20 20,18.8787008 20,17.5 L20,2.5 C20,1.12125 18.8787008,0 17.5,0 L17.5,0 Z" id="Shape" fill="#0080FF"></path>
+                <path d="M16.875,10.0000002 L13.7500003,10.0000002 L13.7500003,7.49999999 C13.7500003,6.80999996 14.3100009,6.87500012 15,6.87500012 L16.2500001,6.87500012 L16.2500001,3.75 L13.7500003,3.75 C11.6787997,3.75 10,5.42875003 10,7.49999999 L10,10.0000002 L7.5,10.0000002 L7.5,13.1250004 L10,13.1250004 L10,20 L13.7500003,20 L13.7500003,13.1250004 L15.6250003,13.1250004 L16.875,10.0000002 L16.875,10.0000002 Z" id="Shape" fill="#FAFAFA"></path>
+            </g>
+        </g>
+    </g>
+</svg>

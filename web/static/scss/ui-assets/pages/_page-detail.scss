@@ -1,0 +1,33 @@
+
+.gallery-wrap{
+	img{ max-width:100%; cursor:zoom-in; }
+	.img-main-wrap{ display:block; overflow:hidden;  text-align:center;  
+		img {min-height: 400px;}
+	}
+	
+	.item-thumb{
+		display:inline-block; margin:3px; 
+		img{ object-fit: cover;}
+		&:hover{ opacity:.8 }
+	}
+}
+
+
+// only desktop screens
+@media (min-width:993px){
+	.gallery-vertical{
+		display:flex;
+		.thumbs-wrap{ 
+			order:1; 
+			width:60px; margin-right:1rem;
+		}
+		.img-main-wrap{ order:2; }
+	}
+}
+
+
+.item-option-select{
+	margin-bottom:1rem; display: inline-block; margin-right:15px;
+	.btn{ min-width: 80px; }
+}
+

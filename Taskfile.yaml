@@ -1,0 +1,43 @@
+version: '3'
+
+env:
+  POSTGRES: postgres://anordb16user:anordb16password@localhost:5432/anordb16?sslmode=disable
+  TYPESENSE: http://localhost:8108
+
+tasks:
+  create-migration:
+    desc: "creates a migration file"
+    cmds:
+      - migrate create -ext sql -dir migrations -seq  {{.CLI_ARGS}}
+
+  compose-up:
+    cmds:
+      - docker compose -f docker-compose.dev.yaml up -d
+
+  compose-down:
+    cmds:
+      - docker compose -f docker-compose.dev.yaml down
+
+  compose-logs:
+    cmds:
+      - docker compose -f docker-compose.dev.yaml logs
+
+  compose-clean-restart:
+    cmds:
+      - task: compose-down
+      - docker volume rm anor_anor_data
+      - sudo rm -rf ./typesense-data
+      - task: compose-up
+      - sleep 5s
+      - task: goose-up
+
+
+  goose-up:
+    cmds:
+      - GOOSE_DRIVER=postgres GOOSE_DBSTRING=$POSTGRES goose -dir ./postgres/migrations up
+
+  sqlc-gen: sqlc generate
+
+  import-dataset:
+    cmds:
+      - go run ./tools/ebay-data-importer/*.go -source="./tools/ebay-data-importer/dataset/" -database=$POSTGRES -typesense=$TYPESENSE
