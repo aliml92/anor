@@ -2,11 +2,14 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"fmt"
+	"github.com/aliml92/anor/cache"
 	"strings"
 	"time"
 
-	"github.com/alexedwards/scs/v2"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/aliml92/anor"
@@ -17,13 +20,14 @@ import (
 type authService struct {
 	userService anor.UserService
 	emailer     emailer.Emailer
-	session     *scs.SessionManager
+	cache       cache.ResetPasswordTokenCacher
 }
 
-func NewAuthService(us anor.UserService, e emailer.Emailer) anor.AuthService {
+func NewAuthService(us anor.UserService, e emailer.Emailer, cacher cache.ResetPasswordTokenCacher) anor.AuthService {
 	return &authService{
 		userService: us,
 		emailer:     e,
+		cache:       cacher,
 	}
 }
 
@@ -35,7 +39,7 @@ func (s *authService) Signup(ctx context.Context, name, email, password string) 
 	}
 	email = strings.ToLower(email)
 	otp := utils.GeneraterRandomCode(6)
-	otpExp := time.Now().UTC().Add(2 * time.Minute).Unix()
+	otpExp := time.Now().UTC().Add(5 * time.Minute).Unix()
 
 	u := anor.User{
 		Email:     email,
@@ -47,13 +51,27 @@ func (s *authService) Signup(ctx context.Context, name, email, password string) 
 
 	if err := s.userService.CreateUser(ctx, u); err != nil {
 		if errors.Is(err, anor.ErrUserExists) {
-			return ErrEmailAlreadyTaken
+			// get user by email and check its status
+			user, err := s.userService.GetUserByEmail(ctx, email)
+			if err != nil {
+				return err
+			}
+			switch user.Status {
+			case anor.UserStatusActive:
+				return ErrEmailAlreadyTaken
+			case anor.UserStatusRegistrationPending:
+				return s.saveAndResendOTP(ctx, user)
+			}
 		}
-
 		return err
 	}
 
-	if err := s.emailer.SendVerificationMessageWithOTP(ctx, otp, email); err != nil {
+	m, err := s.emailer.NewMessage("Anor account details confirmation", email, "email-verification-otp.gohtml", otp)
+	if err != nil {
+		return err
+	}
+
+	if err := s.emailer.Send(ctx, m); err != nil {
 		return err
 	}
 
@@ -101,7 +119,7 @@ func (s *authService) Signin(ctx context.Context, email, password string) (int64
 		return id, ErrEmailNotConfirmed
 	case anor.UserStatusBlocked:
 		return id, ErrAccountBlocked
-	case anor.UserStatusInactice:
+	case anor.UserStatusInactive:
 		return id, ErrAccountInactive
 	}
 
@@ -113,4 +131,94 @@ func (s *authService) Signin(ctx context.Context, email, password string) (int64
 	}
 
 	return u.ID, nil
+}
+
+func (s *authService) ResendOTP(ctx context.Context, email string) error {
+	user, err := s.userService.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+	otp := utils.GeneraterRandomCode(6)
+	otpExp := time.Now().UTC().Add(2 * time.Minute).Unix()
+
+	user.OTP = otp
+	user.OTPExpiry = otpExp
+	return s.saveAndResendOTP(ctx, user)
+}
+
+func (s *authService) SendResetPasswordLink(ctx context.Context, email string) error {
+	user, err := s.userService.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	token, err := generateToken()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("token: %s\n", token)
+	fmt.Printf("user: %v\n", user)
+	err = s.cache.CacheToken(ctx, token, user.ID, 10*time.Minute)
+	if err != nil {
+		return err
+	}
+
+	resetURL := "http://localhost:8008/auth/reset-password?token=" + token
+	m, err := s.emailer.NewMessage("Anor | Reset Password", user.Email, "reset-password.gohtml", resetURL)
+	if err != nil {
+		return err
+	}
+
+	return s.emailer.Send(ctx, m)
+}
+
+func (s *authService) VerifyResetPasswordToken(ctx context.Context, token string) (bool, error) {
+	ok, err := s.cache.TokenExists(ctx, token)
+	return ok, err
+}
+
+func (s *authService) ResetPassword(ctx context.Context, token string, password string) error {
+	userID, err := s.cache.GetUserIDByToken(ctx, token)
+	if err != nil {
+		return err
+	}
+	if userID == 0 {
+		return ErrInvalidOrExpiredResetURL
+	}
+
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		return err
+	}
+
+	if err := s.userService.UpdateUserPassword(ctx, userID, hashedPassword); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *authService) saveAndResendOTP(ctx context.Context, user anor.User) error {
+	if err := s.userService.UpdateUserOTP(ctx, user.ID, user.OTP, user.OTPExpiry); err != nil {
+		return err
+	}
+
+	m, err := s.emailer.NewMessage("Anor | Signup Confirmation", user.Email, "email-verification-otp.gohtml", user.OTP)
+	if err != nil {
+		return err
+	}
+
+	err = s.emailer.Send(ctx, m)
+
+	return err
+}
+
+func generateToken() (string, error) {
+	tokenLength := 16
+	randomBytes := make([]byte, tokenLength)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+	token := base64.URLEncoding.EncodeToString(randomBytes)
+	return token, nil
 }
