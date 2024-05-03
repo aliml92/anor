@@ -1,0 +1,728 @@
+{{- /*gotype: github.com/aliml92/anor/productcatalog.CategoryViewData*/ -}}
+{{ $category := .Category }}
+{{ $request := .Request }}
+<!-- ============== SECTION PAGETOP ============== -->
+<section class="py-4">
+    <div class="container" >
+        <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '/';">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item">
+                    <a href="/" class="text-dark fw-bold"
+                       hx-push-url="true"
+                       hx-get="/"
+                       hx-target="#main"
+                    >Home</a>
+                </li>
+                <li class="breadcrumb-item text-muted">
+                    <a href="/categories" class="text-muted"
+                       hx-push-url="true"
+                       hx-get="/categories"
+                       hx-target="main"
+                    >All Categories</a>
+                </li>
+
+                {{/* ancestor categories as breadcrumbs */}}
+                {{ range .AncestorCategories }}
+                    <li class="breadcrumb-item text-muted">
+                        <a href="#"
+                           hx-push-url="true"
+                           hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                           hx-target="#main"
+                           hx-target-error=""
+                           class="text-muted">{{ .Category }}
+                        </a>
+                    </li>
+                {{ end }}
+                {{/* ancestor categories as breadcrumbs end */}}
+
+                {{/* current category as the last item of breadcrumb */}}
+                <li class="breadcrumb-item text-muted active" aria-current="page">
+                    {{ .Category.Category }}
+                </li>
+                {{/* current category as the last item of breadcrumb end */}}
+            </ol>
+        </nav>
+    </div> <!-- container //  -->
+</section>
+<!-- ============== SECTION PAGETOP END// ============== -->
+
+<!-- ============== SECTION CONTENT ============== -->
+<section>
+    <div class="container">
+
+        <div class="row">
+            <aside class="col-xl-2 col-lg-3">
+                <!-- ===== Card for sidebar filter ===== -->
+                <div id="aside_filter" class="collapse d-lg-block mb-5 sticky-top">
+
+                    <!-- filterby item -->
+                    <div class="pb-3 mb-2">
+                        <div class="side-filter-title mt-4 mb-3">Categories</div>
+                        <ul class="list-menu mb-0 side-category-list">
+                            {{/* all categories link  */}}
+                            <li>
+                                <a class="fw-bold d-flex align-items-center"
+                                   href="/categories"
+                                   hx-push-url="true"
+                                   hx-get="/categories"
+                                   hx-target="#main"
+                                >
+                                    <i class="fa fa-chevron-left fa-sm"></i>
+                                    <span class="ms-1">All Categories</span>
+                                </a>
+                            </li>
+                            {{/* all categories link end */}}
+
+                            {{/* ancestor categories as side menu */}}
+                            {{ range .AncestorCategories }}
+                                <li >
+                                    <a class="fw-bold d-flex align-items-center"
+                                       href="/categories/{{ .Slug }}-{{ .ID }}"
+                                       hx-push-url="true"
+                                       hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                                       hx-target="#main"
+                                    >
+                                        <i class="fa fa-chevron-left fa-sm"></i>
+                                        <span class="ms-1">{{ .Category }}</span>
+                                    </a>
+                                </li>
+                            {{ end }}
+                            {{/* ancestor categories as side menu end */}}
+
+
+                            {{/*  child categories as side menu */}}
+                            {{ $lenChildCategories := len .ChildCategories }}
+                            {{ if gt $lenChildCategories 0 }}
+                                <li>
+                                    <a class="fw-bold d-flex align-items-center bg-gray-light" href="javascript: void(0)">
+                                        <i class="fa fa-chevron-down fa-sm"></i>
+                                        <span class="ms-1">{{ .Category.Category }}</span>
+                                    </a>
+                                </li>
+
+                                {{ if ( le $lenChildCategories 15) }}
+                                    {{ range .ChildCategories }}
+                                        <li class="ps-2">
+                                            <a class="ms-1"
+                                               href="#"
+                                               hx-push-url="true"
+                                               hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                                               hx-target="#main"
+                                            >{{ .Category }}</a></li>
+                                    {{ end }}
+                                {{ else }}
+                                    {{ $categories15   := ( slice .ChildCategories 0 15) }}
+                                    {{ $categoriesMore := ( slice .ChildCategories 15) }}
+
+                                    {{ range $categories15 }}
+                                        <li class="ps-2"><a class="ms-1"
+                                                            href="#"
+                                                            hx-push-url="true"
+                                                            hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                                                            hx-target="#main"
+                                            >{{ .Category }}</a></li>
+                                    {{ end }}
+
+                                    <div class="collapse side-filter-collapsible" id="category-collapse">
+                                        {{ range $categoriesMore }}
+                                            <li class="ps-2"><a class="ms-1"
+                                                                href="#"
+                                                                hx-push-url="true"
+                                                                hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                                                                hx-target="#main"
+                                                >{{ .Category }}</a></li>
+                                        {{ end }}
+                                    </div>
+                                    <li class="ps-2">
+                                        <a class="side-filter-more-button ms-1" data-bs-toggle="collapse"
+                                           href="#category-collapse" role="button" aria-expanded="false"
+                                           aria-controls="category-collapse">
+                                            <i class="fa fa-chevron-down fa-sm"></i>
+                                            <span> More</span>
+                                        </a>
+                                    </li>
+                                {{ end }}
+                            {{ end }}
+                            {{/*  child categories as side menu end */}}
+
+                            {{/* sibling categories as side menu */}}
+                            {{ $lenSiblingCategories := len .SiblingCategories }}
+                            {{ if gt $lenSiblingCategories 0 }}
+                                {{ $activeCategoryID := .Category.ID }}
+                                {{ $categories := injectCategoryIntoSiblings .Category .SiblingCategories }}
+                                {{ if ( le $lenSiblingCategories 15) }}
+                                    {{ range $categories }}
+                                        {{ if eq $activeCategoryID .ID }}
+                                            <li class="ps-2" >
+                                                <a href="javascript: void(0)" class="bg-gray-light ms-1">
+                                                    {{ .Category }}
+                                                </a>
+                                            </li>
+                                        {{ else }}
+                                            <li class="ps-2"><a class="ms-1"
+                                                                href="/categories/{{ .Slug }}-{{ .ID }}"
+                                                                hx-push-url="true"
+                                                                hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                                                                hx-target="#main"
+                                                >{{ .Category }}</a></li>
+                                        {{ end }}
+
+                                    {{ end }}
+                                {{ else }}
+                                    {{ $categories15   := ( slice $categories  0 15) }}
+                                    {{ $categoriesMore := ( slice $categories  15) }}
+                                    {{ range $categories15 }}
+                                        <li class="ps-2"><a class="ms-1"
+                                                            href="#"
+                                                            hx-push-url="true"
+                                                            hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                                                            hx-target="#main"
+                                            >{{ .Category }}</a></li>
+                                    {{ end }}
+                                    <div class="collapse side-filter-collapsible" id="category-collapse">
+                                        {{ range $categoriesMore }}
+                                            <li class="ps-2"><a class="ms-1"
+                                                                href="#"
+                                                                hx-push-url="true"
+                                                                hx-get="/categories/{{ .Slug }}-{{ .ID }}"
+                                                                hx-target="#main"
+                                                >{{ .Category }}</a></li>
+                                        {{ end }}
+                                    </div>
+                                    <li class="ps-2">
+                                        <a class="side-filter-more-button ms-1" data-bs-toggle="collapse"
+                                           href="#category-collapse" role="button" aria-expanded="false"
+                                           aria-controls="category-collapse">
+                                            <i class="fa fa-chevron-down fa-sm"></i>
+                                            <span> More</span>
+                                        </a>
+                                    </li>
+                                {{ end }}
+                            {{ else }}
+                                {{ if .Category.IsLeaf }}
+                                    <li class="ps-2" >
+                                        <a href="javascript: void(0)" class="bg-gray-light ms-1">
+                                            {{ .Category.Category }}
+                                        </a>
+                                    </li>
+                                {{ end }}
+                            {{ end }}
+                            {{/* sibling categories as side menu end */}}
+                        </ul>
+                    </div>
+                    <!-- filterby item .// -->
+
+                    <!-- filterby item -->
+                    <div class="pb-2">
+                        <div class="side-filter-title mb-2">Price range</div>
+                        {{ $minPrice := .FilteringData.PriceFrom }}
+                        {{ $maxPrice := .FilteringData.PriceTo  }}
+                        {{ $priceFrom := .Request.Query.FilterParam.PriceFrom }}
+                        {{ $priceTo := .Request.Query.FilterParam.PriceTo }}
+                        {{if .Request.Query.FilterParam.PriceFrom.IsZero }}
+                            {{ $priceFrom = $minPrice }}
+                        {{ end }}
+                        {{if .Request.Query.FilterParam.PriceTo.IsZero }}
+                            {{ $priceTo = $maxPrice }}
+                        {{ end }}
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="col input-group input-group-sm position-relative">
+                                    <span class="input-group-text  py-1 px-0 position-absolute bg-transparent border-0 price-input-span" ><small style="font-size: 12px">from</small></span>
+                                    <input class="form-control  js-input-from price-input" type="number" style="padding-left: 40px" id="min"  placeholder="{{ $minPrice }}" value="{{ $minPrice }}"
+                                           hx-push-url="true"
+                                           hx-get="/categories/{{ .Category.Slug }}-{{ .Category.ID }}"
+                                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                           hx-trigger="keyup[key=='Enter'] delay:0.5s"
+                                           hx-target="#main"
+                                           hx-swap="innerHTML show:window:top"
+                                    >
+                                </div>
+                            </div> <!-- col end.// -->
+                            <div class="col-6">
+                                <div class="col input-group input-group-sm">
+                                    <span class="input-group-text  py-1 px-0 position-absolute bg-transparent border-0 price-input-span" ><small style="font-size: 12px">to</small></span>
+                                    <input class="form-control  js-input-to price-input ps-4" type="number" id="max"  placeholder="{{ $maxPrice }}" value="{{ $maxPrice }}"
+                                           hx-push-url="true"
+                                           hx-get="/categories/{{ .Category.Slug }}-{{ .Category.ID }}"
+                                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                           hx-trigger="keyup[key=='Enter'] delay:0.5s"
+                                           hx-target="#main"
+                                           hx-swap="innerHTML show:window:top"
+                                    >
+                                </div>
+                            </div>
+                        </div> <!-- row end.// -->
+                        <div class="range-slider invisible" style="height: 50px">
+                            <input type="text" class="js-range-slider" value=""
+                                   data-skin="round"
+                                   data-type="double"
+                                   data-min="{{ $minPrice }}"
+                                   data-max="{{ $maxPrice }}"
+                                   data-from="{{ $priceFrom }}"
+                                   data-to="{{ $priceTo }}"
+                                   data-step="1"
+                                   data-grid="false"
+                                   data-keyboard="false"
+                                   data-hide-min-max="true"
+                                   data-hide-from-to="true"
+                                   hx-push-url="true"
+                                   hx-get="/categories/{{ .Category.Slug }}-{{ .Category.ID }}"
+                                   hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                   hx-trigger="filterByPriceRange delay:1s"
+                                   hx-target="#main"
+                                   hx-swap="innerHTML show:window:top"
+                            />
+                        </div>
+                    </div>
+                    <!-- filterby item .// -->
+
+                    <!-- filterby item -->
+                    <div class="pb-3 mb-2">
+                        <div class="side-filter-title mb-3">Brands</div>
+                        {{/* populate brands */}}
+                        {{ $lenBrands := len .FilteringData.Brands }}
+                        {{ if ( le $lenBrands 7) }}
+                            <div class="side-filter-brands" id="side-filter-brands">
+                                {{ range $brand := .FilteringData.Brands }}
+                                    <label class="form-check mb-2"
+                                           hx-push-url="true"
+                                           hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                           hx-trigger="click delay:1s"
+                                           hx-target="#main"
+                                    >
+                                        <input class="form-check-input" type="checkbox" value="{{ $brand }}"
+                                                {{ if isBrandChecked $brand $request.Query.FilterParam.Brands }}
+                                                    checked
+                                                {{ end }}
+                                        >
+                                        <span class="form-check-label">{{ $brand }}</span>
+                                    </label>
+                                {{ end }}
+                            </div>
+                        {{ else }}
+                            {{ $brands10   := ( slice .FilteringData.Brands 0 7) }}
+                            {{ $brandsMore := ( slice .FilteringData.Brands 7) }}
+                            <div class="side-filter-brands" id="side-filter-brands">
+                                {{ range $brand := $brands10 }}
+                                    <label class="form-check mb-2"
+                                           hx-push-url="true"
+                                           hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                           hx-trigger="click delay:1s"
+                                           hx-target="#main"
+                                    >
+                                        <input class="form-check-input" type="checkbox" value="{{ $brand }}"
+                                                {{ if isBrandChecked $brand $request.Query.FilterParam.Brands }}
+                                                    checked
+                                                {{ end }}
+                                        >
+                                        <span class="form-check-label">{{ $brand }}</span>
+                                    </label>
+                                {{ end }}
+                                <div class="collapse side-filter-collapsible" id="brand-collapse">
+                                    {{ range $brand := $brandsMore }}
+                                        <label class="form-check mb-2"
+                                               hx-push-url="true"
+                                               hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                               hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                               hx-trigger="click delay:1s"
+                                               hx-target="#main"
+                                        >
+                                            <input class="form-check-input" type="checkbox" value="{{ $brand }}"
+                                                    {{ if isBrandChecked $brand $request.Query.FilterParam.Brands }}
+                                                        checked
+                                                    {{ end }}
+                                            >
+                                            <span class="form-check-label">{{ $brand }}</span>
+                                        </label>
+                                    {{ end }}
+                                </div>
+                            </div>
+                            <div><a class="side-filter-more-button"
+                                    data-bs-toggle="collapse"
+                                    href="#brand-collapse"
+                                    role="button"
+                                    aria-expanded="false"
+                                    aria-controls="category-collapse"
+                                >
+                                    <i class="fa fa-chevron-down fa-sm"></i><span> More</span></a>
+                            </div>
+                        {{ end }}
+
+                    </div>
+                    <!-- filterby item .// -->
+
+                    <!-- filterby item -->
+                    <div class="pb-3 mb-2">
+                        <div class="side-filter-title mb-2">Ratings</div>
+                        <label class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" value="">
+                            <span class="form-check-label">
+                                <ul class="rating-stars">
+                                  <li class="stars-active" style="width: 100%;">
+                                    <img src="static/images/misc/stars-active.svg" alt="">
+                                  </li>
+                                  <li> <img src="static/images/misc/starts-disable.svg" alt=""> </li>
+                                </ul>
+                              </span>
+                        </label> <!-- form-check end.// -->
+                        <label class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" value="">
+                            <span class="form-check-label">
+                                <ul class="rating-stars">
+                                  <li class="stars-active" style="width: 80%;">
+                                    <img src="static/images/misc/stars-active.svg" alt="">
+                                  </li>
+                                  <li> <img src="static/images/misc/starts-disable.svg" alt=""> </li>
+                                </ul>
+                              </span>
+                        </label> <!-- form-check end.// -->
+                        <label class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" value="">
+                            <span class="form-check-label">
+                                <ul class="rating-stars">
+                                  <li class="stars-active" style="width: 60%;">
+                                    <img src="static/images/misc/stars-active.svg" alt="">
+                                  </li>
+                                  <li> <img src="static/images/misc/starts-disable.svg" alt=""> </li>
+                                </ul>
+                              </span>
+                        </label> <!-- form-check end.// -->
+                        <label class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" value="">
+                            <span class="form-check-label">
+                                <ul class="rating-stars">
+                                  <li class="stars-active" style="width: 40%;">
+                                    <img src="static/images/misc/stars-active.svg" alt="">
+                                  </li>
+                                  <li> <img src="static/images/misc/starts-disable.svg" alt=""> </li>
+                                </ul>
+                              </span>
+                        </label> <!-- form-check end.// -->
+                    </div>
+                    <!-- filterby item .// -->
+
+
+                </div> <!-- card.// -->
+
+                <!-- ===== Card for sidebar filter .// ===== -->
+
+            </aside> <!-- col .// -->
+            <main class="col-xl-10 col-lg-9" >
+
+                <header class="card mb-1 border-0">
+                    <div class="p-3 d-md-flex align-items-center">
+                        <!-- left   -->
+                        <span class="d-block pt-3">{{ humanizeNum .FoundProductCount }} results</span>
+                        <!-- left  .//  -->
+                        <!-- right -->
+                        <div class="ms-auto d-md-flex align-items-center gap-3">
+                            <div class="d-flex justify-content-center">
+                                <label for="sort-selector"  class="d-inline-block" >Sort</label>
+                                <select class="form-select  d-inline-block" id="sort-selector"
+                                        hx-push-url="true"
+                                        hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                        hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                        hx-trigger="change changed delay:1s"
+                                        hx-target="#main"
+                                >   {{ if eq .Request.Query.SortParam "" }}
+                                        <option value="best_match" selected>Best Match</option>
+                                        <option value="price_low_to_high">Price: Low to High</option>
+                                        <option value="price_high_to_low">Price: High to Low</option>
+                                        <option value="highest_rated">Highest Rated</option>
+                                        <option value="best_sellers">Best Sellers</option>
+                                        <option value="new_arrivals">New Arrivals</option>
+                                    {{ else }}
+                                        {{ $sort := .Request.Query.SortParam }}
+                                        {{ if (eq $sort "best_match")}}
+                                            <option value="best_match" selected>Best Match</option>
+                                        {{ else }}
+                                            <option value="best_match" >Best Match</option>
+                                        {{ end }}
+
+                                        {{ if (eq $sort "price_low_to_high")}}
+                                            <option value="price_low_to_high" selected>Price: Low to High</option>
+                                        {{ else }}
+                                            <option value="price_low_to_high" >Price: Low to High</option>
+                                        {{ end }}
+
+                                        {{ if (eq $sort "price_high_to_low")}}
+                                            <option value="price_high_to_low" selected>Price: High to Low</option>
+                                        {{ else }}
+                                            <option value="price_high_to_low" >Price: High to Low</option>
+                                        {{ end }}
+
+                                        {{ if (eq $sort "highest_rated")}}
+                                            <option value="highest_rated" selected>Highest Rated</option>
+                                        {{ else }}
+                                            <option value="highest_rated" >Highest Rated</option>
+                                        {{ end }}
+
+                                        {{ if (eq $sort "best_sellers")}}
+                                            <option value="best_sellers" selected>Best Sellers</option>
+                                        {{ else }}
+                                            <option value="best_sellers" >Best Sellers</option>
+                                        {{ end }}
+
+                                        {{ if (eq $sort "new_arrivals")}}
+                                            <option value="new_arrivals" selected>New Arrivals</option>
+                                        {{ else }}
+                                            <option value="new_arrivals" >New Arrivals</option>
+                                        {{ end }}
+                                    {{ end }}
+                                </select>
+                            </div>
+
+                            <div class="btn-group">
+                                <a class="btn btn-light" data-bs-toggle="tooltip" title="List view">
+                                    <i class="fa fa-bars"></i>
+                                </a>
+                                <a class="btn btn-light active" data-bs-toggle="tooltip" title="Grid view">
+                                    <i class="fa fa-th"></i>
+                                </a>
+                            </div> <!-- btn-group end.// -->
+                        </div>  <!-- right .//-->
+                    </div>
+                </header>  <!-- card .//-->
+
+                <!-- filtered-elements -->
+                {{ if not .Request.Query.FilterParam.IsZero }}
+                    <div class="mb-3">
+                        {{ if not .Request.Query.FilterParam.PriceFrom.IsZero }}
+                            {{ if not .Request.Query.FilterParam.PriceTo.IsZero }}
+                                <span class="chips border bg-gray-light"
+                                      hx-push-url="true"
+                                      hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                      hx-vals="js:{brands: getCheckedBrands(), sort: getSort()}"
+                                      hx-trigger="click delay:1s"
+                                      hx-target="#main"
+                                >${{ .Request.Query.FilterParam.PriceFrom }} to ${{ .Request.Query.FilterParam.PriceTo }}<a class="btn-close"></a> </span>
+                            {{ else }}
+                                <span class="chips border bg-gray-light"
+                                      hx-push-url="true"
+                                      hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                      hx-vals="js:{price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                                      hx-trigger="click delay:1s"
+                                      hx-target="#main"
+                                >over ${{ .Request.Query.FilterParam.PriceFrom }}<a class="btn-close"></a> </span>
+                            {{ end }}
+                        {{ else }}
+                            {{ if not .Request.Query.FilterParam.PriceTo.IsZero }}
+                                <span class="chips border bg-gray-light"
+                                      hx-push-url="true"
+                                      hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                      hx-vals="js:{price_from: getPriceFrom(), brands: getCheckedBrands(), sort: getSort()}"
+                                      hx-trigger="click delay:1s"
+                                      hx-target="#main"
+                                >under ${{ .Request.Query.FilterParam.PriceTo }}<a class="btn-close"></a> </span>
+                            {{ end }}
+                        {{ end }}
+
+                        {{ range .Request.Query.FilterParam.Brands }}
+                            <span class="chips border bg-gray-light"
+                                  hx-push-url="true"
+                                  hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                                  hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), sort: getSort()}"
+                                  hx-trigger="click delay:1s"
+                                  hx-target="#main"
+                            >{{ . }}<a class="btn-close"></a> </span>
+                        {{ end }}
+                        <a href="" id="clear-filters" class="btn btn-link"
+                           hx-push-url="true"
+                           hx-get="/categories/{{ $category.Slug }}-{{ $category.ID }}"
+                           hx-trigger="click delay:1s"
+                           hx-target="#main"
+                        >Clear all</a>
+                    </div>
+                {{ end }}
+                <!-- filtered-elements .// -->
+
+                <!-- ========= content items ========= -->
+                <div class="row" id="product-items-with-footer">
+                    {{ range .Products }}
+                        <div class="col-xxl-3 col-xl-4 col-sm-6 col-12">
+                            <figure class="card card-product-grid" data-product-id="{{ .ID }}">
+                                <div class="position-relative rounded-top">
+                                    <a href="#" class="img-wrap rounded-top"> <img src="{{ .ThumbImg }}">  </a>
+                                    <span class="saved-item-icon d-inline-block py-2 px-2 rounded-circle">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-heart" viewBox="0 0 16 16">
+                                          <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"></path>
+                                        </svg>
+                                    </span>
+                                </div>
+                                <figcaption class="p-3 border-0 card-product-grid-body">
+                                    <a class="title mb-1"
+                                       href="#"
+                                       hx-push-url="true"
+                                       hx-get="/products/{{ .Slug }}-{{ .ID }}"
+                                       hx-target="#main"
+                                       hx-swap="innerHTML show:window:top"
+
+                                    >{{ .Name }}</a>
+                                    <div class="mb-3 item-rating-card">
+                                        <p class="d-inline text-warning"><i class="fa fa-sm fa-star"></i></p>
+                                        <span class="text-muted">4.5</span>
+                                        <span class="text-muted ms-0">(34 reviews)</span>
+                                    </div> <!-- rating-wrap.// -->
+                                    <div class="price-wrap">
+                                        {{ if (eqd0 .Pricing.Discount ) }}
+                                            <span class="d-block price-old" style="visibility: hidden" >${{ .Pricing.BasePrice }}</span>
+                                            <span class="price">${{ .Pricing.BasePrice }}</span>
+                                        {{ else }}
+                                            <span class="d-block price-old">${{ .Pricing.BasePrice }}</span>
+                                            <span class="price">${{ .Pricing.DiscountedPrice }}</span>
+                                        {{ end }}
+
+                                    </div> <!-- price-wrap.// -->
+                                </figcaption>
+                            </figure> <!-- card // -->
+                        </div> <!-- col .// -->
+                    {{ end }}
+
+                    <footer class="my-4" id="footer">
+                        <!-- initialize pagination variables -->
+                        {{ $currentPage  := .Request.Query.Paging.Page }}
+                        {{ $pagesCount := .TotalPages }}
+                        {{ $categorySlug := formatSlug .Category.Slug .Category.ID }}
+
+                        <!-- show more button -->
+                        {{ if (lt $currentPage (sub1 $pagesCount) ) }}
+                            <div class="d-grid mb-3">
+                                <button class="btn btn-outline-secondary btn-lg py-3 border-0 btn-show-more" type="button"
+                                        hx-push-url="true"
+                                        hx-headers='{"HX-Action-Source": "btn-pagination"}'
+                                        hx-get="/categories/{{ $categorySlug }}?page={{ add1 $currentPage}}"
+                                        hx-target="#footer"
+                                        hx-swap="outerHTML"
+                                >Show 20 more</button>
+                            </div>
+                        {{ else if (eq $currentPage (sub1 $pagesCount) ) }}
+                            <div class="d-grid mb-3">
+                                <button class="btn btn-outline-secondary btn-lg py-3 border-0 btn-show-more" type="button"
+                                        hx-push-url="true"
+                                        hx-headers='{"HX-Action-Source": "btn-pagination"}'
+                                        hx-get="/categories/{{ $categorySlug }}?page={{ add1 $currentPage}}"
+                                        hx-target="#footer"
+                                        hx-swap="outerHTML"
+                                >Show {{ mod .FoundProductCount 20}} more</button>
+                            </div>
+                        {{ end}}
+                        <!-- show more button .//-->
+
+                        <!-- pagination menu -->
+                        <nav class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                <!-- 'Previous' link -->
+                                {{ if (eq $currentPage 1) }}
+                                    <li class="page-item me-2 disabled">
+                                        <a class="page-link rounded-circle" href="#" aria-label="Previous">
+                                            <i class="fa fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {{ else }}
+                                    <li class="page-item me-2">
+                                        <a class="page-link rounded-circle"
+                                           href="/categories/{{ $categorySlug }}?page={{ sub1 $currentPage}}"
+                                           aria-label="Previous"
+                                           hx-push-url="true"
+                                           hx-headers='{"HX-Action-Source": "btn-pagination"}'
+                                           hx-get="/categories/{{ $categorySlug }}?page={{ sub1 $currentPage}}"
+                                           hx-target="#product-items-with-footer"
+                                           hx-swap="innerHTML show:window:top"
+                                        >
+                                            <i class="fa fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {{ end }}
+                                <!-- 'Previous' link .//-->
+
+                                <!-- pagination links -->
+                                {{ range $pageNum := genPageNums $currentPage $pagesCount 5 }}
+                                    {{ if (eq $pageNum $currentPage) }}
+                                        <li class="page-item active me-2" aria-current="page">
+                                            <span class="page-link rounded-circle" >{{ $pageNum }}</span>
+                                        </li>
+                                    {{ else }}
+                                        <li class="page-item me-2">
+                                            <a class="page-link rounded-circle"
+                                               href="/categories/{{ $categorySlug }}?page={{ $pageNum }}"
+                                               hx-push-url="true"
+                                               hx-headers='{"HX-Action-Source": "btn-pagination"}'
+                                               hx-get="/categories/{{ $categorySlug }}?page={{ $pageNum }}"
+                                               hx-target="#product-items-with-footer"
+                                               hx-swap="innerHTML show:window:top"
+                                            >
+                                                {{ $pageNum }}
+                                            </a>
+                                        </li>
+                                    {{ end }}
+                                {{ end }}
+                                <!-- pagination links .//-->
+
+                                <!-- 'Next' link -->
+                                {{ if (eq $currentPage $pagesCount) }}
+                                    <li class="page-item me-2 disabled">
+                                        <a class="page-link rounded-circle disabled" href="#" aria-label="Next">
+                                            <i class="fa fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {{ else }}
+                                    <li class="page-item me-2">
+                                        <a class="page-link rounded-circle"
+                                           href="/categories/{{ $categorySlug }}?page={{ add1 $currentPage}}"
+                                           aria-label="Next"
+                                           hx-push-url="true"
+                                           hx-headers='{"HX-Action-Source": "btn-pagination"}'
+                                           hx-get="/categories/{{ $categorySlug }}?page={{ add1 $currentPage}}"
+                                           hx-target="#product-items-with-footer"
+                                           hx-swap="innerHTML show:window:top"
+                                        >
+                                            <i class="fa fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {{ end }}
+                                <!-- 'Next' link .//-->
+                            </ul>
+                        </nav>
+
+                        <!-- pagination menu .//-->
+                    </footer>
+                </div> <!-- row.// -->
+
+                <!-- ========= content items .// ========= -->
+
+            </main> <!-- col .// -->
+        </div> <!-- row .// -->
+
+    </div> <!-- container .//  -->
+</section>
+<!-- ============== SECTION CONTENT END// ============== -->
+
+
+
+<!-- ================ SECTION SUBSCRIBE ================ -->
+<section class="padding-y-lg bg-gray-light">
+    <div class="container">
+
+        <h4 class="text-center">Subscribe on our newsletter</h4>
+        <p class="pb-2 text-center">Get daily news on upcoming offers from many suppliers all over the world</p>
+
+        <div style="max-width:380px;" class="mx-auto">
+
+            <div class="d-flex">
+                <div class="me-1 flex-grow-1">
+                    <input class="w-100 form-control" placeholder="Your Email" type="email">
+                </div> <!-- col.// -->
+                <div class="">
+                    <button type="submit" class="btn btn-primary"> <i class="fa fa-envelope"></i> Subscribe
+                    </button>
+                </div> <!-- col.// -->
+            </div>
+        </div>
+
+
+    </div> <!-- container  .// -->
+</section>
+<!-- ================ SECTION SUBSCRIBE END.// ================ -->
