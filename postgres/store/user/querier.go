@@ -13,6 +13,8 @@ type Querier interface {
 	CreateUser(ctx context.Context, email string, password string, fullName string, otp *string, otpExpiry *int64) error
 	GetUser(ctx context.Context, id int64) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	UpdateUserOTP(ctx context.Context, iD int64, otp *string, otpExpiry *int64) error
+	UpdateUserPassword(ctx context.Context, password string, iD int64) error
 	UpdateUserStatus(ctx context.Context, status UserStatus, iD int64) error
 }
 

@@ -58,16 +58,23 @@ func (s UserService) GetUser(ctx context.Context, id int64) (anor.User, error) {
 	}
 
 	u := anor.User{
-		ID:          ru.ID,
-		Email:       ru.Email,
-		Password:    ru.Password,
-		PhoneNumber: *ru.PhoneNumber,
-		FullName:    ru.FullName,
-		Status:      anor.UserStatus(ru.Status),
-		OTP:         *ru.Otp,
-		OTPExpiry:   *ru.OtpExpiry,
-		CreatedAt:   ru.CreatedAt.Time,
-		UpdatedAt:   ru.UpdatedAt.Time,
+		ID:        ru.ID,
+		Email:     ru.Email,
+		Password:  ru.Password,
+		FullName:  ru.FullName,
+		Status:    anor.UserStatus(ru.Status),
+		CreatedAt: ru.CreatedAt.Time,
+		UpdatedAt: ru.UpdatedAt.Time,
+	}
+
+	if ru.PhoneNumber != nil {
+		u.PhoneNumber = *ru.PhoneNumber
+	}
+	if ru.Otp != nil {
+		u.OTP = *ru.Otp
+	}
+	if ru.Otp != nil {
+		u.OTPExpiry = *ru.OtpExpiry
 	}
 
 	return u, nil
@@ -83,16 +90,23 @@ func (s UserService) GetUserByEmail(ctx context.Context, email string) (anor.Use
 	}
 
 	u := anor.User{
-		ID:          ru.ID,
-		Email:       ru.Email,
-		Password:    ru.Password,
-		PhoneNumber: *ru.PhoneNumber,
-		FullName:    ru.FullName,
-		Status:      anor.UserStatus(ru.Status),
-		OTP:         *ru.Otp,
-		OTPExpiry:   *ru.OtpExpiry,
-		CreatedAt:   ru.CreatedAt.Time,
-		UpdatedAt:   ru.UpdatedAt.Time,
+		ID:        ru.ID,
+		Email:     ru.Email,
+		Password:  ru.Password,
+		FullName:  ru.FullName,
+		Status:    anor.UserStatus(ru.Status),
+		CreatedAt: ru.CreatedAt.Time,
+		UpdatedAt: ru.UpdatedAt.Time,
+	}
+
+	if ru.PhoneNumber != nil {
+		u.PhoneNumber = *ru.PhoneNumber
+	}
+	if ru.Otp != nil {
+		u.OTP = *ru.Otp
+	}
+	if ru.OtpExpiry != nil {
+		u.OTPExpiry = *ru.OtpExpiry
 	}
 
 	return u, nil
@@ -104,5 +118,22 @@ func (s UserService) UpdateUserStatus(ctx context.Context, status anor.UserStatu
 		return err
 	}
 
+	return nil
+}
+
+func (s UserService) UpdateUserOTP(ctx context.Context, id int64, otp string, otpExpiry int64) error {
+	err := s.userStore.UpdateUserOTP(ctx, id, &otp, &otpExpiry)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s UserService) UpdateUserPassword(ctx context.Context, id int64, password string) error {
+	err := s.userStore.UpdateUserPassword(ctx, password, id)
+	if err != nil {
+		return err
+	}
 	return nil
 }

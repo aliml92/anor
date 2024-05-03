@@ -7,6 +7,11 @@ INSERT INTO users
 VALUES 
     ($1, $2, $3, $4, $5);
 
+-- name: UpdateUserOTP :exec
+UPDATE users
+SET otp = $2,
+    otp_expiry = $3
+WHERE id = $1;
 
 -- name: UpdateUserStatus :exec
 UPDATE users
@@ -22,3 +27,9 @@ INSERT INTO users (
 ) VALUES (
     $1, $2, $3, $4
 ) RETURNING id;
+
+
+-- name: UpdateUserPassword :exec
+UPDATE users
+SET password = $1
+WHERE id = $2 AND status = 'Active';

@@ -91,6 +91,29 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 	return &i, err
 }
 
+const updateUserOTP = `-- name: UpdateUserOTP :exec
+UPDATE users
+SET otp = $2,
+    otp_expiry = $3
+WHERE id = $1
+`
+
+func (q *Queries) UpdateUserOTP(ctx context.Context, iD int64, otp *string, otpExpiry *int64) error {
+	_, err := q.db.Exec(ctx, updateUserOTP, iD, otp, otpExpiry)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password = $1
+WHERE id = $2 AND status = 'Active'
+`
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, password string, iD int64) error {
+	_, err := q.db.Exec(ctx, updateUserPassword, password, iD)
+	return err
+}
+
 const updateUserStatus = `-- name: UpdateUserStatus :exec
 UPDATE users
 SET status = $1

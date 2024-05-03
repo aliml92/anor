@@ -128,12 +128,12 @@ type ProductAttribute struct {
 }
 
 type ProductPricing struct {
-	ProductID        int64
-	BasePrice        decimal.Decimal
-	CurrencyCode     string
-	DiscountLevel    decimal.Decimal
-	DiscountedAmount decimal.Decimal
-	IsOnSale         bool
+	ProductID       int64
+	BasePrice       decimal.Decimal
+	CurrencyCode    string
+	Discount        decimal.Decimal
+	DiscountedPrice decimal.Decimal
+	IsOnSale        bool
 }
 
 type ProductRating struct {
@@ -179,12 +179,12 @@ type Sku struct {
 }
 
 type SkuPricing struct {
-	SkuID            int64
-	BasePrice        decimal.Decimal
-	CurrencyCode     string
-	DiscountLevel    decimal.Decimal
-	DiscountedAmount decimal.Decimal
-	IsOnSale         bool
+	SkuID           int64
+	BasePrice       decimal.Decimal
+	CurrencyCode    string
+	Discount        decimal.Decimal
+	DiscountedPrice decimal.Decimal
+	IsOnSale        bool
 }
 
 type SkuProductAttributeValue struct {
