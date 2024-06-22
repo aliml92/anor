@@ -131,7 +131,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	productcatalogHandler := product.NewHandler(userService, productService, categoryService, cartService, searcher, view, logger, sessionManager)
 	userHandler := user.NewHandler(userService, cartService, view, sessionManager, logger)
 	cartHandler := cart.NewHandler(userService, cartService, view, sessionManager, logger)
-	checkoutHandler := checkout.NewHandler(userService, cartService, orderService, view, sessionManager, logger)
+	checkoutHandler := checkout.NewHandler(userService, cartService, orderService, view, sessionManager, logger, cfg)
 
 	mux := anor.NewRouter()
 

@@ -12,6 +12,7 @@ type Config struct {
 	Email    EmailConfig
 	Database DatabaseConfig
 	Redis    RedisConfig
+	Stripe   StripeConfig
 }
 
 type ServerConfig struct {
@@ -42,6 +43,10 @@ type RedisConfig struct {
 	DB           int
 	MinIdleConns int
 	MaxIdleConns int
+}
+
+type StripeConfig struct {
+	SecretKey string
 }
 
 func LoadConfigFromFile(path string) (*viper.Viper, error) {

@@ -26,7 +26,7 @@ func (h *Handler) GetCheckoutView(w http.ResponseWriter, r *http.Request) {
 		err       error
 	)
 
-	stripe.Key = "sk_test_51PJ8DELIUpPV6l70aEJwjoHMWFm2bVoVQhLyjzA9Ht4KuxYEpj8WXdMUOLjx0A94PggJZf2ert88KgIYGAvHy60000rYLagjER"
+	stripe.Key = h.cfg.Stripe.SecretKey
 	if u != nil {
 		c, err := h.cartSvc.GetCart(ctx, u.ID, true)
 		if err != nil {
@@ -87,10 +87,10 @@ func (h *Handler) GetCheckoutView(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("cart items", v.Cart.CartItems)
 
 	cc := checkout.Content{Cart: anor.Cart{
-			CartItems:    cartItems,
-			TotalAmount:  getTotalPrice(cartItems),
-			CurrencyCode: getCurrency(cartItems),
-		},
+		CartItems:    cartItems,
+		TotalAmount:  getTotalPrice(cartItems),
+		CurrencyCode: getCurrency(cartItems),
+	},
 	}
 	if isHXRequest(r) {
 		h.view.Render(w, "pages/checkout/content.gohtml", cc)

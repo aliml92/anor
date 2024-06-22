@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aliml92/anor"
+	"github.com/aliml92/anor/config"
 	"github.com/aliml92/anor/pkg/httperrors"
 	"github.com/aliml92/anor/redis/cache/session"
 	"log/slog"
@@ -22,6 +23,7 @@ type Handler struct {
 	session  *session.Manager
 	view     *html.View
 	logger   *slog.Logger
+	cfg      *config.Config
 }
 
 func NewHandler(
@@ -31,6 +33,7 @@ func NewHandler(
 	view *html.View,
 	session *session.Manager,
 	logger *slog.Logger,
+	cfg *config.Config,
 ) *Handler {
 	return &Handler{
 		userSvc:  userSvc,
@@ -39,6 +42,7 @@ func NewHandler(
 		view:     view,
 		session:  session,
 		logger:   logger,
+		cfg:      cfg,
 	}
 }
 
