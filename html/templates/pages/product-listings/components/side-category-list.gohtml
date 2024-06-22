@@ -1,0 +1,151 @@
+{{ define "side-category-list" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/product-listings/components.SideCategoryList*/ -}}
+
+    {{/* Variables */}}
+    {{ $category := .Category }}
+    {{ $ancestorCategories := .AncestorCategories }}
+    {{ $childCategories := .ChildrenCategories }}
+    {{ $siblingCategories := .SiblingCategories }}
+
+    <div class="pb-3 mb-2">
+        <div class="side-filter-title mt-4 mb-3">Categories</div>
+        <ul class="list-menu mb-0 side-category-list">
+
+            {{/* Ancestor Categories */}}
+            {{ range $ancestorCategories }}
+                <li >
+                    <a class="fw-bold d-flex align-items-center"
+                       href="/categories/{{ .Handle }}-{{ .ID }}"
+                       hx-push-url="true"
+                       hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                       hx-target="#content"
+                    >
+                        <i class="bi bi-chevron-left"></i>
+                        <span class="ms-1">{{ .Category }}</span>
+                    </a>
+                </li>
+            {{ end }}
+            {{/* Ancestor Categories End */}}
+
+
+            {{/* Child Categories */}}
+            {{ $lenChildCategories := len $childCategories }}
+            {{ if gt $lenChildCategories 0 }}
+                <li>
+                    <a class="fw-bold d-flex align-items-center bg-gray-light" href="javascript: void(0)">
+                        <i class="bi bi-chevron-down"></i>
+                        <span class="ms-1">{{ $category.Category }}</span>
+                    </a>
+                </li>
+
+                {{ if ( le $lenChildCategories 15) }}
+                    {{ range $childCategories }}
+                        <li class="ps-2">
+                            <a class="ms-1"
+                               href="/categories/{{ .Handle }}-{{ .ID }}"
+                               hx-push-url="true"
+                               hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                               hx-target="#content"
+                            >{{ .Category }}</a></li>
+                    {{ end }}
+                {{ else }}
+                    {{ $categories15   := ( slice $childCategories 0 15) }}
+                    {{ $categoriesMore := ( slice $childCategories 15) }}
+
+                    {{ range $categories15 }}
+                        <li class="ps-2"><a class="ms-1"
+                                            href="/categories/{{ .Handle }}-{{ .ID }}"
+                                            hx-push-url="true"
+                                            hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                                            hx-target="#content"
+                            >{{ .Category }}</a></li>
+                    {{ end }}
+
+                    <div class="collapse side-filter-collapsible" id="category-collapse">
+                        {{ range $categoriesMore }}
+                            <li class="ps-2"><a class="ms-1"
+                                                href="/categories/{{ .Handle }}-{{ .ID }}"
+                                                hx-push-url="true"
+                                                hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                                                hx-target="#content"
+                                >{{ .Category }}</a></li>
+                        {{ end }}
+                    </div>
+                    <li class="ps-2">
+                        <a class="side-filter-more-button ms-1" data-bs-toggle="collapse"
+                           href="#category-collapse" role="button" aria-expanded="false"
+                           aria-controls="category-collapse">
+                            <i class="bi bi-chevron-down"></i>
+                            <span> More</span>
+                        </a>
+                    </li>
+                {{ end }}
+            {{ end }}
+            {{/* Child Categories End */}}
+
+            {{/* Sibling Categories */}}
+            {{ $lenSiblingCategories := len $siblingCategories }}
+            {{ if gt $lenSiblingCategories 0 }}
+                {{ $activeCategoryID := $category.ID }}
+                {{ $categories := injectCategoryIntoSiblings $category $siblingCategories }}
+                {{ if ( le $lenSiblingCategories 15) }}
+                    {{ range $categories }}
+                        {{ if eq $activeCategoryID .ID }}
+                            <li class="ps-2" >
+                                <a href="javascript: void(0)" class="bg-gray-light ms-1">
+                                    {{ .Category }}
+                                </a>
+                            </li>
+                        {{ else }}
+                            <li class="ps-2"><a class="ms-1"
+                                                href="/categories/{{ .Handle }}-{{ .ID }}"
+                                                hx-push-url="true"
+                                                hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                                                hx-target="#content"
+                                >{{ .Category }}</a></li>
+                        {{ end }}
+
+                    {{ end }}
+                {{ else }}
+                    {{ $categories15   := ( slice $categories  0 15) }}
+                    {{ $categoriesMore := ( slice $categories  15) }}
+                    {{ range $categories15 }}
+                        <li class="ps-2"><a class="ms-1"
+                                            href="/categories/{{ .Handle }}-{{ .ID }}"
+                                            hx-push-url="true"
+                                            hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                                            hx-target="#content"
+                            >{{ .Category }}</a></li>
+                    {{ end }}
+                    <div class="collapse side-filter-collapsible" id="category-collapse">
+                        {{ range $categoriesMore }}
+                            <li class="ps-2"><a class="ms-1"
+                                                href="/categories/{{ .Handle }}-{{ .ID }}"
+                                                hx-push-url="true"
+                                                hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                                                hx-target="#content"
+                                >{{ .Category }}</a></li>
+                        {{ end }}
+                    </div>
+                    <li class="ps-2">
+                        <a class="side-filter-more-button ms-1" data-bs-toggle="collapse"
+                           href="#category-collapse" role="button" aria-expanded="false"
+                           aria-controls="category-collapse">
+                            <i class="bi bi-chevron-down"></i>
+                            <span> More</span>
+                        </a>
+                    </li>
+                {{ end }}
+            {{/* Sibling Categories End */}}
+            {{ else }}
+                {{ if $category.IsLeaf }}
+                    <li class="ps-2" >
+                        <a href="javascript: void(0)" class="bg-gray-light ms-1">
+                            {{ $category.Category }}
+                        </a>
+                    </li>
+                {{ end }}
+            {{ end }}
+        </ul>
+    </div>
+{{ end }}

@@ -1,0 +1,107 @@
+{{ define "pagination" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/search-listings/components.Pagination*/ -}}
+    <div class="my-4" id="pagination">
+
+        {{/* Variables */}}
+        {{ $q := .Q }}
+        {{ $currentPage  := .CurrentPage }}
+        {{ $totalPages := .TotalPages }}
+        {{ $totalProducts := .TotalProducts }}
+
+        {{/* Show More Button */}}
+        {{ if (lt $currentPage (sub1 $totalPages) ) }}
+            <div class="d-grid mb-3">
+                <button class="btn btn-outline-secondary btn-lg py-3 border-0 btn-show-more" type="button"
+                        hx-push-url="true"
+                        hx-get="/search?q={{ $q }}&page={{ add1 $currentPage}}&page_size=20"
+                        hx-target="#pagination"
+                        hx-swap="outerHTML"
+                >Show 20 more</button>
+            </div>
+        {{ else if (eq $currentPage (sub1 $totalPages) ) }}
+            <div class="d-grid mb-3">
+                <button class="btn btn-outline-secondary btn-lg py-3 border-0 btn-show-more" type="button"
+                        hx-push-url="true"
+                        hx-get="/search?q={{ $q }}&page={{ add1 $currentPage}}&page_size=20"
+                        hx-target="#pagination"
+                        hx-swap="outerHTML"
+                >Show {{ mod $totalProducts 20}} more</button>
+            </div>
+        {{ end}}
+        {{/* Show More Button End */}}
+
+        {{/* Paginatin Nav */}}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {{/* Previous Button  */}}
+                {{ if (eq $currentPage 1) }}
+                    <li class="page-item me-2 disabled">
+                        <a class="page-link rounded-circle arrow" href="#" aria-label="Previous">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                {{ else }}
+                    <li class="page-item me-2">
+                        <a class="page-link rounded-circle arrow"
+                           href="/search?q={{ $q }}&page={{ sub1 $currentPage}}&page_size=20"
+                           aria-label="Previous"
+                           hx-push-url="true"
+                           hx-get="/search?q={{ $q }}&page={{ sub1 $currentPage}}&page_size=20"
+                           hx-target="#product-grid-with-pagination"
+                           hx-swap="innerHTML show:window:top"
+                        >
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                {{ end }}
+                {{/* Previous Button End */}}
+
+                {{/* Nav Items  */}}
+                {{ range $pageNum := genPageNums $currentPage $totalPages 5 }}
+                    {{ if (eq $pageNum $currentPage) }}
+                        <li class="page-item active me-2" aria-current="page">
+                            <span class="page-link rounded-circle" >{{ $pageNum }}</span>
+                        </li>
+                    {{ else }}
+                        <li class="page-item me-2">
+                            <a class="page-link rounded-circle"
+                               href="/search?q={{ $q }}&page={{ $pageNum }}&page_size=20"
+                               hx-push-url="true"
+                               hx-get="/search?q={{ $q }}&page={{ $pageNum }}&page_size=20"
+                               hx-target="#product-grid-with-pagination"
+                               hx-swap="innerHTML show:window:top"
+                            >
+                                {{ $pageNum }}
+                            </a>
+                        </li>
+                    {{ end }}
+                {{ end }}
+                {{/* Nav Items End */}}
+
+                {{/* Next Button */}}
+                {{ if (eq $currentPage $totalPages) }}
+                    <li class="page-item me-2 disabled">
+                        <a class="page-link rounded-circle disabled arrow" href="#" aria-label="Next">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                {{ else }}
+                    <li class="page-item me-2">
+                        <a class="page-link rounded-circle arrow"
+                           href="/search?q={{ $q }}&page={{ add1 $currentPage}}&page_size=20"
+                           aria-label="Next"
+                           hx-push-url="true"
+                           hx-get="/search?q={{ $q }}&page={{ add1 $currentPage}}&page_size=20"
+                           hx-target="#product-grid-with-pagination"
+                           hx-swap="innerHTML show:window:top"
+                        >
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                {{ end }}
+                {{/* Next Button End */}}
+            </ul>
+        </nav>
+        {{/* Paginatin Nav End */}}
+    </div>
+{{ end }}

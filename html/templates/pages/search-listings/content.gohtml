@@ -1,0 +1,34 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/search-listings.Content*/ -}}
+    <section class="py-4">
+        <div class="container" >
+            {{ template "category-breadcrumb" .CategoryBreadcrumb }}
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="row">
+                <aside class="col-xl-2 col-lg-3">
+                    <div id="aside_filter" class="collapse d-lg-block mb-5 sticky-top">
+                        {{ template "side-category-list" .SideCategoryList }}
+
+                        {{ template "side-price-range" .SidePriceRange }}
+
+                        {{ template "side-filter-checkbox" .SideBrandsCheckbox }}
+
+                        {{ template "side-rating-checkbox" .SideRatingCheckbox }}
+                    </div>
+                </aside>
+                <main class="col-xl-10 col-lg-9" >
+                    {{ template "search-listings-info" .SearchListingsInfo }}
+
+                    <div class="row" id="product-grid-with-pagination">
+                        {{ template "product-grid" .ProductGrid }}
+                        {{ template "pagination" .Pagination }}
+                    </div>
+                </main>
+            </div>
+        </div>
+    </section>
+{{ end }}

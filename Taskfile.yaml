@@ -3,12 +3,13 @@ version: '3'
 env:
   POSTGRES: postgres://anordb16user:anordb16password@localhost:5432/anordb16?sslmode=disable
   TYPESENSE: http://localhost:8108
+  MIGRATION_DIR: ./postgres/migrations
 
 tasks:
   create-migration:
     desc: "creates a migration file"
     cmds:
-      - migrate create -ext sql -dir migrations -seq  {{.CLI_ARGS}}
+      - GOOSE_DRIVER=postgres GOOSE_DBSTRING=$POSTGRES GOOSE_MIGRATION_DIR=$MIGRATION_DIR goose -s create {{.CLI_ARGS}} sql
 
   compose-up:
     cmds:
@@ -26,7 +27,7 @@ tasks:
     cmds:
       - task: compose-down
       - docker volume rm anor_anor_data
-      - sudo rm -rf ./typesense-data
+      - sudo rm -rf ./_typesense-data
       - task: compose-up
       - sleep 5s
       - task: goose-up
@@ -40,4 +41,4 @@ tasks:
 
   import-dataset:
     cmds:
-      - go run ./tools/ebay-data-importer/*.go -source="./tools/ebay-data-importer/dataset/" -database=$POSTGRES -typesense=$TYPESENSE
+      - go run ./tools/ebay-data-importer/*.go -source="./tools/ebay-data-importer/dataset/" -database=$POSTGRES -typesense=$TYPESENSE {{ .CLI_ARGS}}

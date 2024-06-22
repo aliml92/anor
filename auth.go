@@ -12,4 +12,5 @@ type AuthService interface {
 	SendResetPasswordLink(ctx context.Context, email string) error
 	VerifyResetPasswordToken(ctx context.Context, token string) (bool, error)
 	ResetPassword(ctx context.Context, token string, password string) error
+	GetUser(ctx context.Context, id int64) (*User, error)
 }

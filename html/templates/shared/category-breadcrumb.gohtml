@@ -1,0 +1,28 @@
+{{ define "category-breadcrumb" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/shared.CategoryBreadcrumbNav*/ -}}
+    <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '/';">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+                <a href="/" hx-boost="true" class="text-dark fw-bold">Anor</a>
+            </li>
+
+            {{/* populate ancestor categories as breadcrumb */}}
+            {{ range $index, $category := .AncestorCategories }}
+                <li class="breadcrumb-item text-muted">
+                    <a href="/categories/{{ $category.Handle }}-{{ $category.ID }}"
+                       hx-push-url="true"
+                       hx-get="/categories/{{ $category.Handle }}-{{ $category.ID }}"
+                       hx-target="#content"
+                       hx-target-error=""
+                       class="text-muted">{{ $category.Category }}
+                    </a>
+                </li>
+            {{ end }}
+
+            {{/* populate category as the last item of breadcrumb */}}
+            <li class="breadcrumb-item text-muted active" aria-current="page">
+                {{ .Category.Category }}
+            </li>
+        </ol>
+    </nav>
+{{ end}}

@@ -2,7 +2,10 @@ package funcs
 
 import (
 	"fmt"
+	"github.com/aliml92/anor"
 	"regexp"
+	"sort"
+	"strconv"
 
 	"github.com/spf13/cast"
 )
@@ -60,7 +63,9 @@ func GenPageNums(currentPage, pageCount, maxPages int) []int {
 	}
 
 	c := currentPage
-	if c > 2 {
+	if c > 3 {
+		c -= 3
+	} else if c > 2 {
 		c -= 2
 	} else if c > 1 {
 		c--
@@ -75,6 +80,48 @@ func GenPageNums(currentPage, pageCount, maxPages int) []int {
 	return res
 }
 
-func FormatSlug(slug string, id interface{}) string {
-	return fmt.Sprintf("%s-%v", slug, id)
+func FormatHandle(handle string, id interface{}) string {
+	return fmt.Sprintf("%s-%v", handle, id)
+}
+
+func InjectCategoryIntoSiblings(c anor.Category, siblings []anor.Category) []anor.Category {
+	var categories []anor.Category
+	if len(siblings) < 15 {
+		categories = append(siblings, c)
+		sort.Slice(categories, func(i, j int) bool {
+			return categories[i].ID < categories[j].ID
+		})
+	} else {
+		categories = append([]anor.Category{c}, siblings...)
+	}
+
+	return categories
+}
+
+func IsBrandChecked(brand string, brands []string) bool {
+	if len(brands) == 0 {
+		return false
+	}
+	for _, b := range brands {
+		if b == brand {
+			return true
+		}
+	}
+	return false
+}
+
+func FormatProductQty(count int) string {
+	if count < 1 {
+		return "None left"
+	}
+
+	if count == 1 {
+		return "Only one left"
+	}
+
+	if count > 10 {
+		return "More than 10 available"
+	}
+
+	return strconv.Itoa(count) + " left"
 }

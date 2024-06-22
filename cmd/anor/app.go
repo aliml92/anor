@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliml92/anor"
+	"github.com/aliml92/anor/storefront/cart"
+	"github.com/aliml92/anor/storefront/checkout"
 	"html/template"
 	"io"
 	"log"
@@ -14,21 +17,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alexedwards/scs/pgxstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/aliml92/go-typesense/typesense"
+	"github.com/redis/go-redis/v9"
 
-	"github.com/aliml92/anor/auth"
 	"github.com/aliml92/anor/config"
 	"github.com/aliml92/anor/html"
 	"github.com/aliml92/anor/pkg/emailer"
 	"github.com/aliml92/anor/pkg/middlewares"
 	"github.com/aliml92/anor/postgres"
-	"github.com/aliml92/anor/postgres/store"
-	"github.com/aliml92/anor/postgres/store/category"
-	"github.com/aliml92/anor/postgres/store/product"
-	"github.com/aliml92/anor/postgres/store/user"
-	"github.com/aliml92/anor/productcatalog"
+	"github.com/aliml92/anor/postgres/repository"
+	cartRepo "github.com/aliml92/anor/postgres/repository/cart"
+	categoryRepo "github.com/aliml92/anor/postgres/repository/category"
+	orderRepo "github.com/aliml92/anor/postgres/repository/order"
+	productRepo "github.com/aliml92/anor/postgres/repository/product"
+	userRepo "github.com/aliml92/anor/postgres/repository/user"
+	rs "github.com/aliml92/anor/redis/cache"
+	authCache "github.com/aliml92/anor/redis/cache/auth"
+	"github.com/aliml92/anor/redis/cache/session"
+	"github.com/aliml92/anor/storefront/auth"
+	"github.com/aliml92/anor/storefront/product"
+	"github.com/aliml92/anor/storefront/user"
 	ts "github.com/aliml92/anor/typesense"
 )
 
@@ -44,7 +53,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	}
 
 	// get db connection pool
-	dbPool, err := store.NewDatabasePool(ctx, &cfg.Database)
+	dbPool, err := repository.NewDatabasePool(ctx, &cfg.Database)
 	if err != nil {
 		return err
 	}
@@ -52,35 +61,55 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	defer dbPool.Close()
 
 	// setup typesense client
-	client, _ := typesense.NewClient(nil, "http://localhost:8108")
-	client = client.WithAPIKey("xyz")
-	searcher := ts.NewSearcher(client)
+	tsClient, _ := typesense.NewClient(nil, "http://localhost:8108")
+	tsClient = tsClient.WithAPIKey("xyz")
+	redisClient, err := getRedisClient(ctx, cfg.Redis)
+	if err != nil {
+		return err
+	}
+
+	categoryCacher := rs.NewCategoryCacher(redisClient)
+	rpCacher := authCache.NewResetPasswordTokenCacher(redisClient)
+	otpCacher := authCache.NewSignupConfirmationOTPCacher(redisClient)
+	searcher := ts.NewSearcher(tsClient)
+
 	// already initialized
-	//if err := ts.InitCollections(ctx, client); err != nil {
-	//	return err
-	//}
+	if err := ts.InitCollections(ctx, tsClient); err != nil {
+		return err
+	}
 
 	// setup brevo brevoEmailer
-	emailTemplate := template.Must(template.ParseGlob("./html/templates/html/email/*.tmpl"))
+	emailTemplate := template.Must(template.ParseGlob("./pkg/emailer/templates/*.gohtml"))
 	brevoEmailer := emailer.NewBrevoEmailer(&cfg.Email, emailTemplate)
 
 	// setup session manager
 	// TODO: do not use hardcoded lifetime value
-	session := scs.New()
-	session.Lifetime = 60 * time.Minute
-	session.Store = pgxstore.New(dbPool)
+	authSession := scs.New()
+	authSession.Store = session.NewRedisStore(redisClient).WithPrefix("keys:app:session:user:authenticated:")
+	authSession.Codec = session.MessagePackCodec{}
+	authSession.Lifetime = 2 * 24 * time.Hour
+	authSession.Cookie.Name = "__anor_ust" // anor, authenticated user's session token
 
-	userStore := user.NewStore(dbPool)
-	productStore := product.NewStore(dbPool)
-	categoryStore := category.NewStore(dbPool)
+	anonSession := scs.New()
+	anonSession.Store = session.NewRedisStore(redisClient).WithPrefix("keys:app:session:user:anonymous:")
+	anonSession.Codec = session.MessagePackCodec{}
+	anonSession.Lifetime = 5 * 24 * time.Hour
+	anonSession.Cookie.Name = "__anor_gst" // anor, guest's session token
 
-	userService := postgres.NewUserService(userStore)
-	productService := postgres.NewProductService(productStore, categoryStore)
-	categoryService := postgres.NewCategoryService(categoryStore)
-	authService := auth.NewAuthService(userService, brevoEmailer)
+	sessionManager := session.NewManager(authSession, anonSession)
 
-	// setup templates
-	renderer := html.NewRender()
+	userRepository := userRepo.NewRepository(dbPool)
+	productRepository := productRepo.NewRepository(dbPool)
+	categoryRepository := categoryRepo.NewRepository(dbPool)
+	cartRepository := cartRepo.NewRepository(dbPool)
+	orderRepository := orderRepo.NewRepository(dbPool)
+
+	userService := postgres.NewUserService(userRepository, cartRepository, orderRepository)
+	productService := postgres.NewProductService(productRepository, categoryRepository)
+	categoryService := postgres.NewCategoryService(categoryRepository, categoryCacher)
+	authService := auth.NewAuthService(userService, brevoEmailer, otpCacher, rpCacher)
+	cartService := postgres.NewCartService(cartRepository, productRepository)
+	orderService := postgres.NewOrderService(orderRepository)
 
 	// setup loggers
 	logHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
@@ -96,27 +125,32 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	srvLogger := slog.NewLogLogger(logHandler, slog.LevelError)
 	logger := slog.New(logHandler)
 
-	authHandler := auth.NewHandler(authService, renderer, session, logger)
-	productcatalogHandler := productcatalog.NewHandler(userService, productService, categoryService, searcher, renderer, logger, session)
+	view := html.NewView()
 
-	// setup handlers
-	mux := http.NewServeMux()
+	authHandler := auth.NewHandler(authService, cartService, view, sessionManager, logger)
+	productcatalogHandler := product.NewHandler(userService, productService, categoryService, cartService, searcher, view, logger, sessionManager)
+	userHandler := user.NewHandler(userService, cartService, view, sessionManager, logger)
+	cartHandler := cart.NewHandler(userService, cartService, view, sessionManager, logger)
+	checkoutHandler := checkout.NewHandler(userService, cartService, orderService, view, sessionManager, logger)
+
+	mux := anor.NewRouter()
 
 	addStaticRoutes(mux)
+
+	responseLogger := middlewares.NewRequestLogger(logger, nil)
+	mux.Use(middlewares.RequestID, responseLogger.Log, authSession.LoadAndSave, userHandler.AuthInjector, authHandler.SessionMiddleware)
 	auth.RegisterRoutes(authHandler, mux)
-	productcatalog.RegisterRoutes(productcatalogHandler, mux)
+	product.RegisterRoutes(productcatalogHandler, mux)
+	user.RegisterRoutes(userHandler, mux)
+	cart.RegisterRoutes(cartHandler, mux)
+	checkout.RegisterRoutes(checkoutHandler, mux)
 
 	var handler http.Handler = mux
-	excluded := []string{
-		"/health", "/status", "/static", "/user/static/", "/products/static/", "/categories/static/",
-		"/favicon.ico", "/categories/images/",
-	}
-	handler = middlewares.RequestLogger(handler, logger, excluded...)
 
 	// create server and run
 	httpServer := http.Server{
 		Addr:     net.JoinHostPort(cfg.Server.Host, cfg.Server.Port),
-		Handler:  session.LoadAndSave(handler),
+		Handler:  handler,
 		ErrorLog: srvLogger,
 	}
 
@@ -139,6 +173,24 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	return nil
 }
 
+func getRedisClient(ctx context.Context, cfg config.RedisConfig) (*redis.Client, error) {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:         cfg.Addr,
+		Username:     cfg.Username,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		MinIdleConns: cfg.MinIdleConns,
+		MaxIdleConns: cfg.MaxIdleConns,
+	})
+
+	statusCmd := rdb.Ping(ctx)
+	if statusCmd.Err() != nil {
+		return nil, statusCmd.Err()
+	}
+
+	return rdb, nil
+}
+
 func getConfig() (*config.Config, error) {
 	cfgPath := os.Getenv(ConfigFilePathEnvVar)
 	if cfgPath == "" {
@@ -158,11 +210,13 @@ func getConfig() (*config.Config, error) {
 	return cfg, nil
 }
 
-func addStaticRoutes(mux *http.ServeMux) {
+func addStaticRoutes(mux *anor.Router) {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+	mux.Handle("GET /auth/static/", http.StripPrefix("/auth/static/", http.FileServer(http.Dir("web/static"))))
 	mux.Handle("GET /user/static/", http.StripPrefix("/user/static/", http.FileServer(http.Dir("web/static"))))
 	mux.Handle("GET /products/static/", http.StripPrefix("/products/static/", http.FileServer(http.Dir("web/static"))))
 	mux.Handle("GET /categories/static/", http.StripPrefix("/categories/static/", http.FileServer(http.Dir("web/static"))))
+	mux.Handle("GET /checkout/static/", http.StripPrefix("/checkout/static/", http.FileServer(http.Dir("web/static"))))
 	mux.Handle("GET /favicon.ico", http.HandlerFunc(faviconHandler))
 }
 

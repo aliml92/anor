@@ -4953,7 +4953,7 @@ themeToggleBtn.addEventListener('click', function() {
     themeToggleDarkIcon.classList.toggle('hidden');
     themeToggleLightIcon.classList.toggle('hidden');
 
-    // if set via local store previously
+    // if set via local repository previously
     if (localStorage.getItem('color-theme')) {
         if (localStorage.getItem('color-theme') === 'light') {
             document.documentElement.classList.add('dark');
@@ -4963,7 +4963,7 @@ themeToggleBtn.addEventListener('click', function() {
             localStorage.setItem('color-theme', 'light');
         }
 
-    // if NOT set via local store previously
+    // if NOT set via local repository previously
     } else {
         if (document.documentElement.classList.contains('dark')) {
             document.documentElement.classList.remove('dark');

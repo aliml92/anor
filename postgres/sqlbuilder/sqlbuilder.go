@@ -52,25 +52,43 @@ func (sb *SqlBuilder) Where() *SqlBuilder {
 }
 
 func (sb *SqlBuilder) Eq(field string, value interface{}) *SqlBuilder {
-	sb.WriteString(fmt.Sprintf("%s = $%d ", field, sb.counter+1))
+	sb.counter++
+	sb.WriteString(fmt.Sprintf("%s = $%d ", field, sb.counter))
 	sb.args = append(sb.args, value)
 	return sb
 }
 
 func (sb *SqlBuilder) EqAny(field string, value interface{}) *SqlBuilder {
-	sb.WriteString(fmt.Sprintf("%s = ANY($%d) ", field, sb.counter+1))
+	sb.counter++
+	sb.WriteString(fmt.Sprintf("%s = ANY($%d) ", field, sb.counter))
 	sb.args = append(sb.args, value)
 	return sb
 }
 
 func (sb *SqlBuilder) Lt(field string, value interface{}) *SqlBuilder {
-	sb.WriteString(fmt.Sprintf("%s < $%d ", field, sb.counter+1))
+	sb.counter++
+	sb.WriteString(fmt.Sprintf("%s < $%d ", field, sb.counter))
 	sb.args = append(sb.args, value)
 	return sb
 }
 
 func (sb *SqlBuilder) Gt(field string, value interface{}) *SqlBuilder {
-	sb.WriteString(fmt.Sprintf("%s > $%d ", field, sb.counter+1))
+	sb.counter++
+	sb.WriteString(fmt.Sprintf("%s > $%d ", field, sb.counter))
+	sb.args = append(sb.args, value)
+	return sb
+}
+
+func (sb *SqlBuilder) Le(field string, value interface{}) *SqlBuilder {
+	sb.counter++
+	sb.WriteString(fmt.Sprintf("%s <= $%d ", field, sb.counter))
+	sb.args = append(sb.args, value)
+	return sb
+}
+
+func (sb *SqlBuilder) Ge(field string, value interface{}) *SqlBuilder {
+	sb.counter++
+	sb.WriteString(fmt.Sprintf("%s >= $%d ", field, sb.counter))
 	sb.args = append(sb.args, value)
 	return sb
 }

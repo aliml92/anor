@@ -11,6 +11,7 @@ type Config struct {
 	Server   ServerConfig
 	Email    EmailConfig
 	Database DatabaseConfig
+	Redis    RedisConfig
 }
 
 type ServerConfig struct {
@@ -32,6 +33,15 @@ type DatabaseConfig struct {
 	Database string
 	SSLMode  string
 	PgDriver string
+}
+
+type RedisConfig struct {
+	Addr         string
+	Username     string
+	Password     string
+	DB           int
+	MinIdleConns int
+	MaxIdleConns int
 }
 
 func LoadConfigFromFile(path string) (*viper.Viper, error) {

@@ -1,0 +1,29 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/product-details.Content*/ -}}
+    <section class="py-4">
+        <div class="container" >
+            {{ template "category-breadcrumb" .CategoryBreadcrumb }}
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            {{ template "product-main" .ProductMain }}
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            {{ template "product-specs" .ProductSpecs }}
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            {{ template "related-products" . }}
+        </div>
+    </section>
+
+    <script id="no-content"></script>
+    <script id="product-variant-matrix" data-dim="{{ len .ProductMain.Product.Attributes }}" data-product-variant-id="" type="application/json">{{ .ProductVariantMatrix | jsonify }}</script>
+{{ end }}

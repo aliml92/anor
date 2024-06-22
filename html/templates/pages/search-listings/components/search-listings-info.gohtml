@@ -1,0 +1,104 @@
+{{ define "search-listings-info" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/search-listings/components.SearchListingsInfo*/ -}}
+
+    {{/* Variables */}}
+    {{ $q := .Q }}
+    {{ $totalProducts := .TotalProducts }}
+    {{ $totalCategories := .TotalCategories }}
+    {{ $sortParam := .SortParam }}
+    {{ $filterParam := .FilterParam }}
+
+    <header class="card mb-1 border-0">
+        <div class="p-3 d-md-flex align-items-center">
+            <span class="d-block pt-3">{{ humanizeNum $totalProducts }} results found in
+                {{ if gt $totalCategories 1}} {{ $totalCategories }} categories
+                {{ else }} {{ $totalCategories }} category {{ end }}
+            </span>
+            <div class="ms-auto d-md-flex align-items-center gap-3">
+                <div class="d-flex justify-content-center">
+                    <label for="sort-selector"  class="d-inline-block" style="color: #848484" >Sort</label>
+                    <select class="form-select  d-inline-block" id="sort-selector"
+                            hx-push-url="true"
+                            hx-get="/search?q={{ $q }}"
+                            hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                            hx-headers='js:{"HX-Search-Type": 2}'
+                            hx-trigger="change changed delay:1s"
+                            hx-target="#content"
+                    >
+                        <option value="popular" {{ if or (eq $sortParam "") (eq $sortParam "popular") }} selected {{ end }}>Popular</option>
+                        <option value="price_low_to_high" {{ if eq $sortParam "price_low_to_high" }} selected {{ end }}>Price: Low to High</option>
+                        <option value="price_high_to_low" {{ if eq $sortParam "price_high_to_low" }} selected {{ end }}>Price: High to Low</option>
+                        <option value="highest_rated" {{ if eq $sortParam "highest_rated" }} selected {{ end }}>Highest Rated</option>
+                        <option value="best_sellers" {{ if eq $sortParam "best_sellers" }} selected {{ end }}>Best Sellers</option>
+                        <option value="new_arrivals" {{ if eq $sortParam "new_arrivals" }} selected {{ end }}>New Arrivals</option>
+                    </select>
+                </div>
+
+                <div class="btn-group">
+                    <a class="btn btn-light" data-bs-toggle="tooltip" title="List view">
+                        <i class="bi bi-list"></i>
+                    </a>
+                    <a class="btn btn-light active" data-bs-toggle="tooltip" title="Grid view">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    {{ if not $filterParam.IsZero }}
+        <div class="mb-3">
+            {{ if not $filterParam.PriceFrom.IsZero }}
+                {{ if not $filterParam.PriceTo.IsZero }}
+                    <span class="chips border bg-gray-light"
+                          hx-push-url="true"
+                          hx-get="/search?q={{ $q }}"
+                          hx-vals="js:{brands: getCheckedBrands(), sort: getSort()}"
+                          hx-headers='js:{"HX-Search-Type": 2}'
+                          hx-trigger="click delay:1s"
+                          hx-target="#content"
+                    >${{ $filterParam.PriceFrom }} to ${{ $filterParam.PriceTo }}<a class="btn-close"></a> </span>
+                {{ else }}
+                    <span class="chips border bg-gray-light"
+                          hx-push-url="true"
+                          hx-get="/search?q={{ $q }}"
+                          hx-vals="js:{price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                          hx-headers='js:{"HX-Search-Type": 2}'
+                          hx-trigger="click delay:1s"
+                          hx-target="#content"
+                    >over ${{ $filterParam.PriceFrom }}<a class="btn-close"></a> </span>
+                {{ end }}
+            {{ else }}
+                {{ if not $filterParam.PriceTo.IsZero }}
+                    <span class="chips border bg-gray-light"
+                          hx-push-url="true"
+                          hx-get="/search?q={{ $q }}"
+                          hx-vals="js:{price_from: getPriceFrom(), brands: getCheckedBrands(), sort: getSort()}"
+                          hx-headers='js:{"HX-Search-Type": 2}'
+                          hx-trigger="click delay:1s"
+                          hx-target="#content"
+                    >under ${{ $filterParam.PriceTo }}<a class="btn-close"></a> </span>
+                {{ end }}
+            {{ end }}
+
+            {{ range $filterParam.Brands }}
+                <span class="chips border bg-gray-light"
+                      hx-push-url="true"
+                      hx-get="/search?q={{ $q }}"
+                      hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), sort: getSort()}"
+                      hx-headers='js:{"HX-Search-Type": 2}'
+                      hx-trigger="click delay:1s"
+                      hx-target="#content"
+                >{{ . }}<a class="btn-close"></a>
+                </span>
+            {{ end }}
+            <a href="" id="clear-filters" class="btn btn-link"
+               hx-push-url="true"
+               hx-get="/search?q={{ $q }}"
+               hx-headers='js:{"HX-Search-Type": 2}'
+               hx-trigger="click delay:1s"
+               hx-target="#content"
+            >Clear all</a>
+        </div>
+    {{ end }}
+{{ end }}

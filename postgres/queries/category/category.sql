@@ -1,6 +1,6 @@
 -- name: CreateTopCategory :one
 INSERT INTO categories (
-    category, slug
+    category, handle
 ) VALUES (
     $1, $2
 ) RETURNING *;
@@ -9,7 +9,7 @@ INSERT INTO categories (
 -- name: CreateChildCategoryIfNotExists :one
 WITH inserted AS (
     INSERT INTO categories
-        (category, slug, parent_id)
+        (category, handle, parent_id)
     VALUES
         ($1, $2, $3)
     ON CONFLICT (category, parent_id)
@@ -24,11 +24,11 @@ WHERE category = $1 AND parent_id = $3;
 
 -- name: GetCategoryWithAncestors :many
 WITH RECURSIVE categories_cte AS (
-    SELECT c.id, c.category, c.slug, c.parent_id, 1 AS level
+    SELECT c.id, c.category, c.handle, c.parent_id, 1 AS level
     FROM categories c
     WHERE c.id = $1
     UNION
-    SELECT c.id, c.category, c.slug, c.parent_id, level + 1
+    SELECT c.id, c.category, c.handle, c.parent_id, level + 1
     FROM categories c
              JOIN categories_cte cte ON cte.parent_id = c.id
 )
@@ -50,11 +50,11 @@ SELECT * FROM categories where parent_id = $1;
 
 -- name: GetLeafCategoryIDs :many
 WITH RECURSIVE categories_cte AS (
-    SELECT c.id, c.category, c.slug, c.parent_id
+    SELECT c.id, c.category, c.handle, c.parent_id
     FROM categories c
     WHERE c.id = $1
     UNION ALL
-    SELECT c2.id, c2.category, c2.slug, c2.parent_id
+    SELECT c2.id, c2.category, c2.handle, c2.parent_id
     FROM categories c2
              JOIN categories_cte cte ON cte.id = c2.parent_id
 )
@@ -67,7 +67,7 @@ WHERE id NOT IN (SELECT parent_id FROM categories WHERE parent_id IS NOT NULL);
 SELECT
     c.id,
     c.category,
-    c.slug,
+    c.handle,
     c.parent_id,
     CASE
         WHEN EXISTS (SELECT 1 FROM categories WHERE parent_id = c.id) THEN false
@@ -83,3 +83,6 @@ SELECT * FROM categories
 WHERE category = $1
 ORDER BY id
 LIMIT 1;
+
+-- name: GetRootCategories :many
+SELECT * FROM categories WHERE parent_id IS NULL;

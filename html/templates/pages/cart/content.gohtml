@@ -1,0 +1,36 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/cart.Content*/ -}}
+    <section class="py-4">
+        <div class="container" >
+            <div class="row">
+                <main class="col-lg-9">
+                    {{ template "cart-items" .CartItems }}
+                </main>
+                <aside class="col-lg-3">
+                    <div class="card p-3 mb-3">
+                        <form>
+                            <div>
+                                <label class="form-label">Have coupon?</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="" placeholder="Add coupon">
+                                    <button class="btn btn-light">Apply</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card shadow-lg">
+                        {{ template "cart-summary" .CartSummary }}
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            {{ template "related-products" . }}
+        </div>
+    </section>
+
+    <script id="no-content"></script>
+{{ end }}

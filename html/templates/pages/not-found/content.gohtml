@@ -1,0 +1,25 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/not-found.Content*/ -}}
+    <section >
+        <div class="container" >
+            <div class="d-flex flex-column justify-content-center align-items-center px-3 mx-auto">
+                <div class="max-w-md">
+                    <img src="static/images/404.svg" alt="astronaut image" class="img-fluid" style="max-width: 400px;">
+                </div>
+                <div class="text-center mx-auto mb-4">
+                    <h1 class="mb-3 display-4 fw-bold text-dark">{{ .Message }}</h1>
+                    <p class="mb-4 fs-5 text-secondary">Oops! Looks like you followed a bad link. If you think this is a problem with us, please tell us.</p>
+                    <a href="/" class="btn btn-primary btn-lg fw-medium me-3"
+                        hx-get="/"
+                        hx-target="#content"
+                    >
+                        <svg class="me-2" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4.354 7.354a.5.5 0 0 1 0-.708l2.5-2.5a.5.5 0 1 1 .708.708L5.707 6.5H14.5a.5.5 0 0 1 0 1H5.707l1.855 1.854a.5.5 0 1 1-.708.708l-2.5-2.5a.5.5 0 0 1 0-.708z"/>
+                        </svg>
+                        Go back home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+{{ end }}

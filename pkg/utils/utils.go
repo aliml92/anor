@@ -1,12 +1,13 @@
 package utils
 
 import (
+	gonanoid "github.com/matoous/go-nanoid"
+	sw "github.com/toadharvard/stopwords-iso"
+	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"regexp"
+	"strconv"
 	"strings"
-
-	gonanoid "github.com/matoous/go-nanoid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var discounts = []float32{
@@ -49,25 +50,25 @@ func MustGenerateID(l int) string {
 	return gonanoid.MustGenerate("0123456789", l)
 }
 
-func CreateSlug(val string) string {
+func CreateHandle(val string) string {
 	// Replace non-alphanumeric characters (except comma: ,) with a hyphen
-	slug := strings.ReplaceAll(val, "&", "and")
+	handle := strings.ReplaceAll(val, "&", "and")
 
 	reg := regexp.MustCompile("[^A-Za-z0-9,]+")
-	slug = reg.ReplaceAllString(slug, "-")
+	handle = reg.ReplaceAllString(handle, "-")
 
 	// Replace all consecutive hyphens with single hyphen
 	reg = regexp.MustCompile("-+")
-	slug = reg.ReplaceAllString(slug, "-")
+	handle = reg.ReplaceAllString(handle, "-")
 
 	// Remove leading and trailing hyphens
-	slug = strings.Trim(slug, "-")
+	handle = strings.Trim(handle, "-")
 
 	// check if there is a comma between 60 and 100th positions
 	var commaIdx int
-	if len(slug) > 60 {
-		for i := 60; i < len(slug) && i < 100; i++ {
-			if slug[i] == ',' {
+	if len(handle) > 60 {
+		for i := 60; i < len(handle) && i < 100; i++ {
+			if handle[i] == ',' {
 				commaIdx = i
 				break
 			}
@@ -75,24 +76,182 @@ func CreateSlug(val string) string {
 	}
 
 	if commaIdx != 0 {
-		// slice the slug until the pos of comma
-		slug = slug[:commaIdx]
+		// slice the handle until the pos of comma
+		handle = handle[:commaIdx]
 	} else {
 		// Truncate if length exceeds 80 characters
 		maxLength := 80
-		if len(slug) > maxLength {
-			// strip out the slug until the pos of maxLength
-			slug = slug[:maxLength]
+		if len(handle) > maxLength {
+			// strip out the handle until the pos of maxLength
+			handle = handle[:maxLength]
 
 			// Remove the last partial word if exists
-			slug = slug[:strings.LastIndexByte(slug, '-')]
+			handle = handle[:strings.LastIndexByte(handle, '-')]
 		}
 	}
 
 	// remove remaining colons
-	slug = strings.ReplaceAll(slug, ",", "")
+	handle = strings.ReplaceAll(handle, ",", "")
 	// Convert to lowercase
-	slug = strings.ToLower(slug)
+	handle = strings.ToLower(handle)
 
-	return slug
+	return handle
+}
+
+type SKUGenerator struct {
+	base string
+	p    string
+	c    int
+
+	varSkuSuffices map[string]struct{}
+}
+
+func NewSKUGenerator(category, product string) *SKUGenerator {
+	swr, _ := sw.NewStopwordsMapping()
+	bs := generateBaseSKU(category, product, swr)
+	bs = strings.ToUpper(bs)
+	return &SKUGenerator{
+		base:           bs,
+		p:              "S",
+		c:              1,
+		varSkuSuffices: make(map[string]struct{}),
+	}
+}
+
+func (s *SKUGenerator) GetBaseSKU() string {
+	return s.base
+}
+
+func (s *SKUGenerator) GenerateSKU(attributes []string) string {
+	if len(attributes) == 0 {
+		return s.base
+	}
+
+	var b strings.Builder
+	b.WriteString(s.base) // e.g. "CLO34-NEKO3264"
+
+	skuSuffix := s.genSKUSuffix(attributes)
+	_, ok := s.varSkuSuffices[skuSuffix]
+	if ok {
+		s.c = s.c + 1
+		skuSuffix = s.genSKUSuffix(attributes)
+	}
+	s.varSkuSuffices[skuSuffix] = struct{}{}
+
+	b.WriteString("-")
+	b.WriteString(skuSuffix)
+
+	return b.String()
+}
+
+func (s *SKUGenerator) genSKUSuffix(attributes []string) string {
+	var b strings.Builder
+	b.WriteString(s.p)
+	cStr := strconv.Itoa(s.c)
+	b.WriteString(cStr)
+	b.WriteString("-")
+
+	l := len(attributes)
+	for index, attr := range attributes {
+		attr = strings.TrimSpace(attr)
+		attr = strings.ToUpper(attr)
+		re := regexp.MustCompile("[^a-zA-Z0-9]")
+		attr = re.ReplaceAllString(attr, "")
+		if len(attr) >= 2 {
+			b.WriteString(string(attr[:2]))
+		} else {
+			b.WriteString(attr)
+		}
+		if index < l-1 {
+			b.WriteString("/")
+		}
+	}
+
+	return b.String()
+}
+
+func generateBaseSKU(category string, productName string, swr sw.StopwordsMapping) string {
+	var builder strings.Builder
+
+	ci := getCategoryInitials(category)
+	builder.WriteString(ci)
+
+	cs := generateCategorySuffix()
+	builder.WriteString(cs)
+
+	builder.WriteString("-")
+
+	productName = swr.ClearString(productName)
+	productWords := strings.Fields(productName)
+	if len(productWords) > 1 {
+		var wCount = 0
+		for _, word := range productWords {
+			if len(word) <= 2 {
+				continue
+			}
+			if wCount >= 2 {
+				break
+			}
+			builder.WriteString(word[:2])
+			wCount++
+		}
+	} else {
+		if len(productName) >= 4 {
+			builder.WriteString(productName[:4])
+		} else {
+			builder.WriteString(productName)
+		}
+	}
+
+	ps := generateProductSuffix()
+	builder.WriteString(ps)
+
+	return builder.String()
+}
+
+func getCategoryInitials(category string) string {
+	// Remove non-English letters using regex
+	re := regexp.MustCompile("[^a-zA-Z ]")
+	category = re.ReplaceAllString(category, "")
+
+	// Split category into individual words
+	words := strings.Fields(category)
+
+	// Initialize result variable
+	var result string
+
+	// Process based on the number of words
+	switch len(words) {
+	case 1:
+		// If one word, get the first three letters
+		result = words[0][:3]
+	case 2:
+		// If two words, get first two letters from first word and first letter from second word
+		result = words[0][:2] + string(words[1][0])
+	case 3:
+		// If three words, get first letter from each word
+		for _, word := range words {
+			result += string(word[0])
+		}
+	default:
+		// If more than three words, only consider the first three
+		for i := 0; i < 3; i++ {
+			result += string(words[i][0])
+		}
+	}
+
+	// Convert result to uppercase
+	result = strings.ToUpper(result)
+
+	return result
+}
+
+func generateCategorySuffix() string {
+	randomNum := GenRandomNum(10, 99)
+	return strconv.Itoa(randomNum)
+}
+
+func generateProductSuffix() string {
+	randomNum := GenRandomNum(1000, 9999)
+	return strconv.Itoa(randomNum)
 }

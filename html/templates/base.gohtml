@@ -1,0 +1,25 @@
+{{ define "base" }}
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+            <meta name="description" content="Anor Market sells huge variety of products" />
+            <meta name="author" content="Alisher Muzaffarov" />
+
+            <title></title>
+            {{ template "head-assets"}}
+        </head>
+
+        <body hx-ext="response-targets" id="body">
+            {{ template "header" . }}
+
+            <div id="content">
+                {{ block "content" . }}{{ end }}
+            </div>
+
+            {{ template "footer" }}
+            {{ template "bottom-scripts" }}
+        </body>
+    </html>
+{{ end }}

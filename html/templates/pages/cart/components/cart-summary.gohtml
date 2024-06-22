@@ -1,0 +1,29 @@
+{{ define "cart-summary" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/cart/components.CartSummary*/ -}}
+    <div class="card-body" id="cart-summary" {{ if (ne .HxSwapOOB "") }} hx-swap-oob="{{ .HxSwapOOB }}"  {{ end }}>
+        <dl class="row">
+            <dt class="col-7 fw-normal text-muted">Subtotal: </dt>
+            <dd class="col-5 text-end">{{ currencySymbol .CurrencyCode }}{{ .TotalAmount }}</dd>
+
+            <dt class="col-7 fw-normal text-muted">Shipping:</dt>
+            <dd class="col-5 text-end">{{ currencySymbol .CurrencyCode }}0.00</dd>
+        </dl>
+        <hr>
+        <dl class="row">
+            <dt class="col-7 h5 text-muted">Total:</dt>
+            <dd class="col-5 h5 text-end ">{{ currencySymbol .CurrencyCode }}{{ .TotalAmount }}</dd>
+        </dl>
+
+        <div class="my-3">
+            <a href="" class="btn btn-lg p-3 btn-success w-100 {{ if eq .CartItemsCount 0 }} disabled {{ end }}"
+               hx-get="/checkout"
+               hx-target="#content"
+               hx-push-url="true"
+            > Go to Checkout </a>
+        </div>
+        <p class="text-center mt-3">
+            <img src="static/images/misc/payments.png" height="24">
+        </p>
+
+    </div> <!-- card-body.// -->
+{{ end }}

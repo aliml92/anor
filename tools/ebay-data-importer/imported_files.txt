@@ -1,0 +1,3 @@
+tools/ebay-data-importer/dataset/clothes_baby.jsonl
+tools/ebay-data-importer/dataset/clothes_kids.jsonl
+tools/ebay-data-importer/dataset/clothes_specialty.jsonl

@@ -1,0 +1,63 @@
+{{ define "cart-items" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/cart/components.CartItems*/ -}}
+    <div class="card mb-4">
+        <div class="card-body p-lg-4" id="cart">
+            <h4 class="card-title mb-4">Shopping cart</h4>
+            {{ $lenItems := len .CartItems }}
+            {{ if eq $lenItems 0 }}
+                {{ template "cart-empty" }}
+            {{ else }}
+
+                {{ range $index, $item := .CartItems }}
+                    <article class="row mb-4" id="item_{{ $index }}">
+                        <div class="col-lg-9">
+                            <figure class="d-flex align-items-start">
+                                <div class="me-3 flex-shrink-0">
+                                    <img src="{{ modifyImgURL $item.Thumbnail 140 }}" class="cart-item-thumb img-thumbnail">
+                                </div>
+                                <figcaption class="info">
+                                    <a class="title" style="color: #666"
+                                       href="/products/{{ $item.ProductPath }}"
+                                       hx-push-url="true"
+                                       hx-get="/products/{{ $item.ProductPath }}"
+                                       hx-target="#content"
+                                       hx-swap="innerHTML show:window:top"
+                                    >${{ $item.ProductName }}</a>
+                                    {{ range $attr, $attrVal := $item.VariantAttributes }}
+                                        <p class="text-muted my-1" style="color: #666">{{ $attr }}: {{ $attrVal }}</p>
+                                    {{ end }}
+                                    <br>
+                                    <a href="javascript:void(0);" class="btn btn-light text-danger btn-sm"
+                                       hx-delete="/cart/item/{{ $item.ID }}"
+                                       hx-target="#item_{{ $index }}"
+                                       hx-headers='{"Hx-Swap-OOB": "true"}'
+                                       hx-swap="outerHTML"
+                                    >Remove</a>
+                                    <a href="#" class="btn btn-light btn-sm">Move to Wishlist</a>
+                                </figcaption>
+                            </figure>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="text-end mb-2">
+                                <var class="h6">{{ currencySymbol $item.CurrencyCode }}{{ muld $item.Price $item.Qty }}</var>
+                            </div> <!-- price-wrap .// -->
+                            <select style="width: 100px" class="float-end form-select" id="qty_{{ $item.ID }}"
+                                    hx-patch="/cart/item/{{ $item.ID }}"
+                                    hx-vals="js:{qty: event.target.value}"
+                                    hx-headers='{"Hx-Swap-OOB": "true"}'
+                                    hx-trigger="change changed"
+                                    hx-target="#no-content"
+                            >
+                                {{/* TODO: Handle the case when avaialble qty less then selected qty */}}
+                                {{ $maxQty := $item.AvailableQty }}
+                                {{ range $i := iterate $maxQty }}
+                                    <option value="{{ $i }}" {{ if eq $i $item.Qty }}selected{{ end }}>{{ $i }}</option>
+                                {{ end }}
+                            </select>
+                        </div>
+                    </article> <!-- row.// -->
+                {{ end }}
+            {{ end }}
+        </div> <!-- card-body .// -->
+    </div> <!-- card.// -->
+{{ end }}

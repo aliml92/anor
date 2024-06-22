@@ -1,0 +1,26 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/home.Content*/ -}}
+    <div id="content">
+        <section class="section-intro mb-3 mt-3">
+            <div class="container">
+                {{ template "featured" .Featured }}
+            </div>
+        </section>
+        <section class="pb-3">
+            <div class="container">
+                <header class="section-heading">
+                    <h3>New Arrivals</h3>
+                </header>
+                {{ template "collection" .NewArrivals}}
+            </div>
+        </section>
+        <section class="pb-3">
+            <div class="container">
+                <header class="section-heading">
+                    <h3>Popular Products</h3>
+                </header>
+                {{ template "collection" .Popular}}
+            </div>
+        </section>
+    </div>
+{{ end}}

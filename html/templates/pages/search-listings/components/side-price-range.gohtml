@@ -1,0 +1,77 @@
+{{ define "side-price-range" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/search-listings/components.SidePriceRange*/ -}}
+
+
+    {{/* Variables */}}
+    {{ $q := .Q }}
+    {{ $filterParam := .FilterParam }}
+    {{ $filteringData := .FilteringData }}
+
+    {{ $minPrice := $filteringData.PriceFrom }}
+    {{ $maxPrice := $filteringData.PriceTo  }}
+    {{ $priceFrom := $filterParam.PriceFrom }}
+    {{ $priceTo := $filterParam.PriceTo }}
+
+    <div class="pb-2" id="price-range" hx-preserve="true">
+        <div class="side-filter-title mb-2">Price range</div>
+
+        {{if $filterParam.PriceFrom.IsZero }}
+            {{ $priceFrom = $minPrice }}
+        {{ end }}
+        {{if $filterParam.PriceTo.IsZero }}
+            {{ $priceTo = $maxPrice }}
+        {{ end }}
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="col input-group input-group-sm position-relative">
+                    <span class="input-group-text  py-1 px-0 position-absolute bg-transparent border-0 price-input-span" ><small style="font-size: 12px">from</small></span>
+                    <input class="form-control  js-input-from price-input" type="number" style="padding-left: 40px" id="min"  placeholder="{{ $minPrice }}" value="{{ $minPrice }}"
+                           hx-push-url="true"
+                           hx-get="/search?q={{ $q }}"
+                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                           hx-headers='js:{"HX-Search-Type": 2}'
+                           hx-trigger="keyup[key=='Enter'] delay:0.5s"
+                           hx-target="#content"
+                           hx-swap="innerHTML show:window:top"
+                    >
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="col input-group input-group-sm">
+                    <span class="input-group-text  py-1 px-0 position-absolute bg-transparent border-0 price-input-span" ><small style="font-size: 12px">to</small></span>
+                    <input class="form-control  js-input-to price-input ps-4" type="number" id="max"  placeholder="{{ $maxPrice }}" value="{{ $maxPrice }}"
+                           hx-push-url="true"
+                           hx-get="/search?q={{ $q }}"
+                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                           hx-headers='js:{"HX-Search-Type": 2}'
+                           hx-trigger="keyup[key=='Enter'] delay:0.5s"
+                           hx-target="#content"
+                           hx-swap="innerHTML show:window:top"
+                    >
+                </div>
+            </div>
+        </div>
+        <div class="range-slider invisible" style="height: 50px">
+            <input type="text" class="js-range-slider" value=""
+                   data-skin="round"
+                   data-type="double"
+                   data-min="{{ $minPrice }}"
+                   data-max="{{ $maxPrice }}"
+                   data-from="{{ $priceFrom }}"
+                   data-to="{{ $priceTo }}"
+                   data-step="1"
+                   data-grid="false"
+                   data-keyboard="false"
+                   data-hide-min-max="true"
+                   data-hide-from-to="true"
+                   hx-push-url="true"
+                   hx-get="/search?q={{ $q }}"
+                   hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(),  brands: getCheckedBrands(), sort: getSort()}"
+                   hx-headers='js:{"HX-Search-Type": 2}'
+                   hx-trigger="filterByPriceRange delay:1s"
+                   hx-target="#content"
+                   hx-swap="innerHTML show:window:top"
+            />
+        </div>
+    </div>
+{{ end }}

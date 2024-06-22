@@ -1,0 +1,63 @@
+{{ define "product-specs" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/product-details/components.ProductSpecs*/ -}}
+    <div class="row">
+        <main class="col-xl-12 col-lg-12">
+            <div class="card mb-4 border-0">
+                <header class="card-header bg-transparent">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#details" aria-current="true"
+                               href="#">About this item</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#shipping" href="#">Shipping </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reviews" href="#">Reviews (27)</a>
+                        </li>
+                    </ul>
+                </header> <!-- card-header .// -->
+                <div class="tab-content card-body">
+
+                    <!-- tab-pane details -->
+                    <article class="tab-pane px-4 active" id="details" role="tabpanel">
+                        <h5 class="mt-2">Item specifics</h5>
+                        <div class="row mt-4">
+                            {{ $splitSpecs := splitMap .Product.BaseProduct.Specifications }}
+                            <div class="col-lg-6">
+                                <dl class="row">
+                                    {{ range $key, $val := $splitSpecs.First }}
+                                        <dt class="col-xxl-3 col-lg-4">{{ $key }}</dt>
+                                        <dd class="col-xxl-9 col-lg-8">{{ $val }}</dd>
+                                    {{ end }}
+                                </dl>
+                            </div>
+                            <div class="col-lg-6">
+                                <dl class="row">
+                                    {{ range $key, $val := $splitSpecs.Second }}
+                                        <dt class="col-xxl-3 col-lg-4">{{ $key }}</dt>
+                                        <dd class="col-xxl-9 col-lg-8">{{ $val }}</dd>
+                                    {{ end }}
+                                </dl>
+                            </div>
+                        </div>
+
+                    </article>
+
+                    <article class="tab-pane px-4" id="shipping" role="tabpanel">
+                        <h5 class="mt-3">Shipping information </h5>
+                        Lorem ipsum dolor sit amet consectetur adipisicing elit. Culpa reprehenderit, nam doloribus possimus sapiente quo cumque maxime rerum. Sit repellat nisi consequuntur assumenda, ipsam ab aut hic sint laboriosam tempore!
+                    </article>
+
+                    <article class="tab-pane px-4" id="reviews" role="tabpanel">
+                        <h5 class="mt-3">All reviews, <span class="text-muted"> 27 reviews </span> </h5>
+
+                    </article>
+
+                </div> <!-- card-body .// -->
+            </div> <!-- card .// -->
+
+        </main>
+
+    </div> <!-- row.// -->
+{{ end }}

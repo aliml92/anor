@@ -1,22 +1,47 @@
 package middlewares
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func RequestLogger(next http.Handler, logger *slog.Logger, excludedPaths ...string) http.Handler {
+type RequestLogger struct {
+	logger        *slog.Logger
+	excludedPaths []string
+}
+
+func NewRequestLogger(logger *slog.Logger, excludedPaths []string) *RequestLogger {
+	return &RequestLogger{
+		logger:        logger,
+		excludedPaths: excludedPaths,
+	}
+}
+
+func (rl *RequestLogger) Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check if the requested path is in the list of excluded paths
-		for _, path := range excludedPaths {
+
+		for _, path := range rl.excludedPaths {
 			if strings.HasPrefix(r.URL.Path, path) {
-				// Skip logging for excluded paths
 				next.ServeHTTP(w, r)
 				return
 			}
 		}
+
+		previousChainV := r.Context().Value("middlewareChain")
+		previousChain, ok := previousChainV.(string)
+		if !ok {
+			previousChain = "unknown"
+		}
+		ctx := context.WithValue(r.Context(), "middlewareChain", previousChain+" -> RequestLogger")
+		r = r.WithContext(ctx)
+
+		path := r.URL.Path
+
+		fmt.Printf("chain: %v, path: %s\n", r.Context().Value("middlewareChain"), path)
 
 		startTime := time.Now()
 
@@ -30,10 +55,11 @@ func RequestLogger(next http.Handler, logger *slog.Logger, excludedPaths ...stri
 		latency := time.Since(startTime)
 
 		// Log request details including latency time, response status code, and messages
-		logger.LogAttrs(
+		rl.logger.LogAttrs(
 			r.Context(),
 			slog.LevelInfo,
 			"Received_Request",
+			slog.String("request_id", r.Header.Get("X-Request-ID")),
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
 			// slog.String("remote_addr", r.RemoteAddr),

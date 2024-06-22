@@ -17,15 +17,30 @@ services:
     restart: unless-stopped  
 
   typesense:
-    image: typesense/typesense:0.25.1
+    image: typesense/typesense:27.0.rc19
     ports:
       - "8108:8108"
     volumes:
-      - ./typesense-data:/data
-    command: '--data-dir /data --api-key=xyz --enable-cors'
+      - ./_typesense-data:/data
+    command: '--data-dir /data --api-key=xyz --enable-cors --enable-search-analytics=true --analytics-flush-interval=300'
     networks:
       - anor_net
     restart: unless-stopped  
+
+  redis:
+    image: redis:7
+    container_name: redis
+    volumes:
+      - ./_redis-data/redis.conf:/redis.conf:rw
+      - ./_redis-data/data:/data:rw
+      - ./_redis-data/users.acl:/etc/redis/users.acl:rw
+    command:
+      - /redis.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - anor_net
+    restart: always
 
 networks:
   anor_net:

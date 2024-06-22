@@ -29,26 +29,33 @@ func NewBrevoEmailer(cfg *config.EmailConfig, t *template.Template) Emailer {
 	}
 }
 
-func (e *brevoEmailer) SendVerificationMessageWithOTP(ctx context.Context, otp string, email string) error {
-	var tplBuffer bytes.Buffer
-	tmpl := e.templateCache.Lookup(e.config.SignupVerificationTemplateName)
-
-	err := tmpl.Execute(&tplBuffer, otp)
+func (e *brevoEmailer) NewMessage(subject string, to string, tmplName string, data interface{}) (Message, error) {
+	var buf bytes.Buffer
+	err := e.templateCache.ExecuteTemplate(&buf, tmplName, data)
 	if err != nil {
-		return err
+		return Message{}, err
 	}
-	_, _, err = e.client.TransactionalEmailsApi.SendTransacEmail(ctx, brevo.SendSmtpEmail{
+	msg := Message{
+		Subject:     subject,
+		To:          to,
+		HtmlContent: buf.String(),
+	}
+	return msg, nil
+}
+
+func (e *brevoEmailer) Send(ctx context.Context, m Message) error {
+	_, _, err := e.client.TransactionalEmailsApi.SendTransacEmail(ctx, brevo.SendSmtpEmail{
 		Sender: &brevo.SendSmtpEmailSender{
 			Name:  "Anor",
 			Email: e.config.FromEmail,
 		},
 		To: []brevo.SendSmtpEmailTo{
 			{
-				Email: email,
+				Email: m.To,
 			},
 		},
-		Subject:     "Anor account details confirmation",
-		HtmlContent: tplBuffer.String(),
+		Subject:     m.Subject,
+		HtmlContent: m.HtmlContent,
 	})
 
 	return err

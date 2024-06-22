@@ -9,8 +9,8 @@ import (
 
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/pkg/utils"
-	"github.com/aliml92/anor/postgres/store/sellerstore"
-	"github.com/aliml92/anor/postgres/store/user"
+	"github.com/aliml92/anor/postgres/repository/store"
+	"github.com/aliml92/anor/postgres/repository/user"
 	ts2 "github.com/aliml92/anor/typesense"
 )
 
@@ -30,7 +30,7 @@ func generateRandomDiscount() float32 {
 	return discounts[idx]
 }
 
-func createSellerUsers(ctx context.Context, us user.Store, n int) ([]int64, error) {
+func createSellerUsers(ctx context.Context, us user.Repository, n int) ([]int64, error) {
 	userIDs := make([]int64, n)
 	for i := 0; i < n; i++ {
 		// save a default user and get its id
@@ -51,30 +51,30 @@ func createSellerUsers(ctx context.Context, us user.Store, n int) ([]int64, erro
 	return userIDs, nil
 }
 
-func createSellerStores(ctx context.Context, ss sellerstore.Store, userIDs []int64, searcher *ts2.Searcher) ([]int32, error) {
-	sellerStoreIDs := make([]int32, len(userIDs))
+func createStores(ctx context.Context, ss store.Repository, userIDs []int64, searcher *ts2.TsSearcher) ([]int32, error) {
+	storeIDs := make([]int32, len(userIDs))
 	for index, userID := range userIDs {
-		// save a default store and get its id
+		// save a default repository and get its id
 		name := gofakeit.Company()
-		publicID := slug.Make(name)
+		handle := slug.Make(name)
 		description := gofakeit.Sentence(20)
 
-		storeID, err := ss.CreateStore(ctx, publicID, userID, name, description)
+		storeID, err := ss.CreateStore(ctx, handle, userID, name, description)
 		if err != nil {
 			return nil, err
 		}
 
-		err = searcher.IndexSellerStore(ctx, anor.SellerStore{
-			ID:       storeID,
-			Name:     name,
-			PublicID: publicID,
+		err = searcher.IndexStore(ctx, anor.Store{
+			ID:     storeID,
+			Name:   name,
+			Handle: handle,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		sellerStoreIDs[index] = storeID
+		storeIDs[index] = storeID
 	}
 
-	return sellerStoreIDs, nil
+	return storeIDs, nil
 }

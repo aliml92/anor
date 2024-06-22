@@ -25,7 +25,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS categories (
     id              INT  NOT NULL DEFAULT generate_category_id() PRIMARY KEY,
     category        TEXT NOT NULL CHECK (LENGTH(category) <= 100),
-    slug            TEXT NOT NULL, 
+    handle           TEXT NOT NULL,
     parent_id       INT,
     
     UNIQUE(category, parent_id)

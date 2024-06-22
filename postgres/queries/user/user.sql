@@ -3,20 +3,14 @@ SELECT * FROM users WHERE email=$1;
 
 -- name: CreateUser :exec
 INSERT INTO users 
-    (email, password, full_name, otp, otp_expiry)
+    (email, password, full_name)
 VALUES 
-    ($1, $2, $3, $4, $5);
+    ($1, $2, $3);
 
--- name: UpdateUserOTP :exec
-UPDATE users
-SET otp = $2,
-    otp_expiry = $3
-WHERE id = $1;
-
--- name: UpdateUserStatus :exec
+-- name: UpdateUserStatusByEmail :exec
 UPDATE users
 SET status = $1
-WHERE id = $2;
+WHERE email = $2;
 
 -- name: GetUser :one
 SELECT * FROM users WHERE id=$1; 

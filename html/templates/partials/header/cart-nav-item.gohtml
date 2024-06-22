@@ -1,0 +1,19 @@
+{{ define "cart-nav-item" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/partials.CartNavItem*/ -}}
+    <div class="widget-header mx-2 text-center cart-icon menu-item ms-0" id="cart-nav-item"
+            {{ if (ne .HxSwapOOB "") }} hx-swap-oob="{{ .HxSwapOOB }}"  {{ end }}>
+        <a href="" class="d-inline-block align-middle"
+           hx-get="/cart"
+           hx-target="#content"
+           hx-push-url="true"
+        >
+            <span class="fs-5 d-inline-block position-relative">
+                <i class="bi bi-cart3" style="font-size: 22px;"></i>
+                {{ if ne .CartItemsCount 0 }}
+                    <span class="notify">{{ .CartItemsCount }}</span>
+                {{ end }}
+            </span>
+            <small class="d-block text-truncate"> Cart </small>
+        </a>
+    </div>
+{{ end }}

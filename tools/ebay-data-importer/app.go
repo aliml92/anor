@@ -15,20 +15,22 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/agnivade/levenshtein"
 	"github.com/aliml92/go-typesense/typesense"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	errors2 "github.com/pkg/errors"
-	"github.com/rs/xid"
 	"github.com/shopspring/decimal"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/pkg/utils"
-	"github.com/aliml92/anor/postgres/store/category"
-	"github.com/aliml92/anor/postgres/store/product"
-	"github.com/aliml92/anor/postgres/store/sellerstore"
-	"github.com/aliml92/anor/postgres/store/user"
-	ts2 "github.com/aliml92/anor/typesense"
+	"github.com/aliml92/anor/postgres/repository/category"
+	"github.com/aliml92/anor/postgres/repository/product"
+	"github.com/aliml92/anor/postgres/repository/store"
+	"github.com/aliml92/anor/postgres/repository/user"
+	ts "github.com/aliml92/anor/typesense"
 )
 
 const (
@@ -40,9 +42,11 @@ var (
 	// flags
 	source   string
 	database string
-	ts       string
+	tsUrl    string
 	force    bool
 )
+
+var uniqueBrands = make(map[string]string)
 
 type ProductJSON struct {
 	Categories []string            `json:"categories"`
@@ -53,12 +57,14 @@ type ProductJSON struct {
 	ImageUrls  []string            `json:"image_links"`
 	Specs      map[string]string   `json:"specs"`
 	Attributes map[string][]string `json:"attributes"`
+
+	Brands string `json:"-"`
 }
 
 func init() {
 	flag.StringVar(&source, "source", "", "path to the dataset folder")
 	flag.StringVar(&database, "database", "", "PostgreSQL database connection string")
-	flag.StringVar(&ts, "typesense", "", "Typesense server url")
+	flag.StringVar(&tsUrl, "typesense", "", "Typesense server url")
 	flag.BoolVar(&force, "force", false, "import all json files forcefully")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
@@ -79,8 +85,8 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("PostgreSQL database connection string is required")
 	}
 
-	if ts == "" {
-		return fmt.Errorf("Typesense server url string is required")
+	if tsUrl == "" {
+		return fmt.Errorf("typesense server url string is required")
 	}
 
 	db, err := pgxpool.New(ctx, database)
@@ -89,7 +95,7 @@ func run(ctx context.Context, w io.Writer) error {
 	}
 	defer db.Close()
 
-	client, _ := typesense.NewClient(nil, ts)
+	client, _ := typesense.NewClient(nil, tsUrl)
 	client = client.WithAPIKey("xyz")
 
 	// Check if there is a file to keep track of imported files
@@ -129,13 +135,13 @@ func run(ctx context.Context, w io.Writer) error {
 }
 
 func walkDataset(ctx context.Context, source string, importedFiles map[string]bool, db *pgxpool.Pool, client *typesense.Client) error {
-	// create store objects
+	// create repository objects
 	var (
-		userStore     = user.NewStore(db)
-		productStore  = product.NewStore(db)
-		categoryStore = category.NewStore(db)
-		sellerStore   = sellerstore.NewSellerStore(db)
-		searcher      = ts2.NewSearcher(client)
+		userRepository     = user.NewRepository(db)
+		productRepository  = product.NewRepository(db)
+		categoryRepository = category.NewRepository(db)
+		storeRepository    = store.NewRepository(db)
+		searcher           = ts.NewSearcher(client)
 	)
 
 	// walk every dataset files
@@ -159,21 +165,21 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 			}
 
 			// create 10 seller users
-			userIDs, err := createSellerUsers(ctx, userStore, 10)
+			userIDs, err := createSellerUsers(ctx, userRepository, 10)
 			if err != nil {
 				return err
 			}
 
 			// create sellers' stores
-			sellerIDs, err := createSellerStores(ctx, sellerStore, userIDs, searcher)
+			sellerIDs, err := createStores(ctx, storeRepository, userIDs, searcher)
 			if err != nil {
-				return errors2.Wrap(err, "failed to create seller store")
+				return errors2.Wrap(err, "failed to create seller repository")
 			}
 
 			// dataset .jsonl files has the same top category (the root category)
 			// therefore, get the first product data a sample
 			// create top category
-			rootCategoryID, err := createRootCategory(ctx, categoryStore, products[0], searcher)
+			rootCategoryID, err := createRootCategory(ctx, categoryRepository, products[0], searcher)
 			if err != nil {
 				return errors2.Wrap(err, "failed to create root category")
 			}
@@ -182,7 +188,7 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 			for _, productItem := range products {
 				time.Sleep(10 * time.Millisecond)
 
-				categoryID, skip, err := createDescendentCategories(ctx, categoryStore, productItem, rootCategoryID, searcher)
+				categoryID, leafCategory, skip, err := createDescendentCategories(ctx, categoryRepository, productItem, rootCategoryID, searcher)
 				if skip {
 					continue
 				}
@@ -210,35 +216,37 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 					brand = s["Brand"]
 				}
 
-				// transfer specs to Specs map
-				specs := make(product.Specs)
+				brand = getBrand(brand)
+
+				// transfer specs to Specifications map
+				specs := make(product.Specifications)
 				for idx, spec := range s {
 					specs[idx] = spec
 				}
 
-				// get random seller store id
+				// get random seller repository id
 				sellerStoreID := sellerIDs[utils.GenRandomNum(0, len(sellerIDs)-1)]
 
 				// create product
-				slug := utils.CreateSlug(productItem.Name)
-				savedProduct, err := productStore.CreateProduct(
+				handle := utils.CreateHandle(productItem.Name)
+				savedProduct, err := productRepository.CreateProduct(
 					ctx,
 					sellerStoreID,
 					categoryID,
 					productItem.Name,
 					&brand,
-					slug,
+					handle,
 					shortInfo,
 					imageUrls,
 					specs,
-					product.ProductStatusActive,
+					product.ProductStatusPublished,
 				)
 				if err != nil {
 					return err
 				}
 
 				// create product pricing
-				pp, err := createProductPricing(ctx, productStore, price, savedProduct.ID)
+				pp, err := createProductPricing(ctx, productRepository, price, savedProduct.ID)
 				if err != nil {
 					return err
 				}
@@ -250,9 +258,9 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 				// cleanedAttMap might have 0 or more attrs
 				// for ease of use I will handle for cases; 0, 1 , 2 and 3
 				attrLen := len(cleanedAttrMap)
-				prefix := "SKU-"
+				skuGen := utils.NewSKUGenerator(leafCategory, productItem.Name)
 				if attrLen == 0 {
-					_, err := createSKU(ctx, productStore, savedProduct.ID)
+					_, err := createSKU(ctx, productRepository, savedProduct.ID, skuGen.GetBaseSKU())
 					if err != nil {
 						return err
 					}
@@ -260,7 +268,7 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 				} else {
 					attrIDMap := make(map[string]int64) // { "Color": 266 }
 					for k := range cleanedAttrMap {
-						id, err := productStore.CreateProductAttribute(ctx, savedProduct.ID, k)
+						id, err := productRepository.CreateProductAttribute(ctx, savedProduct.ID, k)
 						if err != nil {
 							return err
 						}
@@ -281,11 +289,19 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 
 					crPr := cartesianProduct(slices...)
 					for _, cp := range crPr {
-						sku := prefix + xid.New().String()
-						skuID, err := productStore.CreateSKU(ctx,
+						var attrVals []string
+						for _, attr := range cp {
+							attrVals = append(attrVals, attr)
+						}
+						sku := skuGen.GenerateSKU(attrVals)
+						randNum := utils.GenRandomNum(0, 40) - 10
+						if randNum < 0 {
+							randNum = 0
+						}
+						skuID, err := productRepository.CreateProductVariant(ctx,
 							savedProduct.ID,
 							sku,
-							int32(utils.GenRandomNum(0, 50)),
+							int32(randNum),
 							false,
 							[]int16{},
 						)
@@ -295,7 +311,7 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 
 						// loop through map
 						for k, v := range cp {
-							err = productStore.CreateSKUProductAttributeValues(ctx, skuID, attrIDMap[k], v)
+							err = productRepository.CreateProductVariantAttributeValues(ctx, skuID, attrIDMap[k], v)
 							if err != nil {
 								return err
 							}
@@ -305,18 +321,19 @@ func walkDataset(ctx context.Context, source string, importedFiles map[string]bo
 				}
 				err = searcher.IndexProduct(ctx, anor.Product{
 					BaseProduct: anor.BaseProduct{
-						ID:           savedProduct.ID,
-						Name:         productItem.Name,
-						CategoryID:   categoryID,
-						Brand:        brand,
-						Slug:         slug,
-						ThumbImgUrls: map[string]string{"main": imageUrls[0]},
-						CreatedAt:    savedProduct.CreatedAt.Time,
-						UpdatedAt:    savedProduct.UpdatedAt.Time,
+						ID:         savedProduct.ID,
+						Name:       productItem.Name,
+						CategoryID: categoryID,
+						Brand:      brand,
+						Handle:     handle,
+						ImageUrls:  imageUrls,
+						CreatedAt:  savedProduct.CreatedAt.Time,
+						UpdatedAt:  savedProduct.UpdatedAt.Time,
 					},
 					Pricing: anor.ProductPricing{
-						BasePrice:        pp.BasePrice,
-						DiscountedAmount: pp.DiscountedAmount,
+						BasePrice:       pp.BasePrice,
+						Discount:        pp.Discount,
+						DiscountedPrice: pp.DiscountedPrice,
 					},
 				})
 				if err != nil {
@@ -357,7 +374,7 @@ func parse(filepath string) ([]ProductJSON, error) {
 	return products, nil
 }
 
-func createRootCategory(ctx context.Context, cs category.Store, p ProductJSON, searcher *ts2.Searcher) (int32, error) {
+func createRootCategory(ctx context.Context, cs category.Repository, p ProductJSON, searcher *ts.TsSearcher) (int32, error) {
 	rootCategory := p.Categories[0]
 
 	// check if root category is created in the db
@@ -369,7 +386,7 @@ func createRootCategory(ctx context.Context, cs category.Store, p ProductJSON, s
 		// save the top category in db and get retrieve its id
 		c, err := cs.CreateTopCategory(ctx,
 			rootCategory,
-			utils.CreateSlug(rootCategory),
+			utils.CreateHandle(rootCategory),
 		)
 		if err != nil {
 			return 0, err
@@ -379,7 +396,7 @@ func createRootCategory(ctx context.Context, cs category.Store, p ProductJSON, s
 		err = searcher.IndexCategory(ctx, anor.Category{
 			ID:             c.ID,
 			Category:       c.Category,
-			Slug:           c.Slug,
+			Handle:         c.Handle,
 			ParentID:       0,
 			IsLeafCategory: false,
 		})
@@ -393,9 +410,9 @@ func createRootCategory(ctx context.Context, cs category.Store, p ProductJSON, s
 	return c.ID, nil
 }
 
-func createDescendentCategories(ctx context.Context, cs category.Store, p ProductJSON, rootCategoryID int32, searcher *ts2.Searcher) (int32, bool, error) {
+func createDescendentCategories(ctx context.Context, cs category.Repository, p ProductJSON, rootCategoryID int32, searcher *ts.TsSearcher) (int32, string, bool, error) {
 	id := rootCategoryID
-
+	var leafCategory string
 	// exclude the first category (which is the root)
 	// since it is already created
 	categories := p.Categories[1:]
@@ -403,16 +420,16 @@ func createDescendentCategories(ctx context.Context, cs category.Store, p Produc
 	// some products belong to two categories at the same time
 	// therefore the product item with such categories not processed
 	if len(categories) >= 4 {
-		return 0, true, nil
+		return 0, leafCategory, true, nil
 	}
 
 	// loop over categories
 	for index, c := range categories {
 
 		// save every child category along with its parent id if not exists
-		cat, err := cs.CreateChildCategoryIfNotExists(ctx, c, utils.CreateSlug(c), &id)
+		cat, err := cs.CreateChildCategoryIfNotExists(ctx, c, utils.CreateHandle(c), &id)
 		if err != nil {
-			return 0, false, err
+			return 0, leafCategory, false, err
 		}
 
 		id = cat.ID
@@ -420,12 +437,13 @@ func createDescendentCategories(ctx context.Context, cs category.Store, p Produc
 		ac := anor.Category{
 			ID:       cat.ID,
 			Category: cat.Category,
-			Slug:     cat.Slug,
+			Handle:   cat.Handle,
 			ParentID: *cat.ParentID,
 		}
 
 		if index == len(categories)-1 {
 			ac.IsLeafCategory = true
+			leafCategory = cat.Category
 		}
 
 		err = searcher.IndexCategory(ctx, ac)
@@ -434,11 +452,11 @@ func createDescendentCategories(ctx context.Context, cs category.Store, p Produc
 			if errors.As(err, &terr) && terr.StatusCode == 409 {
 				continue
 			}
-			return 0, false, err
+			return 0, leafCategory, false, err
 		}
 	}
 
-	return id, false, nil
+	return id, leafCategory, false, nil
 }
 
 func cleanProductPrice(p string) (decimal.Decimal, error) {
@@ -490,17 +508,20 @@ func cleanProductImageUrls(urls []string) interface{} {
 	return imageUrls
 }
 
-func createProductPricing(ctx context.Context, ps product.Store, price decimal.Decimal, productID int64) (anor.ProductPricing, error) {
+func createProductPricing(ctx context.Context, ps product.Repository, price decimal.Decimal, productID int64) (anor.ProductPricing, error) {
 	var (
-		discountLevel    decimal.Decimal
-		discountedAmount decimal.Decimal
-		isOnSale         bool
+		discount        decimal.Decimal
+		discountedPrice decimal.Decimal
+		isOnSale        bool
 	)
 	rndDiscount := generateRandomDiscount()
 	if rndDiscount != 0 {
-		discountLevel = decimal.NewFromFloat32(rndDiscount)
-		discountedAmount = price.Mul(discountLevel).Round(2)
+		discount = decimal.NewFromFloat32(rndDiscount)
+		discountedAmount := price.Mul(discount).Round(2)
+		discountedPrice = price.Sub(discountedAmount)
 		isOnSale = true
+	} else {
+		discountedPrice = price
 	}
 
 	err := ps.CreateProductPricing(
@@ -508,8 +529,8 @@ func createProductPricing(ctx context.Context, ps product.Store, price decimal.D
 		productID,
 		price,
 		"USD",
-		discountLevel,
-		discountedAmount,
+		discount,
+		discountedPrice,
 		isOnSale,
 	)
 	if err != nil {
@@ -517,8 +538,9 @@ func createProductPricing(ctx context.Context, ps product.Store, price decimal.D
 	}
 
 	return anor.ProductPricing{
-		BasePrice:        price,
-		DiscountedAmount: discountedAmount,
+		BasePrice:       price,
+		Discount:        discount,
+		DiscountedPrice: discountedPrice,
 	}, nil
 }
 
@@ -532,12 +554,22 @@ func cleanProductAttributes(attrs map[string][]string) map[string][]string {
 		}
 
 		// filter out "choose" attributes
-		low := strings.ToLower(k)
-		if low == "choose" {
+		k := strings.ToLower(k)
+		if k == "choose" {
 			continue
 		}
 
-		vals := []string{}
+		k = strings.ToLower(k)
+		if strings.Contains(k, "color") || strings.Contains(k, "colour") {
+			k = "Color"
+		}
+		if strings.Contains(k, "size") {
+			if !strings.Contains(k, "eu") && !strings.Contains(k, "us") {
+				k = "Size"
+			}
+		}
+
+		var vals []string
 		for _, attVal := range v {
 			if strings.Index(attVal, "(Out Of Stock)") != -1 {
 				attVal = strings.ReplaceAll(attVal, "(Out Of Stock)", "")
@@ -556,12 +588,10 @@ func cleanProductAttributes(attrs map[string][]string) map[string][]string {
 	return cleanedAttrMap
 }
 
-func createSKU(ctx context.Context, ps product.Store, productID int64) (int64, error) {
-	// create a random sku
-	sku := "SKU-" + xid.New().String()
-	skuID, err := ps.CreateSKU(ctx,
+func createSKU(ctx context.Context, ps product.Repository, productID int64, skuValue string) (int64, error) {
+	skuID, err := ps.CreateProductVariant(ctx,
 		productID,
-		sku,
+		skuValue,
 		int32(utils.GenRandomNum(0, 50)),
 		false,
 		[]int16{},
@@ -610,4 +640,34 @@ func copyMap(original map[string]string) map[string]string {
 		c[key] = value
 	}
 	return c
+}
+
+func getBrand(brand string) string {
+	b := strings.TrimSpace(brand)
+	if b != "" {
+		b = strings.ToLower(b)
+		value := cases.Title(language.English).String(b)
+		bs := strings.Fields(b)
+		var builder strings.Builder
+		for _, s := range bs {
+			builder.WriteString(s)
+		}
+		key := builder.String()
+		if val, ok := uniqueBrands[key]; ok {
+			return val
+		} else {
+			// use Levenshtein distance
+			for k, v := range uniqueBrands {
+				distance := levenshtein.ComputeDistance(k, key)
+				if distance <= 1 {
+					return v
+				}
+			}
+
+			uniqueBrands[key] = value
+			return value
+		}
+	}
+
+	return "Unbranded"
 }

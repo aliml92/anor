@@ -1,0 +1,86 @@
+{{ define "side-filter-checkbox" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/shared.SideFilterCheckbox*/ -}}
+
+    {{/* Variable */}}
+    {{ $filterName := .FilterName }}
+    {{ $categoryPath := .CategoryPath }}
+    {{ $filterParam := .FilterParam }}
+    {{ $filteringData := .FilteringData }}
+
+    <div class="pb-3 mb-2">
+        <div class="side-filter-title mb-3">{{ $filterName }}</div>
+        {{/* populate brands */}}
+        {{ $lenBrands := len $filteringData.Brands }}
+        {{ if ( le $lenBrands 7) }}
+            <div class="side-filter-brands" id="side-filter-brands">
+                {{ range $brand := $filteringData.Brands }}
+                    <label class="form-check mb-2"
+                           hx-push-url="true"
+                           hx-get="/{{ $categoryPath }}"
+                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                           hx-trigger="click delay:1s"
+                           hx-target="#content"
+                    >
+                        <input class="form-check-input" type="checkbox" value="{{ $brand }}"
+                                {{ if isBrandChecked $brand $filterParam.Brands }}
+                                    checked
+                                {{ end }}
+                        >
+                        <span class="form-check-label">{{ $brand }}</span>
+                    </label>
+                {{ end }}
+            </div>
+        {{ else }}
+            {{ $brands10   := ( slice $filteringData.Brands 0 7) }}
+            {{ $brandsMore := ( slice $filteringData.Brands 7) }}
+            <div class="side-filter-brands" id="side-filter-brands">
+                {{ range $brand := $brands10 }}
+                    <label class="form-check mb-2"
+                           hx-push-url="true"
+                           hx-get="/{{ $categoryPath }}"
+                           hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                           hx-trigger="click delay:1s"
+                           hx-target="#content"
+                    >
+                        <input class="form-check-input" type="checkbox" value="{{ $brand }}"
+                                {{ if isBrandChecked $brand $filterParam.Brands }}
+                                    checked
+                                {{ end }}
+                        >
+                        <span class="form-check-label">{{ $brand }}</span>
+                    </label>
+                {{ end }}
+                <div class="collapse side-filter-collapsible" id="brand-collapse">
+                    {{ range $brand := $brandsMore }}
+                        <label class="form-check mb-2"
+                               hx-push-url="true"
+                               hx-get="/{{ $categoryPath }}"
+                               hx-vals="js:{price_from: getPriceFrom(), price_to: getPriceTo(), brands: getCheckedBrands(), sort: getSort()}"
+                               hx-trigger="click delay:1s"
+                               hx-target="#content"
+                        >
+                            <input class="form-check-input" type="checkbox" value="{{ $brand }}"
+                                    {{ if isBrandChecked $brand $filterParam.Brands }}
+                                        checked
+                                    {{ end }}
+                            >
+                            <span class="form-check-label">{{ $brand }}</span>
+                        </label>
+                    {{ end }}
+                </div>
+            </div>
+            <div>
+                <a class="side-filter-more-button"
+                    data-bs-toggle="collapse"
+                    href="#brand-collapse"
+                    role="button"
+                    aria-expanded="false"
+                    aria-controls="category-collapse"
+                >
+                    <i class="bi bi-chevron-down"></i>
+                    <span> More</span>
+                </a>
+            </div>
+        {{ end }}
+    </div>
+{{ end }}

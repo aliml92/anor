@@ -26,8 +26,7 @@ CREATE EXTENSION IF NOT EXISTS citext;
 CREATE TYPE user_status AS ENUM (
     'Blocked', 
     'RegistrationPending', 
-    'Active', 
-    'Inactice'
+    'Active'
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -37,10 +36,8 @@ CREATE TABLE IF NOT EXISTS users (
     phone_number    TEXT         CHECK (LENGTH(phone_number) <= 20),                
     full_name       TEXT         NOT NULL CHECK (LENGTH(full_name) <= 100),
     status          user_status  NOT NULL DEFAULT 'RegistrationPending',
-    otp             TEXT         CHECK (LENGTH(otp) <= 10),
-    otp_expiry      BIGINT,                
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ    
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 
@@ -61,8 +58,9 @@ CREATE TABLE IF NOT EXISTS user_roles (
 INSERT INTO roles (role) VALUES 
     ( 'admin' ),
     ( 'seller' ),
-    ( 'user');
+    ( 'customer');
 
+-- TODO: add permissions table if needed
 
 -- +goose Down
 DROP TABLE IF EXISTS users CASCADE;

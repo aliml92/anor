@@ -1,27 +1,41 @@
-package anor
+package search
 
-import "context"
+import (
+	"context"
+	"errors"
+	"github.com/aliml92/anor"
+	"github.com/shopspring/decimal"
+)
 
 const (
 	INDEXPRODUCTS       = "products"
 	INDEXCATEGORIES     = "categories"
-	INDEXSELLERSTORES   = "sellerstores"
+	INDEXSTORES         = "stores"
 	INDEXPRODUCTQUERIES = "product_queries"
 )
 
-type SearchQuerySuggestionResults struct {
-	ProductSuggestions []string
-	Categories         []Category
-	SellerStores       []SellerStore
+var ErrNoSearchResults = errors.New("no search results found")
+
+type QuerySuggestionResults struct {
+	ProductNameSuggestions []string
+	Categories             []anor.Category
+	SellerStores           []anor.Store
 }
 
-type SearchResults struct {
-	Products    []Product
+type ProductResults struct {
+	Products    []anor.Product
 	CategoryIDs []int32
-	Options     QueryOptions
+	PriceRange  [2]decimal.Decimal
+	Brands      []string
+}
+
+type ProductsParams struct {
+	Filter anor.FilterParam
+	Sort   anor.SortParam
+	Paging anor.Paging
 }
 
 type Searcher interface {
-	SearchQuerySuggestions(ctx context.Context, q string) (SearchQuerySuggestionResults, error)
-	SearchProducts(ctx context.Context, q string, o QueryOptions) (SearchResults, error)
+	SearchQuerySuggestions(ctx context.Context, q string) (QuerySuggestionResults, error)
+	SearchProducts(ctx context.Context, q string, params ProductsParams) (ProductResults, int64, error)
 }
