@@ -1,0 +1,5 @@
+./cmd/ebay-data-importer/clothes_baby.jsonl
+./cmd/ebay-data-importer/clothes_kids.jsonl
+./cmd/ebay-data-importer/clothes_men.jsonl
+./cmd/ebay-data-importer/clothes_specialty.jsonl
+./cmd/ebay-data-importer/electronics.jsonl
