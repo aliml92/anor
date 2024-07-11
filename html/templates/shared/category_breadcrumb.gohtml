@@ -3,7 +3,11 @@
     <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '/';">
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item">
-                <a href="/" hx-boost="true" class="text-dark fw-bold">Anor</a>
+                <a href="/"
+                   hx-push-url="true"
+                   hx-get="/"
+                   hx-target="#content"
+                   class="text-dark fw-bold">Anor</a>
             </li>
 
             {{/* populate ancestor categories as breadcrumb */}}
