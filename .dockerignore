@@ -1,0 +1,4 @@
+_redis-data
+_typesense-data
+config/config.docker.dev.yaml
+config/config.local.dev.yaml
