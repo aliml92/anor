@@ -8,6 +8,9 @@ import (
 	"net/url"
 )
 
+// SearchQuerySuggestionsView handles search query suggestions requests.
+// It parses the query parameter, fetches product, category and store suggestions,
+// and renders them as a component.
 func (h *Handler) SearchQuerySuggestionsView(w http.ResponseWriter, r *http.Request) {
 	values, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -22,15 +25,14 @@ func (h *Handler) SearchQuerySuggestionsView(w http.ResponseWriter, r *http.Requ
 		fmt.Println(err)
 	}
 
-	sqsl := partials.SearchQuerySuggestionsList{}
-
-	sugs := make([]template.HTML, len(ss.ProductNameSuggestions))
-	for index, sug := range ss.ProductNameSuggestions {
-		s := template.HTML(sug)
-		sugs[index] = s
+	pns := make([]template.HTML, len(ss.ProductNameSuggestions))
+	for idx, sug := range ss.ProductNameSuggestions {
+		pns[idx] = template.HTML(sug)
 	}
 
-	sqsl.ProductNameSuggestions = sugs
+	sqsl := partials.SearchQuerySuggestionsList{
+		ProductNameSuggestions: pns,
+	}
 
-	h.view.RenderComponent(w, "partials/header/search-query-suggestions-list.gohtml", sqsl)
+	h.view.RenderComponent(w, "partials/header/search_query_suggestions_list.gohtml", sqsl)
 }

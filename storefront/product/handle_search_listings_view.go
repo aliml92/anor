@@ -2,24 +2,23 @@ package product
 
 import (
 	"errors"
-	"fmt"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/html"
-	searchlistings "github.com/aliml92/anor/html/dtos/pages/search-listings"
-	"github.com/aliml92/anor/html/dtos/pages/search-listings/components"
-	"github.com/aliml92/anor/html/dtos/partials"
+	searchlistings "github.com/aliml92/anor/html/dtos/pages/search_listings"
+	"github.com/aliml92/anor/html/dtos/pages/search_listings/components"
 	"github.com/aliml92/anor/html/dtos/shared"
 	"github.com/aliml92/anor/search"
+	"log/slog"
 	"net/http"
 	"net/url"
 )
 
-type SearchRequest struct {
-	Q     string
-	Query QueryParams
+type SearchListingsViewRequest struct {
+	Q     string      // search query param
+	Query QueryParams // common listings query params
 }
 
-func (s *SearchRequest) Bind(r *http.Request) error {
+func (s *SearchListingsViewRequest) Bind(r *http.Request) error {
 	values, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
 		return err
@@ -37,7 +36,7 @@ func (s *SearchRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (s *SearchRequest) Validate() error {
+func (s *SearchListingsViewRequest) Validate() error {
 	if err := validateSearchQuery(s.Q); err != nil {
 		return err
 	}
@@ -49,15 +48,21 @@ func (s *SearchRequest) Validate() error {
 	return nil
 }
 
-func (h *Handler) SearchView(w http.ResponseWriter, r *http.Request) {
+// SearchListingsView handles the search request.
+// It returns search listings view page
+func (h *Handler) SearchListingsView(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	target := r.Header.Get("Hx-Target")
 
-	req := &SearchRequest{}
-	err := bindValid(r, req)
+	var req SearchListingsViewRequest
+	err := anor.BindValid(r, &req)
 	if err != nil {
-		h.logClientError(err)
 		if errors.Is(err, ErrInvalidSearchQueryLength) || errors.Is(err, ErrInvalidSearchQueryChars) {
-			h.viewRenderNotFound(w, r, "We found nothing")
+			h.logger.Error(
+				err.Error(),
+				slog.Any("error", err),
+			)
+			h.renderNotFound(w, r, "We found nothing")
 			return
 		}
 		h.clientError(w, err, http.StatusBadRequest)
@@ -73,16 +78,19 @@ func (h *Handler) SearchView(w http.ResponseWriter, r *http.Request) {
 	res, count, err := h.searcher.SearchProducts(ctx, req.Q, searchParams)
 	if err != nil {
 		if errors.Is(err, search.ErrNoSearchResults) {
-			h.viewRenderNotFound(w, r, "We found nothing")
+			h.logger.Error(
+				err.Error(),
+				slog.Any("error", err),
+			)
+			h.renderNotFound(w, r, "We found nothing")
 			return
 		}
 		h.serverInternalError(w, err)
 		return
 	}
 
-	target := r.Header.Get("Hx-Target")
 	pg := shared.ProductGrid{Products: res.Products}
-	p := components.Pagination{
+	pag := components.Pagination{
 		Q:             req.Q,
 		TotalPages:    calcTotalPages(count, req.Query.PageSize),
 		CurrentPage:   req.Query.Page,
@@ -92,7 +100,7 @@ func (h *Handler) SearchView(w http.ResponseWriter, r *http.Request) {
 	if target == "pagination" || target == "product-grid-with-pagination" {
 		comps := []html.Component{
 			{"shared/product-grid.gohtml": pg},
-			{"pages/search-listings/components/pagination.gohtml": p},
+			{"pages/search-listings/components/pagination.gohtml": pag},
 		}
 		h.view.RenderComponents(w, comps)
 		return
@@ -105,7 +113,7 @@ func (h *Handler) SearchView(w http.ResponseWriter, r *http.Request) {
 		PriceTo:   res.PriceRange[1],
 		Brands:    res.Brands,
 	}
-	fmt.Printf("brands: %v\n", res.Brands)
+
 	spr := components.SidePriceRange{
 		Q:             req.Q,
 		FilterParam:   req.Query.FilterParam,
@@ -169,45 +177,8 @@ func (h *Handler) SearchView(w http.ResponseWriter, r *http.Request) {
 		SideRatingCheckbox: components.SideRatingCheckbox{}, // TODO: get ratings
 		SearchListingsInfo: sli,
 		ProductGrid:        pg,
-		Pagination:         p,
+		Pagination:         pag,
 	}
 
-	if target == "content" {
-		h.view.Render(w, "pages/search-listings/content.gohtml", slc)
-		return
-	}
-
-	u := anor.UserFromContext(ctx)
-	headerContent := partials.Header{User: u}
-	if u != nil {
-		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
-		if err != nil {
-			h.serverInternalError(w, err)
-			return
-		}
-
-		headerContent.ActiveOrdersCount = ac.ActiveOrdersCount
-		headerContent.WishlistItemsCount = ac.WishlistItemsCount
-		headerContent.CartItemsCount = ac.CartItemsCount
-
-	} else {
-		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
-		if cartId != 0 {
-
-			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
-			if err != nil {
-				h.serverInternalError(w, err)
-				return
-			}
-
-			headerContent.CartItemsCount = int(guestCartItemCount)
-		}
-	}
-
-	plb := searchlistings.Base{
-		Header:  headerContent,
-		Content: slc,
-	}
-
-	h.view.Render(w, "pages/search-listings/base.gohtml", plb)
+	h.Render(w, r, "pages/search_listings", slc)
 }

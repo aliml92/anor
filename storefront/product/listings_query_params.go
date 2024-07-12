@@ -13,6 +13,7 @@ import (
 	"strings"
 )
 
+// Constants for default and maximum values used in query parameter handling.
 const (
 	defaultPage         = 1
 	defaultPageSize     = 20
@@ -21,6 +22,7 @@ const (
 	maxFilterableSizes  = 10
 )
 
+// Constants for query parameter keys.
 const (
 	sort = "sort"
 
@@ -35,12 +37,14 @@ const (
 	pagingPageSize = "page_size"
 )
 
+// QueryParams holds parsed and validated query parameters.
 type QueryParams struct {
 	anor.SortParam
 	anor.FilterParam
 	anor.Paging
 }
 
+// Bind parses URL query parameters and populates the QueryParams struct.
 func (q *QueryParams) Bind(r *http.Request) error {
 	values, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -119,6 +123,7 @@ func (q *QueryParams) Bind(r *http.Request) error {
 	return errs
 }
 
+// Validate checks if the parsed query parameters are valid.
 func (q *QueryParams) Validate() error {
 	return validation.ValidateStruct(q,
 		validation.Field(&q.SortParam,
