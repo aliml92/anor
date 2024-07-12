@@ -1,6 +1,10 @@
 package anor
 
-import "errors"
+import (
+	"errors"
+	"log/slog"
+	"net/http"
+)
 
 const (
 	EINTERNALMSG = "Something went wrong. Please try again later."
@@ -19,3 +23,26 @@ var (
 	ErrProductVariantNotFound        = errors.New("product variant not found")
 	ErrProductVariantPricingNotFound = errors.New("product variant pricing not found")
 )
+
+func ClientError(logger *slog.Logger, w http.ResponseWriter, err error, statusCode int) {
+	logger.Error(
+		err.Error(),
+		slog.Any("error", err),
+	)
+	http.Error(w, err.Error(), statusCode)
+}
+
+func ServerInternalError(logger *slog.Logger, w http.ResponseWriter, err error) {
+	logger.Error(
+		err.Error(),
+		slog.Any("error", err),
+	)
+	http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
+}
+
+func LogClientError(logger *slog.Logger, err error) {
+	logger.Error(
+		err.Error(),
+		slog.Any("error", err),
+	)
+}
