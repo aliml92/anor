@@ -9,7 +9,7 @@ import (
 
 const (
 	defaultCtxTimeout = 2 * time.Second
-	defaultKeyPrefix  = "keys:app:session:user:authenticated:"
+	defaultKeyPrefix  = "keys:session:user:authenticated:"
 )
 
 type RedisStore struct {
@@ -54,7 +54,7 @@ func (s *RedisStore) Commit(token string, b []byte, expiry time.Time) error {
 	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 
-	cmd := s.client.Set(ctx, s.prefix+token, b, expiry.Sub(time.Now()))
+	cmd := s.client.Set(ctx, s.prefix+token, b, time.Until(expiry))
 	return cmd.Err()
 }
 
@@ -117,7 +117,7 @@ func (s *RedisStore) FindCtx(ctx context.Context, token string) (b []byte, exist
 }
 
 func (s *RedisStore) CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) error {
-	cmd := s.client.Set(ctx, s.prefix+token, b, expiry.Sub(time.Now()))
+	cmd := s.client.Set(ctx, s.prefix+token, b, time.Until(expiry))
 	return cmd.Err()
 }
 
