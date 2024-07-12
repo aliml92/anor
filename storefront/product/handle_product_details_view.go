@@ -1,34 +1,34 @@
 package product
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/aliml92/anor"
-	notfound "github.com/aliml92/anor/html/dtos/pages/not-found"
-	productdetails "github.com/aliml92/anor/html/dtos/pages/product-details"
-	"github.com/aliml92/anor/html/dtos/pages/product-details/components"
-	"github.com/aliml92/anor/html/dtos/partials"
+	notfoundpage "github.com/aliml92/anor/html/dtos/pages/not_found"
+	productdetailspage "github.com/aliml92/anor/html/dtos/pages/product_details"
+	"github.com/aliml92/anor/html/dtos/pages/product_details/components"
 	"github.com/aliml92/anor/html/dtos/shared"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
-// ProductDetailsView handles the HTTP request for displaying the product details page.
+// ProductDetailsView handles the request for the product details page.
 func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
+	h.logger.Debug("handling product details view...")
 	ctx := r.Context()
-	u := anor.UserFromContext(ctx)
 
 	handle := r.PathValue("handle")
 	productID, err := extractProductID(handle)
 	if err != nil {
-		h.viewRenderNotFound(w, r, "Product not found")
+		h.renderNotFound(w, r, "Product not found")
 		return
 	}
 
 	p, err := h.productSvc.GetProduct(ctx, productID)
 	if err != nil {
 		if errors.Is(err, anor.ErrNotFound) {
-			h.viewRenderNotFound(w, r, "Product not found")
+			h.renderNotFound(w, r, "Product not found")
 			return
 		}
 		h.serverInternalError(w, err)
@@ -47,7 +47,7 @@ func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pdc := productdetails.Content{
+	pdc := productdetailspage.Content{
 		CategoryBreadcrumb: shared.CategoryBreadcrumb{
 			Category:           c,
 			AncestorCategories: ac,
@@ -61,76 +61,46 @@ func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
 		ProductVariantMatrix: constructProductVariantMatrix(p.ProductVariants, p.Attributes),
 	}
 
-	if isHXRequest(r) {
-		h.view.Render(w, "pages/product-details/content.gohtml", pdc)
-		return
-	}
-
-	headerContent, err := h.getHeaderContent(ctx, u)
-	if err != nil {
-		h.serverInternalError(w, err)
-		return
-	}
-
-	pdb := productdetails.Base{
-		Header:  headerContent,
-		Content: pdc,
-	}
-
-	h.view.Render(w, "pages/product-details/base.gohtml", pdb)
+	h.Render(w, r, "pages/product_details", pdc)
 }
 
-func (h *Handler) viewRenderNotFound(w http.ResponseWriter, r *http.Request, message string) {
-	ctx := r.Context()
-	u := anor.UserFromContext(ctx)
-	nc := notfound.Content{Message: message}
-	if isHXRequest(r) {
-		h.view.Render(w, "pages/not-found/content.gohtml", nc)
-		return
-	}
-
-	headerContent, err := h.getHeaderContent(ctx, u)
-	if err != nil {
-		h.serverInternalError(w, err)
-		return
-	}
-
-	nb := notfound.Base{
-		Header:  headerContent,
-		Content: nc,
-	}
-
-	h.view.Render(w, "pages/not-found/base.gohtml", nb)
+// renderNotFound renders `not found` page with given message
+func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, message string) {
+	fmt.Println("rendering not found page")
+	c := notfoundpage.Content{Message: message}
+	h.Render(w, r, "pages/not_found", c)
 }
 
-func (h *Handler) getHeaderContent(ctx context.Context, u *anor.User) (partials.Header, error) {
-	headerContent := partials.Header{User: u}
-	if u != nil {
-		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
+// extractProductID extracts product id from handle
+func extractProductID(handle string) (int64, error) {
+	lastIndex := strings.LastIndex(handle, "-")
+	if lastIndex == -1 {
+		// assume handle is number string
+		id, err := strconv.Atoi(handle)
 		if err != nil {
-			return headerContent, err
+			return 0, fmt.Errorf("failed to convert ID to integer: %s", handle)
 		}
-
-		headerContent.ActiveOrdersCount = ac.ActiveOrdersCount
-		headerContent.WishlistItemsCount = ac.WishlistItemsCount
-		headerContent.CartItemsCount = ac.CartItemsCount
-
-	} else {
-		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
-		if cartId != 0 {
-
-			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
-			if err != nil {
-				return headerContent, err
-			}
-
-			headerContent.CartItemsCount = int(guestCartItemCount)
-		}
+		return int64(id), nil
 	}
 
-	return headerContent, nil
+	if lastIndex == len(handle)-1 {
+		return 0, fmt.Errorf("invalid handle format: %s", handle)
+	}
+
+	// Extract the ID part after the last "-"
+	idStr := handle[lastIndex+1:]
+
+	// Convert the ID string to an integer
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert ID to integer: %s", idStr)
+	}
+
+	return int64(id), nil
 }
 
+// constructProductVariantMatrix creates a matrix of product variants based on attributes.
+// It handles cases for 0 to 3 attributes, returning different structures accordingly.
 func constructProductVariantMatrix(variants []anor.ProductVariant, attributes []anor.ProductAttribute) interface{} {
 	switch len(attributes) {
 	case 0:
@@ -164,9 +134,6 @@ func constructProductVariantMatrix(variants []anor.ProductVariant, attributes []
 		for index, v := range a2.Values {
 			m2[v] = index
 		}
-
-		fmt.Printf("len of m1: %d\n", len(m1))
-		fmt.Printf("len of m2: %d\n", len(m2))
 
 		matrix := create2DProductVariantMatrix(len(m1), len(m2))
 		for _, variant := range variants {
@@ -214,6 +181,7 @@ func constructProductVariantMatrix(variants []anor.ProductVariant, attributes []
 	}
 }
 
+// create2DProductVariantMatrix initializes a 2D matrix of ProductVariants.
 func create2DProductVariantMatrix(n, m int) [][]anor.ProductVariant {
 	var matrix [][]anor.ProductVariant
 	for i := 0; i < n; i++ {
@@ -224,6 +192,7 @@ func create2DProductVariantMatrix(n, m int) [][]anor.ProductVariant {
 	return matrix
 }
 
+// create3DProductVariantMatrix initializes a 3D matrix of ProductVariants.
 func create3DProductVariantMatrix(n, m, l int) [][][]anor.ProductVariant {
 	var matrix [][][]anor.ProductVariant
 	for i := 0; i < n; i++ {

@@ -3,22 +3,22 @@ package product
 import (
 	"errors"
 	"github.com/aliml92/anor/html"
-	productlistings "github.com/aliml92/anor/html/dtos/pages/product-listings"
-	"github.com/aliml92/anor/html/dtos/pages/product-listings/components"
-	"github.com/aliml92/anor/html/dtos/partials"
+	productlistings "github.com/aliml92/anor/html/dtos/pages/product_listings"
+	"github.com/aliml92/anor/html/dtos/pages/product_listings/components"
 	"github.com/aliml92/anor/html/dtos/shared"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/aliml92/anor"
 )
 
-type ListingViewRequest struct {
+type ListingsViewRequest struct {
 	CategoryHandle string      // path param
-	Query          QueryParams // query params
+	Query          QueryParams // common listings query params
 }
 
-func (l *ListingViewRequest) Bind(r *http.Request) error {
+func (l *ListingsViewRequest) Bind(r *http.Request) error {
 	handle := r.PathValue("handle")
 	l.CategoryHandle = handle
 
@@ -31,7 +31,7 @@ func (l *ListingViewRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (l *ListingViewRequest) Validate() error {
+func (l *ListingsViewRequest) Validate() error {
 	if err := validateCategoryHandle(l.CategoryHandle); err != nil {
 		return errors.Join(err, ErrInvalidHandle)
 	}
@@ -42,27 +42,29 @@ func (l *ListingViewRequest) Validate() error {
 	return nil
 }
 
-func (h *Handler) ProductListingView(w http.ResponseWriter, r *http.Request) {
-	req := &ListingViewRequest{}
-	err := bindValid(r, req)
+// ProductListingsView handles the request for the product details page.
+func (h *Handler) ProductListingsView(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	target := r.Header.Get("Hx-Target")
+
+	var req ListingsViewRequest
+	err := anor.BindValid(r, &req)
 	if err != nil {
-		h.logClientError(err)
 		if errors.Is(err, ErrInvalidHandle) {
-			h.viewRenderNotFound(w, r, "Category not found")
+			h.renderNotFound(w, r, "Category not found")
 			return
 		}
 		h.clientError(w, err, http.StatusBadRequest)
 		return
 	}
 
-	ctx := r.Context()
 	categoryID := int32(extractID(req.CategoryHandle))
 
 	// get category
 	category, err := h.categorySvc.GetCategory(ctx, categoryID)
 	if err != nil {
 		if errors.Is(err, anor.ErrNotFound) {
-			h.viewRenderNotFound(w, r, "Category not found")
+			h.renderNotFound(w, r, "Category not found")
 			return
 		}
 		h.serverInternalError(w, err)
@@ -81,10 +83,8 @@ func (h *Handler) ProductListingView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target := r.Header.Get("Hx-Target")
-
 	pg := shared.ProductGrid{Products: products}
-	p := components.Pagination{
+	pag := components.Pagination{
 		CategoryPath:  formatCategoryPath(category.Handle, category.ID),
 		TotalPages:    calcTotalPages(count, req.Query.PageSize),
 		CurrentPage:   req.Query.Page,
@@ -94,13 +94,13 @@ func (h *Handler) ProductListingView(w http.ResponseWriter, r *http.Request) {
 	if target == "pagination" || target == "product-grid-with-pagination" {
 		comps := []html.Component{
 			{"shared/product-grid.gohtml": pg},
-			{"pages/product-listings/components/pagination.gohtml": p},
+			{"pages/product-listings/components/pagination.gohtml": pag},
 		}
 		h.view.RenderComponents(w, comps)
 		return
 	}
 
-	hierarchy, err := h.categorySvc.GetCategoryHierarchy(ctx, category)
+	ch, err := h.categorySvc.GetCategoryHierarchy(ctx, category)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
@@ -122,14 +122,14 @@ func (h *Handler) ProductListingView(w http.ResponseWriter, r *http.Request) {
 
 	cb := shared.CategoryBreadcrumb{
 		Category:           category,
-		AncestorCategories: hierarchy.AncestorCategories,
+		AncestorCategories: ch.AncestorCategories,
 	}
 
 	scl := components.SideCategoryList{
 		Category:           category,
-		AncestorCategories: hierarchy.AncestorCategories,
-		ChildrenCategories: hierarchy.ChildCategories,
-		SiblingCategories:  hierarchy.SiblingCategories,
+		AncestorCategories: ch.AncestorCategories,
+		ChildrenCategories: ch.ChildCategories,
+		SiblingCategories:  ch.SiblingCategories,
 	}
 
 	filteringData := anor.FilterParam{
@@ -166,47 +166,23 @@ func (h *Handler) ProductListingView(w http.ResponseWriter, r *http.Request) {
 		SideRatingCheckbox:  components.SideRatingCheckbox{}, // TODO: get ratings
 		ProductListingsInfo: pli,
 		ProductGrid:         pg,
-		Pagination:          p,
+		Pagination:          pag,
 	}
 
-	if target == "content" {
-		h.view.Render(w, "pages/product-listings/content.gohtml", plc)
-		return
+	h.Render(w, r, "pages/product_listings", plc)
+}
+
+// extractID extracts id from handle
+func extractID(handle string) int64 {
+	parts := strings.Split(handle, "-")
+	if len(parts) > 1 {
+		idStr := parts[len(parts)-1]
+		id, _ := strconv.ParseInt(idStr, 10, 64) // Ignore the error
+		return id
 	}
 
-	u := anor.UserFromContext(ctx)
-	headerContent := partials.Header{User: u}
-	if u != nil {
-		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
-		if err != nil {
-			h.serverInternalError(w, err)
-			return
-		}
-
-		headerContent.ActiveOrdersCount = ac.ActiveOrdersCount
-		headerContent.WishlistItemsCount = ac.WishlistItemsCount
-		headerContent.CartItemsCount = ac.CartItemsCount
-
-	} else {
-		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
-		if cartId != 0 {
-
-			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
-			if err != nil {
-				h.serverInternalError(w, err)
-				return
-			}
-
-			headerContent.CartItemsCount = int(guestCartItemCount)
-		}
-	}
-
-	plb := productlistings.Base{
-		Header:  headerContent,
-		Content: plc,
-	}
-
-	h.view.Render(w, "pages/product-listings/base.gohtml", plb)
+	id, _ := strconv.ParseInt(handle, 10, 64) // Ignore the error
+	return id
 }
 
 func formatCategoryPath(handle string, id int32) string {
