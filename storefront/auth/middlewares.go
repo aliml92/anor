@@ -1,9 +1,7 @@
 package auth
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"github.com/alexedwards/scs/v2"
 	"github.com/aliml92/anor"
 	"net/http"
@@ -12,18 +10,6 @@ import (
 
 func (h *Handler) RedirectAuthUserMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		previousChainV := r.Context().Value("middlewareChain")
-		previousChain, ok := previousChainV.(string)
-		if !ok {
-			previousChain = "unknown"
-		}
-		ctx := context.WithValue(r.Context(), "middlewareChain", previousChain+" -> RedirectAuthUserMiddleware")
-		r = r.WithContext(ctx)
-
-		path := r.URL.Path
-
-		fmt.Printf("chain: %v, path: %s\n", r.Context().Value("middlewareChain"), path)
-
 		id := h.session.Auth.GetInt64(r.Context(), "authenticatedUserID")
 		if id != 0 {
 			// retrieve user by id from database
@@ -46,19 +32,7 @@ func (h *Handler) RedirectAuthUserMiddleware(next http.Handler) http.Handler {
 
 func (h *Handler) SessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		previousChainV := r.Context().Value("middlewareChain")
-		previousChain, ok := previousChainV.(string)
-		if !ok {
-			previousChain = "unknown"
-		}
-		ctx := context.WithValue(r.Context(), "middlewareChain", previousChain+" -> SessionMiddleware")
-		r = r.WithContext(ctx)
-
-		path := r.URL.Path
-
-		fmt.Printf("chain: %v, path: %s\n", r.Context().Value("middlewareChain"), path)
-
+		ctx := r.Context()
 		user := anor.UserFromContext(ctx)
 		if user == nil {
 			var token string
