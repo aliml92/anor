@@ -2,14 +2,14 @@ package cart
 
 import (
 	"context"
-	"fmt"
 	"github.com/aliml92/anor"
-	"github.com/aliml92/anor/pkg/httperrors"
+	cartpage "github.com/aliml92/anor/html/dtos/pages/cart"
+	notfoundpage "github.com/aliml92/anor/html/dtos/pages/not_found"
+	"github.com/aliml92/anor/html/dtos/partials"
 	"github.com/aliml92/anor/redis/cache/session"
 	"log/slog"
 	"net/http"
-	"runtime"
-	"strconv"
+	"path"
 	"unicode"
 
 	"github.com/aliml92/anor/html"
@@ -40,33 +40,11 @@ func NewHandler(
 }
 
 func (h *Handler) clientError(w http.ResponseWriter, err error, statusCode int) {
-	_, file, no, _ := runtime.Caller(1)
-	h.logger.LogAttrs(
-		context.TODO(),
-		slog.LevelError,
-		"client error",
-		slog.String("file", file),
-		slog.String("line", strconv.Itoa(no)),
-		slog.String("status", strconv.Itoa(statusCode)),
-		slog.String("error", capitalizeFirst(err.Error())),
-	)
-
-	http.Error(w, err.Error(), statusCode)
+	anor.ClientError(h.logger, w, err, statusCode)
 }
 
 func (h *Handler) serverInternalError(w http.ResponseWriter, err error) {
-	_, file, no, _ := runtime.Caller(1)
-	h.logger.LogAttrs(
-		context.TODO(),
-		slog.LevelError,
-		"server error",
-		slog.String("file", file),
-		slog.String("line", strconv.Itoa(no)),
-		slog.String("status", strconv.Itoa(http.StatusInternalServerError)),
-		slog.String("error", capitalizeFirst(err.Error())),
-	)
-
-	http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
+	anor.ServerInternalError(h.logger, w, err)
 }
 
 func (h *Handler) redirect(w http.ResponseWriter, url string) {
@@ -80,34 +58,77 @@ func (h *Handler) redirect(w http.ResponseWriter, url string) {
 
 	w.Header().Add("HX-Redirect", url)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte{})
 }
 
-type BindValidator interface {
-	Binder
-	Validator
-}
-
-type Binder interface {
-	Bind(r *http.Request) error
-}
-
-type Validator interface {
-	Validate() error
-}
-
-func bindValid[T BindValidator](r *http.Request, v T) error {
-	if err := v.Bind(r); err != nil {
-		return fmt.Errorf("bind request: %w", err)
+func (h *Handler) Render(w http.ResponseWriter, r *http.Request, page string, data interface{}) {
+	ctx := r.Context()
+	if isHXRequest(r) {
+		v := path.Join(page, "content.gohtml")
+		h.view.Render(w, v, data)
 	}
-	if err := v.Validate(); err != nil {
-		return err
+
+	hc, err := h.headerContent(ctx)
+	if err != nil {
+		h.serverInternalError(w, err)
+		return
 	}
-	return nil
+
+	v := path.Join(page, "base.gohtml")
+	switch data.(type) {
+	case cartpage.Content:
+		c, _ := data.(cartpage.Content)
+		base := cartpage.Base{
+			Header:  hc,
+			Content: c,
+		}
+		h.view.Render(w, v, base)
+	case notfoundpage.Content:
+		c, _ := data.(notfoundpage.Content)
+		base := notfoundpage.Base{
+			Header:  hc,
+			Content: c,
+		}
+		h.view.Render(w, v, base)
+	default:
+		base := notfoundpage.Base{
+			Header: hc,
+			Content: notfoundpage.Content{
+				Message: "Page not found",
+			},
+		}
+		h.view.Render(w, v, base)
+	}
+}
+
+func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
+	u := anor.UserFromContext(ctx)
+	header := partials.Header{User: u}
+	if u != nil {
+		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
+		if err != nil {
+			return partials.Header{}, err
+		}
+
+		header.ActiveOrdersCount = ac.ActiveOrdersCount
+		header.WishlistItemsCount = ac.WishlistItemsCount
+		header.CartItemsCount = ac.CartItemsCount
+
+	} else {
+		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
+		if cartId != 0 {
+			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
+			if err != nil {
+				return partials.Header{}, err
+			}
+			header.CartItemsCount = int(guestCartItemCount)
+		}
+	}
+
+	return header, nil
 }
 
 func (h *Handler) logClientError(err error) {
-	httperrors.LogClientError(h.logger, err)
+	anor.LogClientError(h.logger, err)
 }
 
 func capitalizeFirst(s string) string {
