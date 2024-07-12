@@ -3,13 +3,10 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/aliml92/anor/pkg/httperrors"
 	"github.com/aliml92/anor/redis/cache/session"
 	"html/template"
 	"log/slog"
 	"net/http"
-	"runtime"
-	"strconv"
 	"unicode"
 
 	"github.com/aliml92/anor"
@@ -41,32 +38,18 @@ func NewHandler(
 }
 
 func (h *Handler) clientError(w http.ResponseWriter, err error, statusCode int) {
-	_, file, no, _ := runtime.Caller(1)
-	h.logger.LogAttrs(
-		context.TODO(),
-		slog.LevelError,
-		"client error",
-		slog.String("file", file),
-		slog.String("line", strconv.Itoa(no)),
-		slog.String("status", strconv.Itoa(statusCode)),
-		slog.String("error", capitalizeFirst(err.Error())),
+	h.logger.Error(
+		err.Error(),
+		slog.Any("error", err),
 	)
-
 	http.Error(w, formatError(err.Error()), statusCode)
 }
 
 func (h *Handler) serverInternalError(w http.ResponseWriter, err error) {
-	_, file, no, _ := runtime.Caller(1)
-	h.logger.LogAttrs(
-		context.TODO(),
-		slog.LevelError,
-		"server error",
-		slog.String("file", file),
-		slog.String("line", strconv.Itoa(no)),
-		slog.String("status", strconv.Itoa(http.StatusInternalServerError)),
-		slog.String("error", capitalizeFirst(err.Error())),
+	h.logger.Error(
+		err.Error(),
+		slog.Any("error", err),
 	)
-
 	http.Error(w, formatError("Something went wrong. Please try again later."), http.StatusInternalServerError)
 }
 
@@ -75,7 +58,7 @@ func (h *Handler) redirect(w http.ResponseWriter, url string) {
 	h.logger.LogAttrs(
 		context.TODO(),
 		slog.LevelInfo,
-		"redirect",
+		"redirecting to...",
 		slog.String("url", url),
 	)
 
@@ -107,7 +90,7 @@ func bindValid[T BindValidator](r *http.Request, v T) error {
 }
 
 func (h *Handler) logClientError(err error) {
-	httperrors.LogClientError(h.logger, err)
+	anor.LogClientError(h.logger, err)
 }
 
 func capitalizeFirst(s string) string {
@@ -118,11 +101,7 @@ func capitalizeFirst(s string) string {
 }
 
 func isHXRequest(r *http.Request) bool {
-	if r.Header.Get("Hx-Request") == "true" {
-		return true
-	}
-
-	return false
+	return r.Header.Get("Hx-Request") == "true"
 }
 
 func formatMessage(message string, level string) template.HTML {
