@@ -3,11 +3,11 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/aliml92/go-typesense/typesense"
 	"github.com/jackc/pgx/v5/pgxpool"
+	jsoniter "github.com/json-iterator/go"
 	"io"
 	"os"
 	"os/signal"
@@ -74,8 +74,7 @@ func run(ctx context.Context) error {
 	}
 	defer db.Close()
 
-	tsClient, _ := typesense.NewClient(nil, cfg.typesense)
-	tsClient = tsClient.WithAPIKey("xyz")
+	tsClient, _ := typesense.NewClient(nil, cfg.typesense, "xyz")
 
 	userRepository := user.NewRepository(db)
 	productRepository := product.NewRepository(db)
@@ -167,26 +166,50 @@ func parse(filepath string) ([]ProductJSON, error) {
 	defer f.Close()
 
 	var products []ProductJSON
-	d := json.NewDecoder(f)
-	lineNumber := 0
+	reader := bufio.NewReaderSize(f, 4*1024*1024) // 4MB buffer
+	json := jsoniter.ConfigFastest
 
-	for d.More() {
+	lineNumber := 0
+	totalSize := 0
+	skippedLines := 0
+
+	for {
 		lineNumber++
-		var line ProductJSON
-		err := d.Decode(&line)
+		line, err := reader.ReadBytes('\n')
+		if err != nil && err != io.EOF {
+			return nil, fmt.Errorf("error reading line %d: %w", lineNumber, err)
+		}
+
+		totalSize += len(line)
+		if len(strings.TrimSpace(string(line))) == 0 {
+			if err == io.EOF {
+				break
+			}
+			continue
+		}
+
+		var productJSON ProductJSON
+		if err := json.Unmarshal(line, &productJSON); err != nil {
+			// Skip lines that can't be parsed as JSON
+			skippedLines++
+			if lineNumber%1000 == 0 {
+				fmt.Printf("Skipped %d lines so far due to parsing errors\n", skippedLines)
+			}
+			if err == io.EOF {
+				break
+			}
+			continue
+		}
+
+		products = append(products, productJSON)
+
+		if lineNumber%10000 == 0 {
+			fmt.Printf("Processed %d lines (%.2f MB), skipped %d lines\n", lineNumber, float64(totalSize)/1024/1024, skippedLines)
+		}
 
 		if err == io.EOF {
 			break
-		} else if err != nil {
-			if strings.Contains(err.Error(), "looking for beginning of value") {
-				continue
-			}
-
-			offset, _ := f.Seek(0, io.SeekCurrent)
-			return nil, fmt.Errorf("error parsing line %d (byte offset %d): %w", lineNumber, offset, err)
 		}
-
-		products = append(products, line)
 	}
 
 	return products, nil
