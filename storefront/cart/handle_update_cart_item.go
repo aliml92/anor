@@ -43,9 +43,8 @@ func (req *UpdateCartItemRequest) Validate() error {
 }
 
 func (h *Handler) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
-	req := &UpdateCartItemRequest{}
-
-	err := bindValid(r, req)
+	var req UpdateCartItemRequest
+	err := anor.BindValid(r, &req)
 	if err != nil {
 		if errors.Is(err, errInternal) {
 			h.serverInternalError(w, err)

@@ -47,7 +47,7 @@ func (req *AddToCartRequest) Validate() error {
 func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
 	req := &AddToCartRequest{}
 
-	err := bindValid(r, req)
+	err := anor.BindValid(r, req)
 	if err != nil {
 		if errors.Is(err, errInternal) {
 			h.serverInternalError(w, err)
@@ -93,7 +93,6 @@ func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("itemCount: %d\n", itemCount)
 	w.Header().Add("HX-Trigger-After-Settle", `{"anor:showToast":"item added to your cart successfully"}`)
 	v := partials.CartNavItem{
 		HxSwapOOB:      "true",
