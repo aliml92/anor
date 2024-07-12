@@ -48,7 +48,6 @@ func clean(products []ProductJSON) []ProductJSON {
 
 		cleanedProducts = append(cleanedProducts, cp)
 	}
-
 	return cleanedProducts
 }
 
@@ -69,6 +68,9 @@ func cleanCategories(categories []string) ([]string, bool) {
 	var cleanedCategories []string
 	for _, c := range categories {
 		if strings.TrimSpace(c) == "" {
+			return categories, true
+		}
+		if strings.Contains(c, "Underwear") {
 			return categories, true
 		}
 		if strings.Contains(c, "See more") {
