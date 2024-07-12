@@ -3,15 +3,14 @@ package postgres
 import (
 	"context"
 	"errors"
+	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/postgres/repository/cart"
 	"github.com/aliml92/anor/postgres/repository/order"
-
+	"github.com/aliml92/anor/postgres/repository/user"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-
-	"github.com/aliml92/anor"
-	"github.com/aliml92/anor/postgres/repository/user"
+	"github.com/samber/oops"
 )
 
 // Ensure service implements interface.
@@ -48,7 +47,7 @@ func (s UserService) CreateUser(ctx context.Context, u anor.User) error {
 			}
 		}
 
-		return err
+		return oops.Errorf("failed to create user: %v", err)
 	}
 
 	return nil
@@ -60,7 +59,7 @@ func (s UserService) GetUser(ctx context.Context, id int64) (anor.User, error) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return anor.User{}, anor.ErrNotFound
 		}
-		return anor.User{}, err
+		return anor.User{}, oops.Errorf("failed to get user: %v", err)
 	}
 
 	u := anor.User{
@@ -86,7 +85,7 @@ func (s UserService) GetUserByEmail(ctx context.Context, email string) (anor.Use
 		if errors.Is(err, pgx.ErrNoRows) {
 			return anor.User{}, anor.ErrNotFound
 		}
-		return anor.User{}, err
+		return anor.User{}, oops.Errorf("failed to get user by email: %v", err)
 	}
 
 	u := anor.User{
@@ -109,7 +108,7 @@ func (s UserService) GetUserByEmail(ctx context.Context, email string) (anor.Use
 func (s UserService) UpdateUserStatusByEmail(ctx context.Context, status anor.UserStatus, email string) error {
 	err := s.userRepository.UpdateUserStatusByEmail(ctx, user.UserStatus(status), email)
 	if err != nil {
-		return err
+		return oops.Errorf("failed to update user status: %v", err)
 	}
 
 	return nil
@@ -118,7 +117,7 @@ func (s UserService) UpdateUserStatusByEmail(ctx context.Context, status anor.Us
 func (s UserService) UpdateUserPassword(ctx context.Context, id int64, password string) error {
 	err := s.userRepository.UpdateUserPassword(ctx, password, id)
 	if err != nil {
-		return err
+		return oops.Errorf("failed to update user password: %v", err)
 	}
 	return nil
 }
@@ -126,12 +125,12 @@ func (s UserService) UpdateUserPassword(ctx context.Context, id int64, password 
 func (s UserService) GetUserActivityCounts(ctx context.Context, id int64) (anor.UserActivityCounts, error) {
 	cartItemCount, err := s.cartRepository.CountCartItems(ctx, &id)
 	if err != nil {
-		return anor.UserActivityCounts{}, err
+		return anor.UserActivityCounts{}, oops.Errorf("failed to get user cart item counts: %v", err)
 	}
 
 	orderCount, err := s.orderRepository.CountActiveOrders(ctx, &id)
 	if err != nil {
-		return anor.UserActivityCounts{}, err
+		return anor.UserActivityCounts{}, oops.Errorf("failed to get user order counts: %v", err)
 	}
 
 	// TODO: count wishlist items here

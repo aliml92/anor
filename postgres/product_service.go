@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/samber/oops"
 	"github.com/shopspring/decimal"
 
 	"github.com/jackc/pgx/v5"
@@ -41,7 +42,7 @@ func (s *ProductService) GetProduct(ctx context.Context, id int64) (*anor.Produc
 	// get product attributes along with their values
 	pas, err := s.productRepository.GetProductAttributesByProductID(ctx, id)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+		return nil, oops.Errorf("failed to get product attributes: %v", err)
 	}
 
 	productAttributes := make([]anor.ProductAttribute, len(pas))
@@ -56,7 +57,7 @@ func (s *ProductService) GetProduct(ctx context.Context, id int64) (*anor.Produc
 	// get variants, there will be at least one
 	pvs, err := s.productRepository.GetProductVariantsByProductID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, oops.Errorf("failed to get product variants: %v", err)
 	}
 
 	var qty int32
@@ -73,7 +74,7 @@ func (s *ProductService) GetProduct(ctx context.Context, id int64) (*anor.Produc
 		if pv.Attributes != nil {
 			var attrMap map[string]string
 			if err := json.Unmarshal(pv.Attributes, &attrMap); err != nil {
-				return nil, err
+				return nil, oops.Wrap(err)
 			}
 			variant.Attributes = attrMap
 		}
@@ -123,7 +124,7 @@ func (s *ProductService) GetProductsByLeafCategoryID(
 
 	rp, err := s.productRepository.GetProductsByLeafCategoryID(ctx, categoryID, params)
 	if err != nil {
-		return products, count, err
+		return products, count, oops.Errorf("failed to get products by leaf category id: %v", err)
 	}
 
 	products = make([]anor.Product, len(rp))
@@ -163,13 +164,13 @@ func (s *ProductService) GetProductsByNonLeafCategoryID(
 	)
 	leafCategoryIDs, err := s.categoryRepository.GetLeafCategoryIDs(ctx, categoryID)
 	if err != nil {
-		return products, count, err
+		return products, count, oops.Errorf("failed to get leaf category ids: %v", err)
 	}
 
 	// get products by leaf category ids
 	rp, err := s.productRepository.GetProductsByLeafCategoryIDs(ctx, leafCategoryIDs[0], params)
 	if err != nil {
-		return products, count, err
+		return products, count, oops.Errorf("failed to get products by leaf category ids: %v", err)
 	}
 
 	products = make([]anor.Product, len(rp))
@@ -239,13 +240,13 @@ func (s *ProductService) GetProductsByCategory(
 	} else {
 		leafCategoryIDs, err := s.categoryRepository.GetLeafCategoryIDs(ctx, category.ID)
 		if err != nil {
-			return products, count, err
+			return products, count, oops.Errorf("failed to get leaf category ids: %v", err)
 		}
 
 		// get products by leaf category ids
 		rp, err := s.productRepository.GetProductsByLeafCategoryIDs(ctx, leafCategoryIDs[0], params)
 		if err != nil {
-			return products, count, err
+			return products, count, oops.Errorf("failed to get products by leaf category ids: %v", err)
 		}
 
 		products = make([]anor.Product, len(rp))
@@ -285,14 +286,14 @@ func (s *ProductService) GetProductBrandsByCategory(ctx context.Context, categor
 				return brands, anor.ErrNotFound
 			}
 
-			return brands, err
+			return brands, oops.Errorf("failed to get product brands: %v", err)
 		}
 
 		brands = b[0]
 	} else {
 		leafCategoryIDs, err := s.categoryRepository.GetLeafCategoryIDs(ctx, category.ID)
 		if err != nil {
-			return brands, err
+			return brands, oops.Errorf("failed to get leaf category ids: %v", err)
 		}
 
 		b, err := s.productRepository.GetProductBrandsByCategoryIDs(ctx, leafCategoryIDs[0])
@@ -301,7 +302,7 @@ func (s *ProductService) GetProductBrandsByCategory(ctx context.Context, categor
 				return brands, anor.ErrNotFound
 			}
 
-			return brands, err
+			return brands, oops.Errorf("failed to get product brands: %v", err)
 		}
 
 		brands = b[0]
@@ -320,7 +321,7 @@ func (s *ProductService) GetMinMaxPricesByCategory(ctx context.Context, category
 				return minmax, anor.ErrNotFound
 			}
 
-			return minmax, err
+			return minmax, oops.Errorf("failed to get min and max prices by category id: %v", err)
 		}
 
 		minmax[0] = p.MinPrice
@@ -328,7 +329,7 @@ func (s *ProductService) GetMinMaxPricesByCategory(ctx context.Context, category
 	} else {
 		leafCategoryIDs, err := s.categoryRepository.GetLeafCategoryIDs(ctx, category.ID)
 		if err != nil {
-			return minmax, err
+			return minmax, oops.Errorf("failed to get leaf category ids: %v", err)
 		}
 
 		p, err := s.productRepository.GetMinMaxPricesByCategoryIDs(ctx, leafCategoryIDs[0])
@@ -337,7 +338,7 @@ func (s *ProductService) GetMinMaxPricesByCategory(ctx context.Context, category
 				return minmax, anor.ErrNotFound
 			}
 
-			return minmax, err
+			return minmax, oops.Errorf("failed to get min and max prices by category ids: %v", err)
 		}
 
 		minmax[0] = p.MinPrice
@@ -350,7 +351,7 @@ func (s *ProductService) GetMinMaxPricesByCategory(ctx context.Context, category
 func (s *ProductService) GetNewArrivals(ctx context.Context, limit int) ([]anor.Product, error) {
 	p, err := s.productRepository.GetProductsByCreatedAtDesc(ctx, int32(limit))
 	if err != nil {
-		return nil, err
+		return nil, oops.Errorf("failed to get new arrivals: %v", err)
 	}
 
 	products := make([]anor.Product, len(p))

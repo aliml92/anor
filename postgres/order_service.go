@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/postgres/repository/order"
+	"github.com/samber/oops"
 	"github.com/shopspring/decimal"
 )
 
@@ -26,13 +27,13 @@ func (os *OrderService) ConvertCartToOrder(ctx context.Context, c anor.Cart, piI
 	shippingAddr := map[string]string{"Address": "123 Maple Street\nApt 4B\nSpringfield, IL 62704\nUSA"}
 	shippingAddrByte, err := json.Marshal(shippingAddr)
 	if err != nil {
-		return anor.Order{}, err
+		return anor.Order{}, oops.Wrap(err)
 	}
 
 	billingAddr := map[string]string{"Address": "456 Oak Avenue\nSuite 300\nMetropolis, NY 10001\nUSA"}
 	billingAddrByte, err := json.Marshal(billingAddr)
 	if err != nil {
-		return anor.Order{}, err
+		return anor.Order{}, oops.Wrap(err)
 	}
 
 	co, err := os.orderRepository.CreateOrder(
@@ -44,13 +45,16 @@ func (os *OrderService) ConvertCartToOrder(ctx context.Context, c anor.Cart, piI
 		shippingAddrByte,
 		billingAddrByte,
 	)
+	if err != nil {
+		return anor.Order{}, oops.Errorf("failed to create order: %v", err)
+	}
 
 	// WORKAROUND: sqlc copyfrom not respecting query_parameter_limit #3388
 	arg := make([]order.CreateOrderItemsParams, len(c.CartItems))
 	for i, v := range c.CartItems {
 		vab, err := json.Marshal(v.VariantAttributes)
 		if err != nil {
-			return anor.Order{}, err
+			return anor.Order{}, oops.Wrap(err)
 		}
 
 		arg[i] = order.CreateOrderItemsParams{
@@ -65,7 +69,7 @@ func (os *OrderService) ConvertCartToOrder(ctx context.Context, c anor.Cart, piI
 	}
 	_, err = os.orderRepository.CreateOrderItems(ctx, arg)
 	if err != nil {
-		return anor.Order{}, err
+		return anor.Order{}, oops.Errorf("failed to create order items: %v", err)
 	}
 
 	return anor.Order{

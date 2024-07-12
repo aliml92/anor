@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/samber/oops"
 	"strconv"
 )
 
@@ -30,7 +31,7 @@ func NewCartService(cr cart.Repository, pr product.Repository) *CartService {
 func (cs *CartService) GetGuestCartItems(ctx context.Context, cartID int64) ([]*anor.CartItem, error) {
 	cartItems, err := cs.cartRepository.GetCartItemsByCartID(ctx, cartID)
 	if err != nil {
-		return nil, err
+		return nil, oops.Errorf("failed to get cart items: %v", err)
 	}
 
 	items := make([]*anor.CartItem, len(cartItems))
@@ -52,7 +53,7 @@ func (cs *CartService) GetGuestCartItems(ctx context.Context, cartID int64) ([]*
 
 		attrs := make(map[string]string)
 		if err := json.Unmarshal(item.VariantAttributes, &attrs); err != nil {
-			return nil, err
+			return nil, oops.Wrap(err)
 		}
 		it.VariantAttributes = attrs
 		items[index] = it
@@ -63,7 +64,7 @@ func (cs *CartService) GetGuestCartItems(ctx context.Context, cartID int64) ([]*
 	if len(variantIds) > 0 {
 		ph, err := cs.productRepository.GetProductVariantQtyInBulk(ctx, variantIds)
 		if err != nil {
-			return nil, err
+			return nil, oops.Errorf("failed to get product variamt qty in bulk: %v", err)
 		}
 
 		for index := range items {
@@ -82,12 +83,12 @@ func (cs *CartService) CreateCart(ctx context.Context, userID int64) (anor.Cart,
 	if userID > 0 {
 		c, err = cs.cartRepository.CreateCart(ctx, &userID)
 		if err != nil {
-			return anor.Cart{}, err
+			return anor.Cart{}, oops.Errorf("failed to create cart: %v", err)
 		}
 	} else {
 		c, err = cs.cartRepository.CreateGuestCart(ctx)
 		if err != nil {
-			return anor.Cart{}, err
+			return anor.Cart{}, oops.Errorf("failed to create guest cart: %v", err)
 		}
 	}
 
@@ -111,7 +112,7 @@ func (cs *CartService) GetCart(ctx context.Context, userID int64, includeCartIte
 		if errors.Is(err, pgx.ErrNoRows) {
 			return anor.Cart{}, anor.ErrNotFound
 		}
-		return anor.Cart{}, err
+		return anor.Cart{}, oops.Errorf("failed to get cart: %v", err)
 	}
 
 	ac := anor.Cart{
@@ -129,7 +130,7 @@ func (cs *CartService) GetCart(ctx context.Context, userID int64, includeCartIte
 	if includeCartItems {
 		cartItems, err := cs.cartRepository.GetCartItemsByCartID(ctx, c.ID)
 		if err != nil {
-			return anor.Cart{}, err
+			return anor.Cart{}, oops.Errorf("failed to get cart items: %v", err)
 		}
 
 		items := make([]*anor.CartItem, len(cartItems))
@@ -150,7 +151,7 @@ func (cs *CartService) GetCart(ctx context.Context, userID int64, includeCartIte
 
 			attrs := make(map[string]string)
 			if err := json.Unmarshal(item.VariantAttributes, &attrs); err != nil {
-				return anor.Cart{}, err
+				return anor.Cart{}, oops.Wrap(err)
 			}
 			it.VariantAttributes = attrs
 			items[index] = it
@@ -161,7 +162,7 @@ func (cs *CartService) GetCart(ctx context.Context, userID int64, includeCartIte
 		if len(variantIds) > 0 {
 			ph, err := cs.productRepository.GetProductVariantQtyInBulk(ctx, variantIds)
 			if err != nil {
-				return anor.Cart{}, err
+				return anor.Cart{}, oops.Errorf("failed to get product variamt qty in bulk: %v", err)
 			}
 
 			for index := range items {
@@ -195,7 +196,7 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ci, anor.ErrProductVariantPricingNotFound
 			}
-			return ci, err
+			return ci, oops.Errorf("failed to get product variant pricing: %v", err)
 		}
 		ci.Price = pvPrice.DiscountedPrice
 		ci.CurrencyCode = pvPrice.CurrencyCode
@@ -206,7 +207,7 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ci, anor.ErrProductPricingNotFound
 			}
-			return ci, err
+			return ci, oops.Errorf("failed to get product pricing: %v", err)
 		}
 		ci.Price = pPrice.DiscountedPrice
 		ci.CurrencyCode = pPrice.CurrencyCode
@@ -228,7 +229,7 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 
 	var attr map[string]string
 	if err := json.Unmarshal(cd.VariantAttributes, &attr); err != nil {
-		return anor.CartItem{}, err
+		return anor.CartItem{}, oops.Wrap(err)
 	}
 	ci.VariantAttributes = attr
 
@@ -248,10 +249,10 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 		if cartItemAlreadyExists(err) {
 			_, err := cs.cartRepository.IncrementCartItemQty(ctx, ci.CartID, ci.VariantID, ci.Qty)
 			if err != nil {
-				return ci, err
+				return ci, oops.Errorf("failed to increment cart item qty: %v", err)
 			}
 		} else {
-			return ci, err
+			return ci, oops.Errorf("failed to add cart item: %v", err)
 		}
 	}
 
@@ -268,7 +269,7 @@ func (cs *CartService) UpdateCart(ctx context.Context, c anor.Cart) error {
 	}
 	if c.PIClientSecret != "" {
 		if err := cs.cartRepository.UpdateCartClientSecret(ctx, c.ID, &c.UserID, &c.PIClientSecret); err != nil {
-			return err
+			return oops.Errorf("failed to update cart client secret: %v", err)
 		}
 	}
 
@@ -277,27 +278,27 @@ func (cs *CartService) UpdateCart(ctx context.Context, c anor.Cart) error {
 
 func (cs *CartService) UpdateCartItem(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParam) error {
 	err := cs.cartRepository.UpdateCartItemQty(ctx, cartItemID, int32(p.Qty))
-	return err
+	return oops.Errorf("failed to update cart item: %v", err)
 }
 
 func (cs *CartService) DeleteCartItem(ctx context.Context, cartItemID int64) error {
 	err := cs.cartRepository.DeleteCartItem(ctx, cartItemID)
-	return err
+	return oops.Errorf("failed to delete cart item: %v", err)
 }
 
 func (cs *CartService) CountCartItems(ctx context.Context, cartID int64) (int64, error) {
 	count, err := cs.cartRepository.CountCartItemsByCartID(ctx, cartID)
-	return count, err
+	return count, oops.Errorf("failed to count cart items: %v", err)
 }
 
 func (cs *CartService) IsCartItemOwner(ctx context.Context, userID int64, cartItemId int64) (bool, error) {
 	ok, err := cs.cartRepository.CartItemExistsByUserID(ctx, cartItemId, userID)
-	return ok, err
+	return ok, oops.Errorf("failed to check cart item owner: %v", err)
 }
 
 func (cs *CartService) IsGuestCartItemOwner(ctx context.Context, cartID int64, cartItemId int64) (bool, error) {
 	ok, err := cs.cartRepository.CartItemExistsByCartID(ctx, cartID, cartItemId)
-	return ok, err
+	return ok, oops.Errorf("failed to check guest cart item owner: %v", err)
 }
 
 func cartItemAlreadyExists(err error) bool {
