@@ -16,9 +16,13 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-typesense-data/
+_typesense-data/
 .idea/
-config.dev.private.yaml
+config/config.docker.dev.yaml
+config/config.docker.local.yaml
+_redis-data/
+node_modules/
+.prettierrc
 
 # Go workspace file
 go.work
