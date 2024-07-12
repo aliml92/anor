@@ -1,0 +1,48 @@
+server:
+  Host: <HOST>
+  Port: 8008
+
+email:
+  APIKey: <API-KEY>
+  Templates: ./brevo/templates/*.gohtml
+  FromEmail: <EMAIL>
+  SignupVerificationTemplateName: email-verification-otp.gohtml
+
+database:
+  Host: postgres
+  Port: 5432
+  User: anordb16user
+  Password: anordb16password
+  Database: anordb16
+  SSLMode: disable
+  PgDriver: postgres
+
+redis:
+  Host: redis
+  Port: 6379
+  Username: <USERNAME>
+  Password: <PASSWORD>
+  DB: 0
+  MinIdleConns: 2
+  MaxIdleConns: 5
+
+session:
+  AuthCookieName: __anor_ust
+  AuthLifetime: 48h
+  GuestCookieName: __anor_gst
+  GuestLifetime: 48h
+
+typesense:
+  Host: <HOST>
+  Port: 8108
+  APIKey: xyz
+  UseHTTPS: false
+
+stripe:
+  SecretKey: <SECRET-KEY>
+
+logger:
+  Level: debug
+  Format: json
+  AddSource: false
+  TimeFormat: "Jan _2 15:04:05.000"
