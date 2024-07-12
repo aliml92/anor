@@ -5,98 +5,77 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aliml92/anor"
+	"github.com/aliml92/anor/brevo"
 	"github.com/aliml92/anor/storefront/cart"
 	"github.com/aliml92/anor/storefront/checkout"
-	"html/template"
+	sloghttp "github.com/samber/slog-http"
 	"io"
 	"log"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/alexedwards/scs/v2"
-	"github.com/aliml92/go-typesense/typesense"
-	"github.com/redis/go-redis/v9"
-
 	"github.com/aliml92/anor/config"
 	"github.com/aliml92/anor/html"
-	"github.com/aliml92/anor/pkg/emailer"
-	"github.com/aliml92/anor/pkg/middlewares"
 	"github.com/aliml92/anor/postgres"
-	"github.com/aliml92/anor/postgres/repository"
 	cartRepo "github.com/aliml92/anor/postgres/repository/cart"
 	categoryRepo "github.com/aliml92/anor/postgres/repository/category"
 	orderRepo "github.com/aliml92/anor/postgres/repository/order"
 	productRepo "github.com/aliml92/anor/postgres/repository/product"
 	userRepo "github.com/aliml92/anor/postgres/repository/user"
+	"github.com/aliml92/anor/redis"
 	rs "github.com/aliml92/anor/redis/cache"
 	authCache "github.com/aliml92/anor/redis/cache/auth"
 	"github.com/aliml92/anor/redis/cache/session"
 	"github.com/aliml92/anor/storefront/auth"
 	"github.com/aliml92/anor/storefront/product"
 	"github.com/aliml92/anor/storefront/user"
-	ts "github.com/aliml92/anor/typesense"
-)
-
-const (
-	ConfigFilePathEnvVar = "CONFIG_FILEPATH"
+	"github.com/aliml92/anor/typesense"
 )
 
 func run(ctx context.Context, w io.Writer, args []string) error {
 	// get config
-	cfg, err := getConfig()
+	fmt.Println("Starting anor...")
+	cfg, err := config.New()
 	if err != nil {
 		return err
 	}
 
 	// get db connection pool
-	dbPool, err := repository.NewDatabasePool(ctx, &cfg.Database)
+	dbPool, err := postgres.NewDatabasePool(ctx, &cfg.Database)
 	if err != nil {
 		return err
 	}
-
 	defer dbPool.Close()
 
-	// setup typesense client
-	tsClient, _ := typesense.NewClient(nil, "http://localhost:8108")
-	tsClient = tsClient.WithAPIKey("xyz")
-	redisClient, err := getRedisClient(ctx, cfg.Redis)
+	// get typesense client
+	tsClient, err := typesense.NewClient(ctx, cfg.Typesense)
 	if err != nil {
 		return err
 	}
+	if err := typesense.InitCollections(ctx, tsClient); err != nil {
+		return err
+	}
 
+	// get redis client
+	redisClient, err := redis.NewClient(ctx, cfg.Redis)
+	if err != nil {
+		return err
+	}
 	categoryCacher := rs.NewCategoryCacher(redisClient)
 	rpCacher := authCache.NewResetPasswordTokenCacher(redisClient)
 	otpCacher := authCache.NewSignupConfirmationOTPCacher(redisClient)
-	searcher := ts.NewSearcher(tsClient)
+	searcher := typesense.NewSearcher(tsClient)
 
-	// already initialized
-	if err := ts.InitCollections(ctx, tsClient); err != nil {
-		return err
-	}
-
-	// setup brevo brevoEmailer
-	emailTemplate := template.Must(template.ParseGlob("./pkg/emailer/templates/*.gohtml"))
-	brevoEmailer := emailer.NewBrevoEmailer(&cfg.Email, emailTemplate)
+	// setup brevo emailer
+	brevoEmailer := brevo.NewEmailer(cfg.Email)
 
 	// setup session manager
-	// TODO: do not use hardcoded lifetime value
-	authSession := scs.New()
-	authSession.Store = session.NewRedisStore(redisClient).WithPrefix("keys:app:session:user:authenticated:")
-	authSession.Codec = session.MessagePackCodec{}
-	authSession.Lifetime = 2 * 24 * time.Hour
-	authSession.Cookie.Name = "__anor_ust" // anor, authenticated user's session token
-
-	anonSession := scs.New()
-	anonSession.Store = session.NewRedisStore(redisClient).WithPrefix("keys:app:session:user:anonymous:")
-	anonSession.Codec = session.MessagePackCodec{}
-	anonSession.Lifetime = 5 * 24 * time.Hour
-	anonSession.Cookie.Name = "__anor_gst" // anor, guest's session token
-
-	sessionManager := session.NewManager(authSession, anonSession)
+	sessionManager := session.NewManager(cfg.Session, redisClient)
 
 	userRepository := userRepo.NewRepository(dbPool)
 	productRepository := productRepo.NewRepository(dbPool)
@@ -107,25 +86,14 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	userService := postgres.NewUserService(userRepository, cartRepository, orderRepository)
 	productService := postgres.NewProductService(productRepository, categoryRepository)
 	categoryService := postgres.NewCategoryService(categoryRepository, categoryCacher)
-	authService := auth.NewAuthService(userService, brevoEmailer, otpCacher, rpCacher)
 	cartService := postgres.NewCartService(cartRepository, productRepository)
 	orderService := postgres.NewOrderService(orderRepository)
-
-	// setup loggers
-	logHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     slog.LevelInfo,
-		AddSource: false,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				a.Value = slog.Int64Value(time.Now().Unix())
-			}
-			return a
-		},
-	})
-	srvLogger := slog.NewLogLogger(logHandler, slog.LevelError)
-	logger := slog.New(logHandler)
+	authService := auth.NewAuthService(userService, brevoEmailer, otpCacher, rpCacher)
 
 	view := html.NewView()
+
+	logger := newSlogLogger(cfg.Logger)
+	slog.SetDefault(logger)
 
 	authHandler := auth.NewHandler(authService, cartService, view, sessionManager, logger)
 	productcatalogHandler := product.NewHandler(userService, productService, categoryService, cartService, searcher, view, logger, sessionManager)
@@ -137,8 +105,15 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 
 	addStaticRoutes(mux)
 
-	responseLogger := middlewares.NewRequestLogger(logger, nil)
-	mux.Use(middlewares.RequestID, responseLogger.Log, authSession.LoadAndSave, userHandler.AuthInjector, authHandler.SessionMiddleware)
+	mux.Use(
+		//middlewares.RequestID,
+		sloghttp.Recovery,
+		sloghttp.New(logger.WithGroup("http")),
+		sessionManager.Auth.LoadAndSave,
+		userHandler.AuthInjector,
+		authHandler.SessionMiddleware,
+	)
+
 	auth.RegisterRoutes(authHandler, mux)
 	product.RegisterRoutes(productcatalogHandler, mux)
 	user.RegisterRoutes(userHandler, mux)
@@ -151,9 +126,8 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	httpServer := http.Server{
 		Addr:     net.JoinHostPort(cfg.Server.Host, cfg.Server.Port),
 		Handler:  handler,
-		ErrorLog: srvLogger,
+		ErrorLog: newServerLogger(cfg.Logger),
 	}
-
 	go func() {
 		log.Printf("listening on %s\n", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -173,43 +147,6 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	return nil
 }
 
-func getRedisClient(ctx context.Context, cfg config.RedisConfig) (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:         cfg.Addr,
-		Username:     cfg.Username,
-		Password:     cfg.Password,
-		DB:           cfg.DB,
-		MinIdleConns: cfg.MinIdleConns,
-		MaxIdleConns: cfg.MaxIdleConns,
-	})
-
-	statusCmd := rdb.Ping(ctx)
-	if statusCmd.Err() != nil {
-		return nil, statusCmd.Err()
-	}
-
-	return rdb, nil
-}
-
-func getConfig() (*config.Config, error) {
-	cfgPath := os.Getenv(ConfigFilePathEnvVar)
-	if cfgPath == "" {
-		return nil, fmt.Errorf("environment variable %s not set or empty", ConfigFilePathEnvVar)
-	}
-
-	cfgFile, err := config.LoadConfigFromFile(cfgPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config file: %v", err)
-	}
-
-	cfg, err := config.ParseConfig(cfgFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %v", err)
-	}
-
-	return cfg, nil
-}
-
 func addStaticRoutes(mux *anor.Router) {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 	mux.Handle("GET /auth/static/", http.StripPrefix("/auth/static/", http.FileServer(http.Dir("web/static"))))
@@ -222,4 +159,107 @@ func addStaticRoutes(mux *anor.Router) {
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "web/static/images/favicon.ico")
+}
+
+func newServerLogger(cfg config.LoggerConfig) *log.Logger {
+	timeFormat, ok := timeFormats[cfg.TimeFormat]
+	if !ok {
+		timeFormat = time.StampMilli
+	}
+
+	handlerOptions := &slog.HandlerOptions{
+		Level:     slog.LevelError,
+		AddSource: cfg.AddSource,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{
+					Key:   a.Key,
+					Value: slog.StringValue(a.Value.Time().Format(timeFormat)),
+				}
+			}
+			return a
+		},
+	}
+
+	var handler slog.Handler
+	switch strings.ToLower(cfg.Format) {
+	case "json":
+		handler = slog.NewJSONHandler(os.Stdout, handlerOptions)
+	case "text":
+		handler = slog.NewTextHandler(os.Stdout, handlerOptions)
+	default:
+		handler = slog.NewTextHandler(os.Stdout, handlerOptions)
+	}
+	logger := slog.NewLogLogger(handler, slog.LevelError)
+
+	return logger
+}
+
+func newSlogLogger(cfg config.LoggerConfig) *slog.Logger {
+	var level slog.Level
+	switch strings.ToLower(cfg.Level) {
+	case "debug":
+		level = slog.LevelDebug
+	case "info":
+		level = slog.LevelInfo
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo // Default to Info if invalid level is specified
+	}
+
+	timeFormat, ok := timeFormats[cfg.TimeFormat]
+	if !ok {
+		timeFormat = time.StampMilli
+	}
+
+	handlerOptions := &slog.HandlerOptions{
+		Level:     level,
+		AddSource: cfg.AddSource,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{
+					Key:   a.Key,
+					Value: slog.StringValue(a.Value.Time().Format(timeFormat)),
+				}
+			}
+			return a
+		},
+	}
+
+	var handler slog.Handler
+	switch strings.ToLower(cfg.Format) {
+	case "json":
+		handler = slog.NewJSONHandler(os.Stdout, handlerOptions)
+	case "text":
+		handler = slog.NewTextHandler(os.Stdout, handlerOptions)
+	default:
+		handler = slog.NewTextHandler(os.Stdout, handlerOptions)
+	}
+
+	return slog.New(handler)
+}
+
+var timeFormats = map[string]string{
+	"Layout":      time.Layout,
+	"ANSIC":       time.ANSIC,
+	"UnixDate":    time.UnixDate,
+	"RubyDate":    time.RubyDate,
+	"RFC822":      time.RFC822,
+	"RFC822Z":     time.RFC822Z,
+	"RFC850":      time.RFC850,
+	"RFC1123":     time.RFC1123,
+	"RFC1123Z":    time.RFC1123Z,
+	"RFC3339":     time.RFC3339,
+	"RFC3339Nano": time.RFC3339Nano,
+	"Kitchen":     time.Kitchen,
+	"Stamp":       time.Stamp,
+	"StampMilli":  time.StampMilli,
+	"StampMicro":  time.StampMicro,
+	"StampNano":   time.StampNano,
+	"DateTime":    time.DateTime,
+	"DateOnly":    time.DateOnly,
+	"TimeOnly":    time.TimeOnly,
 }
