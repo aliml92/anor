@@ -12,18 +12,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/aliml92/anor"
-	"github.com/aliml92/anor/pkg/emailer"
+	"github.com/aliml92/anor/email"
 	"github.com/aliml92/anor/pkg/utils"
 )
 
 type authService struct {
 	userService                 anor.UserService
-	emailer                     emailer.Emailer
+	emailer                     email.Emailer
 	signupConfirmationOTPCacher auth.SignupConfirmationOTPCache
 	resetPasswordTokenCacher    auth.ResetPasswordTokenCache
 }
 
-func NewAuthService(us anor.UserService, e emailer.Emailer, otpCacher auth.SignupConfirmationOTPCache, tokenCacher auth.ResetPasswordTokenCache) anor.AuthService {
+func NewAuthService(us anor.UserService, e email.Emailer, otpCacher auth.SignupConfirmationOTPCache, tokenCacher auth.ResetPasswordTokenCache) anor.AuthService {
 	return &authService{
 		userService:                 us,
 		emailer:                     e,
