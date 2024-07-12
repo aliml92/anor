@@ -23,6 +23,11 @@ tasks:
     cmds:
       - docker compose -f docker-compose.dev.yaml logs
 
+  compose-restart:
+    cmds:
+      - docker compose -f docker-compose.dev.yaml down
+      - docker compose -f docker-compose.dev.yaml up -d --build --force-recreate --remove-orphans
+
   compose-clean-restart:
     cmds:
       - task: compose-down
@@ -41,4 +46,4 @@ tasks:
 
   import-dataset:
     cmds:
-      - go run ./tools/ebay-data-importer/*.go -source="./tools/ebay-data-importer/dataset/" -database=$POSTGRES -typesense=$TYPESENSE {{ .CLI_ARGS}}
+      - go run ./cmd/ebay-data-importer/*.go -dataset-dir="./cmd/ebay-data-importer/dataset/" -database=$POSTGRES -typesense=$TYPESENSE {{ .CLI_ARGS}}
