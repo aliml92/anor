@@ -10,7 +10,7 @@ import (
 	"github.com/aliml92/anor"
 )
 
-func (ts TsSearcher) IndexProduct(ctx context.Context, p anor.Product) error {
+func (ts Searcher) IndexProduct(ctx context.Context, p anor.Product) error {
 	doc := map[string]interface{}{
 		"id":               strconv.Itoa(int(p.ID)),
 		"name":             p.Name,
@@ -32,11 +32,11 @@ func (ts TsSearcher) IndexProduct(ctx context.Context, p anor.Product) error {
 		doc[attr] = a.Values
 	}
 
-	_, err := ts.tsClient.Documents.Create(ctx, search.INDEXPRODUCTS, doc)
+	_, err := ts.client.Documents.Create(ctx, search.INDEXPRODUCTS, doc)
 	return err
 }
 
-func (ts TsSearcher) IndexCategory(ctx context.Context, c anor.Category) error {
+func (ts Searcher) IndexCategory(ctx context.Context, c anor.Category) error {
 	doc := map[string]interface{}{
 		"id":        strconv.Itoa(int(c.ID)),
 		"category":  c.Category,
@@ -45,17 +45,17 @@ func (ts TsSearcher) IndexCategory(ctx context.Context, c anor.Category) error {
 		"is_leaf":   c.IsLeaf(),
 	}
 
-	_, err := ts.tsClient.Documents.Create(ctx, search.INDEXCATEGORIES, doc)
+	_, err := ts.client.Documents.Create(ctx, search.INDEXCATEGORIES, doc)
 	return err
 }
 
-func (ts TsSearcher) IndexStore(ctx context.Context, ss anor.Store) error {
+func (ts Searcher) IndexStore(ctx context.Context, ss anor.Store) error {
 	doc := map[string]interface{}{
 		"id":     strconv.Itoa(int(ss.ID)),
 		"name":   ss.Name,
 		"handle": ss.Handle,
 	}
 
-	_, err := ts.tsClient.Documents.Create(ctx, search.INDEXSTORES, doc)
+	_, err := ts.client.Documents.Create(ctx, search.INDEXSTORES, doc)
 	return err
 }

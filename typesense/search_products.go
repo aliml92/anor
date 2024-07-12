@@ -34,7 +34,7 @@ type ProductDocument struct {
 	UpdatedAt       time.Time       `mapstructure:"updated_at"`
 }
 
-func (ts TsSearcher) SearchProducts(ctx context.Context, q string, p search.ProductsParams) (search.ProductResults, int64, error) {
+func (ts Searcher) SearchProducts(ctx context.Context, q string, p search.ProductsParams) (search.ProductResults, int64, error) {
 	r := search.ProductResults{}
 	var found int64
 
@@ -69,12 +69,13 @@ func (ts TsSearcher) SearchProducts(ctx context.Context, q string, p search.Prod
 
 	params.FilterBy = typesense.String(filterBuilder.String())
 
-	res, err := ts.tsClient.Documents.Search(ctx, search.INDEXPRODUCTS, params)
+	res, err := ts.client.Documents.Search(ctx, search.INDEXPRODUCTS, params)
 	if err != nil {
 		return r, found, err
 	}
 
-	if (*res.Found) == 0 {
+	found = int64(*res.Found)
+	if found == 0 {
 		return r, found, search.ErrNoSearchResults
 	}
 
@@ -139,9 +140,7 @@ func (ts TsSearcher) SearchProducts(ctx context.Context, q string, p search.Prod
 		})
 	}
 
-	found = int64(*res.Found)
-
-	return r, int64(*res.Found), nil
+	return r, found, nil
 }
 
 func toTimeHookFunc() mapstructure.DecodeHookFunc {

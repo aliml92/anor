@@ -6,7 +6,7 @@ import (
 	"github.com/aliml92/go-typesense/typesense"
 )
 
-func (ts TsSearcher) SearchQuerySuggestions(ctx context.Context, q string) (search.QuerySuggestionResults, error) {
+func (ts Searcher) SearchQuerySuggestions(ctx context.Context, q string) (search.QuerySuggestionResults, error) {
 	var r search.QuerySuggestionResults
 
 	searchRequests := &typesense.MultiSearchSearchesParameter{
@@ -38,7 +38,7 @@ func (ts TsSearcher) SearchQuerySuggestions(ctx context.Context, q string) (sear
 		PerPage: typesense.Int(10),
 	}
 
-	res, err := ts.tsClient.Documents.MultiSearch(ctx, searchRequests, commonSearchParams)
+	res, err := ts.client.Documents.MultiSearch(ctx, searchRequests, commonSearchParams)
 	if err != nil {
 		return r, err
 	}

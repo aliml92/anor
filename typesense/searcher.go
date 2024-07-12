@@ -2,12 +2,12 @@ package typesense
 
 import "github.com/aliml92/go-typesense/typesense"
 
-type TsSearcher struct {
-	tsClient *typesense.Client
+type Searcher struct {
+	client *typesense.Client
 }
 
-func NewSearcher(tsClient *typesense.Client) *TsSearcher {
-	return &TsSearcher{
-		tsClient: tsClient,
+func NewSearcher(client *typesense.Client) *Searcher {
+	return &Searcher{
+		client: client,
 	}
 }
