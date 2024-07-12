@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	gonanoid "github.com/matoous/go-nanoid"
 	sw "github.com/toadharvard/stopwords-iso"
 	"golang.org/x/crypto/bcrypt"
@@ -210,6 +211,7 @@ func generateBaseSKU(category string, productName string, swr sw.StopwordsMappin
 }
 
 func getCategoryInitials(category string) string {
+	fmt.Printf("category: %s\n", category)
 	// Remove non-English letters using regex
 	re := regexp.MustCompile("[^a-zA-Z ]")
 	category = re.ReplaceAllString(category, "")
@@ -235,6 +237,7 @@ func getCategoryInitials(category string) string {
 		}
 	default:
 		// If more than three words, only consider the first three
+		fmt.Printf("words: %v\n", words)
 		for i := 0; i < 3; i++ {
 			result += string(words[i][0])
 		}
