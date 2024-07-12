@@ -2,11 +2,32 @@ package typesense
 
 import (
 	"context"
+	"github.com/aliml92/anor/config"
 	"github.com/aliml92/anor/search"
+	"strconv"
 
 	"github.com/aliml92/go-typesense/typesense"
 	"github.com/pkg/errors"
 )
+
+func NewClient(_ context.Context, cfg config.TypesenseConfig) (*typesense.Client, error) {
+	tsURL := "http://"
+	if cfg.UseHTTPS {
+		tsURL = "https://"
+	}
+	tsURL = tsURL + cfg.Host + ":" + strconv.Itoa(cfg.Port)
+	tsClient, err := typesense.NewClient(nil, tsURL, cfg.APIKey)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tsClient.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	return tsClient, nil
+}
 
 func setupQuerySuggestions(ctx context.Context, c *typesense.Client) error {
 	// initialize `product_queries` schema definition
