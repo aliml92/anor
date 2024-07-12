@@ -11,8 +11,7 @@ import (
 )
 
 func (h *Handler) RemoveCartItem(w http.ResponseWriter, r *http.Request) {
-	cartItemIDStr := r.PathValue("id")
-	cartItemID, err := strconv.ParseInt(cartItemIDStr, 10, 64)
+	cartItemID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		h.clientError(w, err, http.StatusBadRequest)
 		return
