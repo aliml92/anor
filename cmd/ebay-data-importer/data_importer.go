@@ -60,7 +60,7 @@ type DataImporter struct {
 	productRepository  product.Repository
 	categoryRepository category.Repository
 	storeRepository    store.Repository
-	searcher           *ts.TsSearcher
+	searcher           *ts.Searcher
 }
 
 func (d *DataImporter) safeImportData(ctx context.Context) (err error) {
@@ -80,13 +80,11 @@ func (d *DataImporter) safeImportData(ctx context.Context) (err error) {
 	}()
 
 	err = d.importData(ctx)
-	if err != nil {
-		// Write importedFilesList to file
-		fileErr := updateImported(d.cfg.imported, d.datasetListSucceeded)
-		if fileErr != nil {
-			// If there's an error updating the file, include it in the returned error
-			err = fmt.Errorf("%v; additionally, failed to update file: %v", err, fileErr)
-		}
+	// Write importedFilesList to file
+	fileErr := updateImported(d.cfg.imported, d.datasetListSucceeded)
+	if fileErr != nil {
+		// If there's an error updating the file, include it in the returned error
+		err = fmt.Errorf("%v; additionally, failed to update file: %v", err, fileErr)
 	}
 
 	return err
@@ -94,7 +92,6 @@ func (d *DataImporter) safeImportData(ctx context.Context) (err error) {
 
 func (d *DataImporter) importData(ctx context.Context) error {
 	for _, dataset := range d.datasetList {
-
 		// parse products data from dataset file
 		products, err := parse(dataset)
 		if err != nil {
@@ -382,7 +379,7 @@ func (d *DataImporter) storeProductDataAndIndex(ctx context.Context, p ProductJS
 					return err
 				}
 			}
-
+			fmt.Printf("product variant created: %v\n", skuID)
 		}
 	}
 
@@ -406,7 +403,7 @@ func (d *DataImporter) storeProductDataAndIndex(ctx context.Context, p ProductJS
 	if err != nil {
 		return err
 	}
-
+	fmt.Printf("product indexed: %v\n", savedProduct.ID)
 	return nil
 }
 
