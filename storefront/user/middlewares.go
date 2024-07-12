@@ -20,7 +20,7 @@ func (h *Handler) AuthInjector(next http.Handler) http.Handler {
 				h.logger.LogAttrs(
 					r.Context(),
 					slog.LevelWarn,
-					"ERR_INCONSISTENT_SESSION_DATA",
+					"inconsistent user data",
 					slog.String("user_id", fmt.Sprint(id)),
 					slog.String("user_data_in_session", "found"),
 					slog.String("user_data_in_db", "not found"),
