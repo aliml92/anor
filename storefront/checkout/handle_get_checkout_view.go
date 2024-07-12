@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/html/dtos/pages/checkout"
-	"github.com/aliml92/anor/html/dtos/partials"
 	"github.com/shopspring/decimal"
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/paymentintent"
@@ -75,60 +74,14 @@ func (h *Handler) GetCheckoutView(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	v := &GetCheckoutViewData{
-		User: u,
-		Cart: &anor.Cart{
-			CartItems:    cartItems,
-			TotalAmount:  getTotalPrice(cartItems),
-			CurrencyCode: getCurrency(cartItems),
-		},
-	}
-
-	h.logger.Info("cart items", v.Cart.CartItems)
-
-	cc := checkout.Content{Cart: anor.Cart{
+	c := checkout.Content{Cart: anor.Cart{
 		CartItems:    cartItems,
 		TotalAmount:  getTotalPrice(cartItems),
 		CurrencyCode: getCurrency(cartItems),
 	},
 	}
-	if isHXRequest(r) {
-		h.view.Render(w, "pages/checkout/content.gohtml", cc)
-		return
-	}
 
-	headerContent := partials.Header{User: u}
-	if u != nil {
-		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
-		if err != nil {
-			h.serverInternalError(w, err)
-			return
-		}
-
-		headerContent.ActiveOrdersCount = ac.ActiveOrdersCount
-		headerContent.WishlistItemsCount = ac.WishlistItemsCount
-		headerContent.CartItemsCount = ac.CartItemsCount
-
-	} else {
-		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
-		if cartId != 0 {
-
-			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
-			if err != nil {
-				h.serverInternalError(w, err)
-				return
-			}
-
-			headerContent.CartItemsCount = int(guestCartItemCount)
-		}
-	}
-
-	hb := checkout.Base{
-		Header:  headerContent,
-		Content: cc,
-	}
-
-	h.view.Render(w, "pages/checkout/base.gohtml", hb)
+	h.Render(w, r, "pages/checkout", c)
 }
 
 // getTotalPrice calculates total price of cart, it is assumed that
