@@ -1,31 +1,50 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
+const (
+	// ConfigEnvVar is the environment variable name for the config file path
+	ConfigEnvVar = "CONFIG"
+
+	// DefaultConfigPath is the default path for the config file
+	DefaultConfigPath = "./config.yaml"
+)
+
+// Config holds all configuration for the application
 type Config struct {
-	Server   ServerConfig
-	Email    EmailConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	Stripe   StripeConfig
+	Server    ServerConfig    `mapstructure:"server"`
+	Email     EmailConfig     `mapstructure:"email"`
+	Database  DatabaseConfig  `mapstructure:"database"`
+	Redis     RedisConfig     `mapstructure:"redis"`
+	Session   SessionConfig   `mapstructure:"session"`
+	Typesense TypesenseConfig `mapstructure:"typesense"`
+	Stripe    StripeConfig    `mapstructure:"stripe"`
+	Logger    LoggerConfig    `mapstructure:"logger"`
 }
 
+// ServerConfig holds server-specific configuration
 type ServerConfig struct {
 	Host string
 	Port string
 }
 
+// EmailConfig holds email-specific configuration
 type EmailConfig struct {
 	APIKey                         string
 	FromEmail                      string
+	Templates                      string
 	SignupVerificationTemplateName string
 }
 
+// DatabaseConfig holds database-specific configuration
 type DatabaseConfig struct {
 	Host     string
 	Port     string
@@ -36,8 +55,10 @@ type DatabaseConfig struct {
 	PgDriver string
 }
 
+// RedisConfig holds Redis-specific configuration
 type RedisConfig struct {
-	Addr         string
+	Host         string
+	Port         string
 	Username     string
 	Password     string
 	DB           int
@@ -45,11 +66,53 @@ type RedisConfig struct {
 	MaxIdleConns int
 }
 
+type SessionConfig struct {
+	AuthCookieName  string
+	AuthLifetime    time.Duration
+	GuestCookieName string
+	GuestLifetime   time.Duration
+}
+
+type TypesenseConfig struct {
+	Host     string
+	Port     int
+	APIKey   string
+	UseHTTPS bool
+}
+
+// StripeConfig holds Stripe-specific configuration
 type StripeConfig struct {
 	SecretKey string
 }
 
-func LoadConfigFromFile(path string) (*viper.Viper, error) {
+type LoggerConfig struct {
+	Level      string
+	Format     string
+	AddSource  bool
+	TimeFormat string
+}
+
+// New creates and returns a new Config instance
+func New() (*Config, error) {
+	cfgPath := os.Getenv(ConfigEnvVar)
+	if cfgPath == "" {
+		cfgPath = DefaultConfigPath
+	}
+
+	cfgFile, err := loadConfigFromFile(cfgPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config file: %v", err)
+	}
+
+	cfg, err := parseConfig(cfgFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config: %v", err)
+	}
+
+	return cfg, nil
+}
+
+func loadConfigFromFile(path string) (*viper.Viper, error) {
 	v := viper.New()
 
 	dir, file := filepath.Split(path)
@@ -68,7 +131,7 @@ func LoadConfigFromFile(path string) (*viper.Viper, error) {
 	return v, nil
 }
 
-func ParseConfig(v *viper.Viper) (*Config, error) {
+func parseConfig(v *viper.Viper) (*Config, error) {
 	var c Config
 
 	err := v.Unmarshal(&c)
