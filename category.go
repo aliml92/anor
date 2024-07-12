@@ -16,11 +16,7 @@ func (c Category) IsLeaf() bool {
 }
 
 func (c Category) IsRoot() bool {
-	if c.ParentID == 0 {
-		return true
-	}
-
-	return false
+	return c.ParentID == 0
 }
 
 type CategoryHierarchy struct {
