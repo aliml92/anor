@@ -1,7 +1,7 @@
 package search_listings
 
 import (
-	"github.com/aliml92/anor/html/dtos/pages/search-listings/components"
+	"github.com/aliml92/anor/html/dtos/pages/search_listings/components"
 	"github.com/aliml92/anor/html/dtos/partials"
 	"github.com/aliml92/anor/html/dtos/shared"
 )

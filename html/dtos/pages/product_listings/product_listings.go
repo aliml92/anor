@@ -1,7 +1,7 @@
 package product_listings
 
 import (
-	"github.com/aliml92/anor/html/dtos/pages/product-listings/components"
+	"github.com/aliml92/anor/html/dtos/pages/product_listings/components"
 	"github.com/aliml92/anor/html/dtos/partials"
 	"github.com/aliml92/anor/html/dtos/shared"
 )
