@@ -1,4 +1,24 @@
 services:
+  anor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8008"
+    expose:
+      - 8008
+    depends_on:
+      - postgres
+      - typesense
+      - redis
+    networks:
+      - anor_net
+    volumes:
+      - ./config/config.docker.dev.yaml:/root/config.docker.dev.yaml:ro
+    environment:
+      - CONFIG=/root/config.docker.dev.yaml
+    restart: unless-stopped
+
   postgres:
     image: postgres:16.1
     environment:
