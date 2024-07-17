@@ -40,6 +40,8 @@ services:
     image: typesense/typesense:27.0.rc19
     ports:
       - "8108:8108"
+    expose:
+      - 8108
     volumes:
       - ./_typesense-data:/data
     command: '--data-dir /data --api-key=xyz --enable-cors --enable-search-analytics=true --analytics-flush-interval=300'
