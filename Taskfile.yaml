@@ -2,7 +2,7 @@ version: '3'
 
 env:
   POSTGRES: postgres://anordb16user:anordb16password@localhost:5432/anordb16?sslmode=disable
-  TYPESENSE: http://typesense:8108
+  TYPESENSE: http://localhost:8108
   MIGRATION_DIR: ./postgres/migrations
 
 tasks:
