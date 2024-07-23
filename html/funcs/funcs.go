@@ -32,4 +32,5 @@ var FuncMap = map[string]interface{}{
 	"injectCategoryIntoSiblings": InjectCategoryIntoSiblings,
 	"isBrandChecked":             IsBrandChecked,
 	"formatProductQty":           FormatProductQty,
+	"getRootCategoryAlias":       GetRootCategoryAlias,
 }

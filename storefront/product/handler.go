@@ -6,6 +6,7 @@ import (
 	homepage "github.com/aliml92/anor/html/dtos/pages/home"
 	notfoundpage "github.com/aliml92/anor/html/dtos/pages/not_found"
 	productdetailspage "github.com/aliml92/anor/html/dtos/pages/product_details"
+	productlistings "github.com/aliml92/anor/html/dtos/pages/product_listings"
 	searchlistings "github.com/aliml92/anor/html/dtos/pages/search_listings"
 	"github.com/aliml92/anor/html/dtos/partials"
 	"github.com/aliml92/anor/redis/cache/session"
@@ -52,7 +53,6 @@ func NewHandler(
 }
 
 func (h *Handler) Render(w http.ResponseWriter, r *http.Request, page string, data interface{}) {
-	slog.Debug("rendering page...", "name", page)
 	ctx := r.Context()
 	if isHXRequest(r) {
 		v := path.Join(page, "content.gohtml")
@@ -77,8 +77,14 @@ func (h *Handler) Render(w http.ResponseWriter, r *http.Request, page string, da
 		}
 
 		h.view.Render(w, v, base)
+	case productlistings.Content:
+		c, _ := data.(productlistings.Content)
+		base := productlistings.Base{
+			Header:  hc,
+			Content: c,
+		}
+		h.view.Render(w, v, base)
 	case productdetailspage.Content:
-		slog.Debug("product details page content")
 		c, ok := data.(productdetailspage.Content)
 		if !ok {
 			slog.Warn("could not convert the content", "data", data)
@@ -122,9 +128,9 @@ func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
 			return partials.Header{}, err
 		}
 
-		header.ActiveOrdersCount = ac.ActiveOrdersCount
-		header.WishlistItemsCount = ac.WishlistItemsCount
-		header.CartItemsCount = ac.CartItemsCount
+		header.CartNavItem = partials.CartNavItem{CartItemsCount: ac.CartItemsCount}
+		header.WishlistNavItem = partials.WishlistNavItem{WishlistItemsCount: ac.WishlistItemsCount}
+		header.OrdersNavItem = partials.OrdersNavItem{ActiveOrdersCount: ac.ActiveOrdersCount}
 
 	} else {
 		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
@@ -133,9 +139,15 @@ func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
 			if err != nil {
 				return partials.Header{}, err
 			}
-			header.CartItemsCount = int(guestCartItemCount)
+			header.CartNavItem = partials.CartNavItem{CartItemsCount: int(guestCartItemCount)}
 		}
 	}
+
+	rc, err := h.categorySvc.GetRootCategories(ctx)
+	if err != nil {
+		return header, err
+	}
+	header.RootCategories = rc
 
 	return header, nil
 }

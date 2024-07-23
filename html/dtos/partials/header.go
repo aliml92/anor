@@ -6,10 +6,11 @@ import (
 )
 
 type Header struct {
-	*anor.User
-	OrdersNavItem
-	WishlistNavItem
-	CartNavItem
+	User            *anor.User
+	RootCategories  []anor.Category
+	OrdersNavItem   OrdersNavItem
+	WishlistNavItem WishlistNavItem
+	CartNavItem     CartNavItem
 }
 
 type OrdersNavItem struct {

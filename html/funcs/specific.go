@@ -125,3 +125,14 @@ func FormatProductQty(count int) string {
 
 	return strconv.Itoa(count) + " left"
 }
+
+func GetRootCategoryAlias(category string) string {
+	switch category {
+	case "Clothing, Shoes & Accessories":
+		return "Fashion"
+	case "Jewelry & Watches":
+		return "Jewelry"
+	default:
+		return category
+	}
+}

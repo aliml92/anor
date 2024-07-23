@@ -14,26 +14,29 @@ import (
 )
 
 type Handler struct {
-	userSvc anor.UserService
-	cartSvc anor.CartService
-	session *session.Manager
-	view    *html.View
-	logger  *slog.Logger
+	userSvc     anor.UserService
+	cartSvc     anor.CartService
+	categorySvc anor.CategoryService
+	session     *session.Manager
+	view        *html.View
+	logger      *slog.Logger
 }
 
 func NewHandler(
 	userSvc anor.UserService,
 	cartSvc anor.CartService,
+	categorySvc anor.CategoryService,
 	view *html.View,
 	session *session.Manager,
 	logger *slog.Logger,
 ) *Handler {
 	return &Handler{
-		userSvc: userSvc,
-		cartSvc: cartSvc,
-		view:    view,
-		session: session,
-		logger:  logger,
+		userSvc:     userSvc,
+		cartSvc:     cartSvc,
+		categorySvc: categorySvc,
+		view:        view,
+		session:     session,
+		logger:      logger,
 	}
 }
 func (h *Handler) Render(w http.ResponseWriter, r *http.Request, page string, data interface{}) {
@@ -85,9 +88,9 @@ func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
 			return partials.Header{}, err
 		}
 
-		header.ActiveOrdersCount = ac.ActiveOrdersCount
-		header.WishlistItemsCount = ac.WishlistItemsCount
-		header.CartItemsCount = ac.CartItemsCount
+		header.CartNavItem = partials.CartNavItem{CartItemsCount: ac.CartItemsCount}
+		header.WishlistNavItem = partials.WishlistNavItem{WishlistItemsCount: ac.WishlistItemsCount}
+		header.OrdersNavItem = partials.OrdersNavItem{ActiveOrdersCount: ac.ActiveOrdersCount}
 
 	} else {
 		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
@@ -96,9 +99,15 @@ func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
 			if err != nil {
 				return partials.Header{}, err
 			}
-			header.CartItemsCount = int(guestCartItemCount)
+			header.CartNavItem = partials.CartNavItem{CartItemsCount: int(guestCartItemCount)}
 		}
 	}
+
+	rc, err := h.categorySvc.GetRootCategories(ctx)
+	if err != nil {
+		return header, err
+	}
+	header.RootCategories = rc
 
 	return header, nil
 }

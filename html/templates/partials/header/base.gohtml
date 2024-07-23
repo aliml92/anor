@@ -4,8 +4,8 @@
         <section class="header-main bg-white pt-lg-3 pt-3 pb-lg-2 pb-2">
             <div class="container">
                 <div class="row gx-2 align-items-center">
-
-                    <div class="col-xl-3 col-lg col-6 col-sm-6  col-md flex-grow-0">
+                    <!-- Logo -->
+                    <div class="col-xl-3 col-lg col-6 col-sm-6 col-md flex-grow-0">
                         <a href="" class="brand-wrap me-3"
                            hx-get="/"
                            hx-target="#content"
@@ -15,10 +15,48 @@
                         </a> <!-- brand-wrap end.// -->
                     </div> <!-- col end.// -->
 
-                    <div class="col-xl-6 col-lg-6 col-12 col-sm-12 col-md">
+                    <!-- Mobile Icons and Toggle -->
+                    <div class="col-6 d-lg-none mobile-icons">
+                        <div class="d-flex justify-content-end align-items-center">
+                            <div class="widget-header mx-2 text-center menu-item me-0">
+                                {{ if ne .User nil }}
+                                    <a href="" class="d-inline-block align-middle"
+                                       hx-get="/user/profile"
+                                       hx-target="#content"
+                                       hx-push-url="true"
+                                    >
+                                        <span class="fs-5 d-inline-block position-relative">
+                                            <i class="bi bi-person" style="font-size: 22px;"></i>
+                                        </span>
+                                        <small class="d-block text-truncate"> {{ .User.GetFirstname }} </small>
+                                    </a>
+                                {{ else }}
+                                    <a href="/auth/signin" class="d-inline-block align-middle"
+                                       hx-get="/auth/signin"
+                                       hx-target="#content"
+                                       hx-push-url="true"
+                                    >
+                                    <span class="fs-5 d-inline-block position-relative">
+                                        <i class="bi bi-person" style="font-size: 22px;"></i>
+                                    </span>
+                                        <small class="d-block text-truncate"> Signin </small>
+                                    </a>
+                                {{ end }}
+                            </div>
+
+                            {{ template "cart-nav-item" .CartNavItem }}
+
+                            <button class="navbar-toggler ms-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="col-lg-5 col-12 mt-3 mt-lg-0">
                         <div class="search my-3 my-lg-0">
                             <div class="input-group justify-content-center">
-                                <div class="w-75 position-relative">
+                                <div class="w-100 position-relative">
                                     <span class="bi bi-search form-control-feedback"></span>
                                     <input type="search" class="form-control rounded-0" id="searchInput" autocomplete="off"
                                            name="q" placeholder="Search anything"
@@ -102,12 +140,11 @@
                                 </div>
                             </div> <!-- input-group end.// -->
                         </div> <!-- search-wrap end.// -->
-                    </div> <!-- col end.// -->
+                    </div>
 
-                    <div class="col-xl-3 col-lg col-md-12 col-12">
-
-                        <!-- widgets-wrap  -->
-                        <div class="float-lg-end">
+                    <!-- Desktop Icons -->
+                    <div class="col-lg-4 d-none d-lg-block">
+                        <div class="d-flex justify-content-end align-items-center">
                             <div class="widget-header mx-2 text-center menu-item me-0">
                                 {{ if ne .User nil }}
                                     <a href="" class="d-inline-block align-middle"
@@ -140,59 +177,63 @@
 
                             {{ template "cart-nav-item" .CartNavItem }}
                         </div>
-                        <!-- widgets-wrap.// -->
-                    </div> <!-- col end.// -->
-                </div> <!-- row end.// -->
-            </div> <!-- container end.// -->
-        </section> <!-- header-main end.// -->
+                    </div>
 
-        <nav class="navbar navbar-light bg-white navbar-expand-lg ">
+                </div>
+            </div>
+        </section>
+        <!-- Offcanvas Navigation for Mobile -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="collapse" href="#categoryCollapse" role="button" aria-expanded="false" aria-controls="collapseExample">Categories</a></li>
+                    <div class="collapse" id="categoryCollapse">
+                        <ul class="nav flex-column ms-2">
+                            {{ range .RootCategories }}
+                            <li class="nav-item">
+                                <a class="nav-link" href="/categories/{{ .Handle }}-{{ .ID }}"
+                                    hx-get="/categories/{{ .Handle }}-{{ .ID }}"
+                                    hx-target="#content"
+                                    hx-push-url="true"
+                                >{{ getRootCategoryAlias .Category }}</a>
+                            </li>
+                            {{ end }}
+                        </ul>
+                    </div>
+                    <li class="nav-item"><a class="nav-link" href="#">Deals</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Sell on Anor</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Help</a></li>
+                    <hr>
+                    {{ if ne .User nil }}
+                    <li class="nav-item">
+                        <a class="nav-link" hx-delete="/user/logout">Sign out</a>
+                    </li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <nav class="navbar navbar-light bg-white navbar-expand-lg">
             <div class="container">
-
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar_main"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
                 <div class="collapse navbar-collapse" id="navbar_main">
                     <ul class="navbar-nav">
+                        {{ range .RootCategories }}
                         <li class="nav-item">
-                            <a class="nav-link" href="/categories/clothing-shoes-and-accessories-1003572"
-                               hx-get="/categories/clothing-shoes-and-accessories-1003572"
+                            <a class="nav-link" href="/categories/{{ .Handle }}-{{ .ID }}"
+                               hx-get="/categories/{{ .Handle }}-{{ .ID }}"
                                hx-target="#content"
                                hx-push-url="true"
-                            >Fashion</a>
+                            >{{ getRootCategoryAlias .Category }}</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/categories/electronics-31375180"
-                               hx-get="/categories/electronics-31375180"
-                               hx-target="#content"
-                               hx-push-url="true"
-                            >Electronics</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Sport</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Home & Garden</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Jewelry</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Health & Beauty</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Industrial Equipment</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Baby Essentials</a>
-                        </li>
-
+                        {{ end }}
                     </ul>
-
-                </div> <!-- collapse end.// -->
-            </div> <!-- container end.// -->
-        </nav> <!-- navbar end.// -->
+                </div>
+            </div>
+        </nav>
     </header>
 {{ end }}
