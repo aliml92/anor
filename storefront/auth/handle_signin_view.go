@@ -23,7 +23,7 @@ func (h *Handler) SigninView(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		headerContent.CartItemsCount = int(guestCartItemCount)
+		headerContent.CartNavItem = partials.CartNavItem{CartItemsCount: int(guestCartItemCount)}
 	}
 
 	sb := signin.Base{
