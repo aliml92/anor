@@ -278,27 +278,42 @@ func (cs *CartService) UpdateCart(ctx context.Context, c anor.Cart) error {
 
 func (cs *CartService) UpdateCartItem(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParam) error {
 	err := cs.cartRepository.UpdateCartItemQty(ctx, cartItemID, int32(p.Qty))
-	return oops.Errorf("failed to update cart item: %v", err)
+	if err != nil {
+		return oops.Errorf("failed to update cart item qty: %v", err)
+	}
+	return nil
 }
 
 func (cs *CartService) DeleteCartItem(ctx context.Context, cartItemID int64) error {
 	err := cs.cartRepository.DeleteCartItem(ctx, cartItemID)
-	return oops.Errorf("failed to delete cart item: %v", err)
+	if err != nil {
+		return oops.Errorf("failed to delete cart item: %v", err)
+	}
+	return nil
 }
 
 func (cs *CartService) CountCartItems(ctx context.Context, cartID int64) (int64, error) {
 	count, err := cs.cartRepository.CountCartItemsByCartID(ctx, cartID)
-	return count, oops.Errorf("failed to count cart items: %v", err)
+	if err != nil {
+		return 0, oops.Errorf("failed to count cart: %v", err)
+	}
+	return count, nil
 }
 
 func (cs *CartService) IsCartItemOwner(ctx context.Context, userID int64, cartItemId int64) (bool, error) {
 	ok, err := cs.cartRepository.CartItemExistsByUserID(ctx, cartItemId, userID)
-	return ok, oops.Errorf("failed to check cart item owner: %v", err)
+	if err != nil {
+		return false, oops.Errorf("failed to check cart item owner: %v", err)
+	}
+	return ok, nil
 }
 
 func (cs *CartService) IsGuestCartItemOwner(ctx context.Context, cartID int64, cartItemId int64) (bool, error) {
 	ok, err := cs.cartRepository.CartItemExistsByCartID(ctx, cartID, cartItemId)
-	return ok, oops.Errorf("failed to check guest cart item owner: %v", err)
+	if err != nil {
+		return false, oops.Errorf("failed to check cart item owner: %v", err)
+	}
+	return ok, nil
 }
 
 func cartItemAlreadyExists(err error) bool {
