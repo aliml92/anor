@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/alexedwards/scs/v2"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/html/dtos/partials"
@@ -77,7 +76,6 @@ func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Printf("cartID: %d\n", cartID)
 	_, err = h.cartSvc.AddCartItem(ctx, cartID, anor.AddCartItemParam{
 		VariantID: req.VariantID,
 		Qty:       req.Qty,
@@ -98,7 +96,7 @@ func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
 		HxSwapOOB:      "true",
 		CartItemsCount: int(itemCount),
 	}
-	h.view.RenderComponent(w, "partials/header/cart-nav-item.gohtml", v)
+	h.view.RenderComponent(w, "partials/header/cart_nav_item.gohtml", v)
 }
 
 func (h *Handler) getOrCreateCart(ctx context.Context, userID int64) (int64, error) {
