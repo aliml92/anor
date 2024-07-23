@@ -9,7 +9,7 @@ email:
   SignupVerificationTemplateName: email-verification-otp.gohtml
 
 database:
-  Host: postgres
+  Host: localhost
   Port: 5432
   User: anordb16user
   Password: anordb16password
@@ -18,7 +18,7 @@ database:
   PgDriver: postgres
 
 redis:
-  Host: redis
+  Host: localhost
   Port: 6379
   Username: <USERNAME>
   Password: <PASSWORD>
@@ -33,7 +33,7 @@ session:
   GuestLifetime: 48h
 
 typesense:
-  Host: <HOST>
+  Host: localhost
   Port: 8108
   APIKey: xyz
   UseHTTPS: false
