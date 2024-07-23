@@ -1,4 +1,5 @@
+tmp
 _redis-data
 _typesense-data
-config/config.docker.dev.yaml
-config/config.local.dev.yaml
+config/config.docker.yaml
+config/config.local.yaml

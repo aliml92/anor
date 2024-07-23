@@ -16,10 +16,11 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+tmp/
 _typesense-data/
 .idea/
-config/config.docker.dev.yaml
-config/config.local.dev.yaml
+config/config.docker.yaml
+config/config.local.yaml
 _redis-data/
 node_modules/
 .prettierrc
