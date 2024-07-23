@@ -7,11 +7,13 @@
 
 ## Table of Contents
 - [Features](#features)
-- [Installation](#installation)
+- [Development](#development)
     - [Prerequisites](#prerequisites)
     - [Getting Started](#getting-started)
-    - [Additional Configuration](#additional-configuration)
 - [Testing](#testing)
+- [Deployment](#deployment)
+  - [Prerequisites](#prerequisites)
+  - [Getting Started](#getting-started)
 - [Learning Resources](#learning-resources)
     - [Resources Used](#resources-used)
     - [Resources to Explore](#resources-to-explore)
@@ -26,10 +28,14 @@
   - [x] Signin 
   - [x] Forgot Password 
   - [x] Logout 
-  - [ ] Google Sign-in 
-- **Product listing page with categories:**
+  - [ ] Google Sign-in
+- **Home Page**
+  - [ ] Featured products carousel
+  - [ ] Popular products 
+  - [x] New Arrivals
+- **Product Listing Page:**
   - Sort by:
-    - [ ] Popularity
+    - [ ] Popular
     - [x] Price: Lowest
     - [x] Price: Highest
     - [ ] Highest rated
@@ -43,21 +49,61 @@
   - Pagination:
     - [x] Page-based navigation
     - [x] "Show More" functionality (dynamically adds new product item cards)
+- **Recent search queries**
+- **Trending search queries**
+- **Search Autocomplete:**
+    - [x] Product suggestions
+    - [ ] Category suggestions
+    - [ ] Store suggestions
+- **Search Listing Page:**
+  - Sort by:
+  - [ ] Popular
+  - [x] Price: Lowest
+  - [x] Price: Highest
+  - [ ] Highest rated
+  - [ ] New arrivals
+  - [ ] Best sellers
+  - Filter by:
+    - [x] Price range
+    - [x] Brand
+    - [ ] Rating
+    - [ ] Custom attributes (size, color, material, etc.)
+  - Pagination:
+    - [x] Page-based navigation
+    - [x] "Show More" functionality (dynamically adds new product item cards)
 - **Product Details Page:**
   - [x] Product details display
   - [x] Additional product images carousel
   - [ ] Product reviews and ratings
   - [ ] Related products section
-  - [x] Add to cart button
-
-- Customer Profile Page:
+  - [x] "Add To Cart" by authenticated user
+  - [x] "Add To Cart" by guest user
+  - [ ] "Buy It Now" button
+- **User Profile Page:**
   - [ ] Display user information
   - [ ] Order history
   - [ ] Edit profile functionality
   - [ ] Change password option
   - [ ] Address book management
-- [ ] Shopping cart functionality
-- [ ] Checkout and payment integration
+- **User Cart Page:**
+  - [x] Remove cart item for authenticated user
+  - [x] Remove cart item for guest user
+  - [x] Update cart item quantity for authenticated user
+  - [x] Update cart item quantity for guest user
+  - [ ] Apply coupon
+- **Checkout Page**
+  - [x] Create stripe payment intent
+  - [ ] Set delivery/billing addresses
+  - [ ] Set payment method
+  - [x] Pay
+- **Product View Tracking**
+  - [x] Count product view on product listings page
+  - [ ] Count product view on product details page
+
+[//]: # (Extra functionalities)
+- [ ] Wishlist management
+- [ ] Merging guest cart with user cart when logged in
+- [ ] Guest Order
 - [ ] Order tracking
 - [ ] Recommendation engine for products
 - [ ] Coupon and discount functionality
@@ -65,14 +111,15 @@
 - [ ] Advanced search filters
 - [ ] Mobile app version
 
-## Installation
+## Development
 
 ### Prerequisites
-Before installing the application, ensure you have the following tools installed on your machine:
+Ensure you have the following tools installed on your machine:
 - Docker/Docker Compose.
 - sqlc: For generating type-safe code from SQL.
 - goose: For database migrations.
 - task: A task runner/simpler Make alternative written in Go.
+- air: For live reload.
 
 ### Getting Started
 To get the application running locally, follow these steps:
@@ -85,7 +132,7 @@ To get the application running locally, follow these steps:
     ```
 2. **Run database migrations**:
 
-    Apply database migrations with goose::
+    Apply database migrations with goose:
     ```
     task goose-up
     ``` 
@@ -96,18 +143,12 @@ To get the application running locally, follow these steps:
     task import-dataset
     ```
 4. **Start the application**
-
-   Populate the database with the initial dataset:
+   First fill in necessary fields in `./config/config.sample.yaml` then run the following commands.
    ```
-   export CONFIG_FILEPATH=./config.dev.yaml
-   go run cmd/anor/*.go
+   export CONFIG=./config/config.sample.yaml
+   air
    ```
 Project starts on port 8008 by default.
-
-### Additional Configuration  
-Adjust additional settings and configurations as needed:
-
-- **Configuration Files**:  Customize `config.dev.yaml` as needed to tweak database connections, service endpoints, and other critical settings. 
 
 ## Testing
 Coming soon
