@@ -33,7 +33,7 @@ func NewView() *View {
 	if err != nil {
 		panic(err)
 	}
-
+	fmt.Printf("parsed templates: %v\n", templatesCache)
 	return &View{
 		templateCache: templatesCache,
 	}
@@ -55,6 +55,7 @@ func (v *View) Render(w http.ResponseWriter, name string, data interface{}) {
 
 func (v *View) RenderComponent(w http.ResponseWriter, name string, data interface{}) {
 	tmpl, ok := v.templateCache[name]
+	fmt.Printf("template %v\n", tmpl.Name())
 	if !ok {
 		http.Error(w, fmt.Sprintf("template %s not found", name), http.StatusInternalServerError)
 		return
@@ -62,6 +63,7 @@ func (v *View) RenderComponent(w http.ResponseWriter, name string, data interfac
 
 	s := strings.Split(name, "/")
 	name = strings.TrimSuffix(s[len(s)-1], ".gohtml")
+	name = strings.ReplaceAll(name, "_", "-")
 	err := tmpl.ExecuteTemplate(w, name, data)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("template %s error: %v", name, err), http.StatusInternalServerError)
@@ -82,6 +84,7 @@ func (v *View) RenderComponents(w http.ResponseWriter, components []Component) {
 
 			s := strings.Split(name, "/")
 			name = strings.TrimSuffix(s[len(s)-1], ".gohtml")
+			name = strings.ReplaceAll(name, "_", "-")
 			err := tmpl.ExecuteTemplate(w, name, data)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("template %s error: %v", name, err), http.StatusInternalServerError)
