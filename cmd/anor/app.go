@@ -97,9 +97,9 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 
 	authHandler := auth.NewHandler(authService, cartService, view, sessionManager, logger)
 	productcatalogHandler := product.NewHandler(userService, productService, categoryService, cartService, searcher, view, logger, sessionManager)
-	userHandler := user.NewHandler(userService, cartService, view, sessionManager, logger)
-	cartHandler := cart.NewHandler(userService, cartService, view, sessionManager, logger)
-	checkoutHandler := checkout.NewHandler(userService, cartService, orderService, view, sessionManager, logger, cfg)
+	userHandler := user.NewHandler(userService, cartService, categoryService, view, sessionManager, logger)
+	cartHandler := cart.NewHandler(userService, cartService, categoryService, view, sessionManager, logger)
+	checkoutHandler := checkout.NewHandler(userService, cartService, orderService, categoryService, view, sessionManager, logger, cfg)
 
 	mux := anor.NewRouter()
 
@@ -107,8 +107,8 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 
 	mux.Use(
 		//middlewares.RequestID,
-		sloghttp.Recovery,
 		sloghttp.New(logger.WithGroup("http")),
+		sloghttp.Recovery,
 		sessionManager.Auth.LoadAndSave,
 		userHandler.AuthInjector,
 		authHandler.SessionMiddleware,
