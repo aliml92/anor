@@ -11,7 +11,7 @@ type Base struct {
 }
 
 type Content struct {
-	components.Featured
+	Featured    components.Featured
 	NewArrivals components.Collection
 	Popular     components.Collection
 }
