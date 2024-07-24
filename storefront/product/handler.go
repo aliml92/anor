@@ -23,6 +23,7 @@ type Handler struct {
 	userSvc     anor.UserService
 	productSvc  anor.ProductService
 	categorySvc anor.CategoryService
+	featuredSvc anor.FeaturedPromotionService
 	cartSvc     anor.CartService
 	searcher    search.Searcher
 	view        *html.View
@@ -34,6 +35,7 @@ func NewHandler(
 	userSvc anor.UserService,
 	productSvc anor.ProductService,
 	categorySvc anor.CategoryService,
+	featuredSvc anor.FeaturedPromotionService,
 	cartSvc anor.CartService,
 	searcher search.Searcher,
 	view *html.View,
@@ -44,6 +46,7 @@ func NewHandler(
 		userSvc:     userSvc,
 		productSvc:  productSvc,
 		categorySvc: categorySvc,
+		featuredSvc: featuredSvc,
 		cartSvc:     cartSvc,
 		searcher:    searcher,
 		view:        view,

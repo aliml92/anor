@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/brevo"
+	"github.com/aliml92/anor/postgres/repository/featured_promotion"
 	"github.com/aliml92/anor/storefront/cart"
 	"github.com/aliml92/anor/storefront/checkout"
 	sloghttp "github.com/samber/slog-http"
@@ -80,12 +81,14 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	userRepository := userRepo.NewRepository(dbPool)
 	productRepository := productRepo.NewRepository(dbPool)
 	categoryRepository := categoryRepo.NewRepository(dbPool)
+	featurePromotionRepository := featured_promotion.NewRepository(dbPool)
 	cartRepository := cartRepo.NewRepository(dbPool)
 	orderRepository := orderRepo.NewRepository(dbPool)
 
 	userService := postgres.NewUserService(userRepository, cartRepository, orderRepository)
 	productService := postgres.NewProductService(productRepository, categoryRepository)
 	categoryService := postgres.NewCategoryService(categoryRepository, categoryCacher)
+	featuredPromotionsService := postgres.NewFeaturedPromotionService(featurePromotionRepository)
 	cartService := postgres.NewCartService(cartRepository, productRepository)
 	orderService := postgres.NewOrderService(orderRepository)
 	authService := auth.NewAuthService(userService, brevoEmailer, otpCacher, rpCacher)
@@ -96,7 +99,17 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	slog.SetDefault(logger)
 
 	authHandler := auth.NewHandler(authService, cartService, view, sessionManager, logger)
-	productcatalogHandler := product.NewHandler(userService, productService, categoryService, cartService, searcher, view, logger, sessionManager)
+	productcatalogHandler := product.NewHandler(
+		userService,
+		productService,
+		categoryService,
+		featuredPromotionsService,
+		cartService,
+		searcher,
+		view,
+		logger,
+		sessionManager,
+	)
 	userHandler := user.NewHandler(userService, cartService, categoryService, view, sessionManager, logger)
 	cartHandler := cart.NewHandler(userService, cartService, categoryService, view, sessionManager, logger)
 	checkoutHandler := checkout.NewHandler(userService, cartService, orderService, categoryService, view, sessionManager, logger, cfg)
