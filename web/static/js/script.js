@@ -1329,13 +1329,19 @@ function loadImageSlider(evt, msg) {
             cover: true,
             pagination: false,
             rewind: true,
+            breakpoints: {
+                767: {
+                    height: 290,
+                },
+            }
         });
 
         window.pdpVerticalImageSlider = new Splide("#vertical-slider", {
             height: 580,
             direction: "ttb",
             isNavigation: true,
-            fixedHeight: 90,
+            // fixedHeight: 90,
+            autoHeight: true,
             gap        : 10,
             rewind     : true,
             pagination : false,
