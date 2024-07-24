@@ -6,8 +6,8 @@
                 {{  range $index, $promotion := .Promotions }}
                 <article class="carousel-item {{ if eq $index 0 }} active {{ end }}">
                     {{ if eq $promotion.Type "category"}}
-                        <a href="/categories/{{ $promotion.Category.Handle}}-{{ $promotion.TargetID }}?t={{ $promotion.Type }}"
-                           hx-get="/categories/{{ $promotion.Category.Handle}}-{{ $promotion.TargetID }}?t={{ $promotion.Type }}"
+                        <a href="/categories/{{ $promotion.Category.Handle}}-{{ $promotion.TargetID }}"
+                           hx-get="/categories/{{ $promotion.Category.Handle}}-{{ $promotion.TargetID }}"
                            hx-target="#content"
                            hx-push-url="true"
                         >
@@ -15,8 +15,8 @@
                                  class="responsive-banner" alt="Banner">
                         </a>
                     {{ else }}
-                        <a href="/categories/{{ $promotion.Collection.Handle}}-{{ $promotion.TargetID }}?t={{ $promotion.Type }}"
-                           hx-get="/categories/{{ $promotion.Collection.Handle}}-{{ $promotion.TargetID }}?t={{ $promotion.Type }}"
+                        <a href="/categories/{{ $promotion.Collection.Handle}}-{{ $promotion.TargetID }}?is_collection=true"
+                           hx-get="/categories/{{ $promotion.Collection.Handle}}-{{ $promotion.TargetID }}is_collection=true"
                            hx-target="#content"
                            hx-push-url="true"
                         >

@@ -7,6 +7,7 @@ import (
 	"github.com/aliml92/anor/html/dtos/pages/product_listings/components"
 	"github.com/aliml92/anor/html/dtos/shared"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 type ListingsViewRequest struct {
 	CategoryHandle string      // path param
 	Query          QueryParams // common listings query params
+	IsCollection   bool
 }
 
 func (l *ListingsViewRequest) Bind(r *http.Request) error {
@@ -27,6 +29,13 @@ func (l *ListingsViewRequest) Bind(r *http.Request) error {
 		return err
 	}
 	l.Query = *q
+
+	values, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return err
+	}
+	isCollection := values.Get("is_collection")
+	l.IsCollection = isCollection == "true"
 
 	return nil
 }
@@ -56,6 +65,10 @@ func (h *Handler) ProductListingsView(w http.ResponseWriter, r *http.Request) {
 		}
 		h.clientError(w, err, http.StatusBadRequest)
 		return
+	}
+
+	if req.IsCollection {
+		// TODO: handle product collection case
 	}
 
 	categoryID := int32(extractID(req.CategoryHandle))
