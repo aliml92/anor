@@ -106,8 +106,8 @@ func (h *Handler) ProductListingsView(w http.ResponseWriter, r *http.Request) {
 
 	if target == "pagination" || target == "product-grid-with-pagination" {
 		comps := []html.Component{
-			{"shared/product-grid.gohtml": pg},
-			{"pages/product-listings/components/pagination.gohtml": pag},
+			{"shared/product_grid.gohtml": pg},
+			{"pages/product_listings/components/pagination.gohtml": pag},
 		}
 		h.view.RenderComponents(w, comps)
 		return
