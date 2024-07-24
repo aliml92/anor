@@ -3,7 +3,7 @@ package components
 import "github.com/aliml92/anor"
 
 type Featured struct {
-	Products []anor.Product
+	Promotions []anor.FeaturedPromotion
 }
 
 type Collection struct {

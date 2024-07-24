@@ -15,10 +15,16 @@ func (h *Handler) HomeView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	featuredPromotions, err := h.featuredSvc.GetFeaturedPromotions(ctx, 5)
+	if err != nil {
+		h.serverInternalError(w, err)
+		return
+	}
+
 	// Prepare home page content
 	hc := homepage.Content{
 		Featured: components.Featured{
-			Products: nil, // TODO: get featured products for carousel
+			Promotions: featuredPromotions,
 		},
 		NewArrivals: components.Collection{
 			Products: newArrivals,
