@@ -30,7 +30,7 @@
   - [x] Logout 
   - [ ] Google Sign-in
 - **Home Page**
-  - [ ] Featured products carousel
+  - [x] Featured products carousel
   - [ ] Popular products 
   - [x] New Arrivals
 - **Product Listing Page:**
