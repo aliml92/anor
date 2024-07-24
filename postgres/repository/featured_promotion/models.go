@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.26.0
 
-package cart
+package featured_promotion
 
 import (
 	"database/sql/driver"

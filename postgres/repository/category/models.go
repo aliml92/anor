@@ -218,6 +218,13 @@ type Category struct {
 	ParentID *int32
 }
 
+type Collection struct {
+	ID          int32
+	Name        string
+	Handle      string
+	Description *string
+}
+
 type Coupon struct {
 	ID             int32
 	Code           string
@@ -236,6 +243,18 @@ type CouponUsage struct {
 	UserID     int64
 	CartID     int64
 	AppliedAt  pgtype.Timestamptz
+}
+
+type FeaturedPromotion struct {
+	ID           int64
+	Title        string
+	ImageUrl     string
+	Type         string
+	TargetID     *int32
+	FilterParams []byte
+	StartDate    pgtype.Date
+	EndDate      pgtype.Date
+	DisplayOrder *int32
 }
 
 type Order struct {
@@ -283,6 +302,11 @@ type ProductAttribute struct {
 	ID        int64
 	ProductID int64
 	Attribute string
+}
+
+type ProductCollection struct {
+	ProductID    int64
+	CollectionID int32
 }
 
 type ProductPricing struct {
