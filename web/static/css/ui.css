@@ -1785,7 +1785,7 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 .responsive-banner {
     width: 100%;
     height: auto;
-    max-height: 50vh;
+    max-height: 37vh;
     object-fit: cover;
     object-position: center;
 }
@@ -1801,7 +1801,7 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 
 @media (max-width: 992px) {
     .responsive-banner {
-        max-height: 45vh;
+        max-height: 35vh;
     }
 
     .responsive-heading {
@@ -1816,7 +1816,7 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 
 @media (max-width: 768px) {
     .responsive-banner {
-        max-height: 40vh;
+        max-height: 33vh;
     }
 
     .responsive-heading {
@@ -1837,5 +1837,46 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     .responsive-button {
         font-size: 0.7rem;
         padding: 0.2rem 0.4rem;
+    }
+}
+
+#carouselMain .carousel-control-prev-icon,
+#carouselMain .carousel-control-next-icon {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    background-position-y: center;
+    background-size: 75% 75%;
+    background-color: rgba(76, 85, 72, 0.7);
+}
+
+#carouselMain .carousel-control-next-icon {
+    background-position-x: 60%;
+}
+
+#carouselMain .carousel-control-prev-icon {
+    background-position-x: 30%;
+}
+
+@media (max-width: 767px) {
+    #carouselMain .carousel-control-prev-icon,
+    #carouselMain .carousel-control-next-icon {
+        width: 30px;
+        height: 27px;
+        background-size: 60% 60%;
+        background-color: rgba(76, 85, 72, 0.8);
+    }
+
+    #carouselMain .carousel-control-next-icon {
+        background-position-x: 65%;
+    }
+
+    #carouselMain .carousel-control-prev-icon {
+        background-position-x: 35%;
+    }
+
+    #carouselMain .carousel-control-prev,
+    #carouselMain .carousel-control-next {
+        width: 10%;
     }
 }
