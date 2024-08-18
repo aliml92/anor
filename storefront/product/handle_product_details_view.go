@@ -8,6 +8,7 @@ import (
 	productdetails "github.com/aliml92/anor/html/templates/pages/product_details"
 	"github.com/aliml92/anor/html/templates/pages/product_details/components"
 	"github.com/aliml92/anor/html/templates/shared"
+	"github.com/aliml92/anor/relation"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +25,8 @@ func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := h.productService.Get(ctx, productID)
+	relationSet := relation.New(relation.Store, relation.Pricing, relation.ProductAttribute, relation.ProductVariant)
+	p, err := h.productService.Get(ctx, productID, relationSet)
 	if err != nil {
 		if errors.Is(err, anor.ErrNotFound) {
 			h.renderNotFound(w, r, "Product not found")

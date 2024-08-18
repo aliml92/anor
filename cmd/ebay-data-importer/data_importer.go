@@ -316,11 +316,11 @@ func (d *DataImporter) storeProductDataAndIndex(ctx context.Context, p ProductJS
 	} else {
 		attrIDMap := make(map[string]int64) // { "Color": 266 }
 		for k := range p.Attributes {
-			id, err := d.productRepository.CreateProductAttribute(ctx, savedProduct.ID, k)
+			pd, err := d.productRepository.CreateProductAttribute(ctx, savedProduct.ID, k)
 			if err != nil {
 				return err
 			}
-			attrIDMap[k] = id
+			attrIDMap[k] = pd.ID
 		}
 
 		var slices [][]map[string]string
@@ -384,16 +384,14 @@ func (d *DataImporter) storeProductDataAndIndex(ctx context.Context, p ProductJS
 	}
 
 	err = d.searcher.IndexProduct(ctx, anor.Product{
-		BaseProduct: anor.BaseProduct{
-			ID:         savedProduct.ID,
-			Name:       p.Name,
-			CategoryID: leafCategory.ID,
-			Brand:      p.Brand,
-			Handle:     handle,
-			ImageUrls:  imageURLs,
-			CreatedAt:  savedProduct.CreatedAt.Time,
-			UpdatedAt:  savedProduct.UpdatedAt.Time,
-		},
+		ID:         savedProduct.ID,
+		Name:       p.Name,
+		CategoryID: leafCategory.ID,
+		Brand:      p.Brand,
+		Handle:     handle,
+		ImageUrls:  imageURLs,
+		CreatedAt:  savedProduct.CreatedAt.Time,
+		UpdatedAt:  savedProduct.UpdatedAt.Time,
 		Pricing: anor.ProductPricing{
 			BasePrice:       pp.BasePrice,
 			Discount:        pp.Discount,

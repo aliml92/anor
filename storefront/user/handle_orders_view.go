@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/aliml92/anor"
 	ordersdata "github.com/aliml92/anor/html/templates/pages/orders"
+	"github.com/aliml92/anor/relation"
 	"github.com/aliml92/anor/session"
 	"net/http"
 )
@@ -18,15 +19,12 @@ func (h *Handler) OrdersView(w http.ResponseWriter, r *http.Request) {
 		err    error
 	)
 
+	withRelations := relation.New(relation.ShippingAddress, relation.StripeCardPayment, relation.OrderItems)
 	orderListParams := anor.OrderListParams{
-		UserID: u.ID,
-		Preloads: anor.NewIncludeSet(
-			anor.PreloadShippingAddress,
-			anor.PreloadStripeCardPayment,
-			anor.PreloadOrderItems,
-		),
-		Page:     1,
-		PageSize: 10,
+		UserID:        u.ID,
+		WithRelations: withRelations,
+		Page:          1,
+		PageSize:      10,
 	}
 
 	switch filter {
