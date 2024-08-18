@@ -12,3 +12,6 @@ cmd/ebay-data-importer/dataset/smartphones.jsonl
 cmd/ebay-data-importer/dataset/sports.jsonlcmd/ebay-data-importer/dataset/toys.jsonl
 cmd/ebay-data-importer/dataset/tv.jsonl
 cmd/ebay-data-importer/dataset/winter_sports.jsonl
+cmd/ebay-data-importer/dataset/adidas.jsonl
+cmd/ebay-data-importer/dataset/notespads.jsonl
+cmd/ebay-data-importer/dataset/sports.jsonl

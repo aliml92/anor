@@ -61,7 +61,7 @@ func cleanProductName(name string) (string, bool) {
 }
 
 func cleanCategories(categories []string) ([]string, bool) {
-	if len(categories) <= 1 || len(categories) > 4 {
+	if len(categories) <= 1 || len(categories) > 5 {
 		return categories, true
 	}
 
