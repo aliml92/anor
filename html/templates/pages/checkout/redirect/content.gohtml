@@ -1,0 +1,21 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/checkout_redirect.Content*/ -}}
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h1 class="mb-4"><i class="bi bi-check-circle-fill text-success"></i> Payment Successful</h1>
+                        <p class="lead mb-4">Thank you for your order! Your payment has been processed successfully.</p>
+                        <p>Order ID: <strong>{{ .Order.ID }}</strong></p>
+                        <p>Total Amount: <strong>${{ .Order.TotalAmount }}</strong></p>
+                        <hr>
+                        <p class="mb-0">You will receive an email confirmation shortly with the details of your order.</p>
+                        <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
+                        <a href="/" class="btn btn-primary mt-3">Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{{ end }}

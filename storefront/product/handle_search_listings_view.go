@@ -4,9 +4,9 @@ import (
 	"errors"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/html"
-	searchlistings "github.com/aliml92/anor/html/dtos/pages/search_listings"
-	"github.com/aliml92/anor/html/dtos/pages/search_listings/components"
-	"github.com/aliml92/anor/html/dtos/shared"
+	searchlistings "github.com/aliml92/anor/html/templates/pages/search_listings"
+	"github.com/aliml92/anor/html/templates/pages/search_listings/components"
+	"github.com/aliml92/anor/html/templates/shared"
 	"github.com/aliml92/anor/search"
 	"log/slog"
 	"net/http"
@@ -135,17 +135,17 @@ func (h *Handler) SearchListingsView(w http.ResponseWriter, r *http.Request) {
 
 	if len(res.CategoryIDs) == 1 {
 		id := res.CategoryIDs[0]
-		category, err := h.categorySvc.GetCategory(ctx, id)
+		category, err := h.categoryService.GetCategory(ctx, id)
 		if err != nil {
 			h.serverInternalError(w, err)
 			return
 		}
-		ancestorCategories, err := h.categorySvc.GetAncestorCategories(ctx, id)
+		ancestorCategories, err := h.categoryService.GetAncestorCategories(ctx, id)
 		if err != nil {
 			h.serverInternalError(w, err)
 			return
 		}
-		siblingCategories, err := h.categorySvc.GetSiblingCategories(ctx, id)
+		siblingCategories, err := h.categoryService.GetSiblingCategories(ctx, id)
 		if err != nil {
 			h.serverInternalError(w, err)
 			return
@@ -160,7 +160,7 @@ func (h *Handler) SearchListingsView(w http.ResponseWriter, r *http.Request) {
 		scl.AncestorCategories = ancestorCategories
 		scl.SiblingCategories = siblingCategories
 	} else {
-		rootCategories, err := h.categorySvc.GetRootCategories(ctx)
+		rootCategories, err := h.categoryService.GetRootCategories(ctx)
 		if err != nil {
 			h.serverInternalError(w, err)
 			return
@@ -180,5 +180,5 @@ func (h *Handler) SearchListingsView(w http.ResponseWriter, r *http.Request) {
 		Pagination:         pag,
 	}
 
-	h.Render(w, r, "pages/search_listings", slc)
+	h.Render(w, r, "pages/search_listings/content.gohtml", slc)
 }

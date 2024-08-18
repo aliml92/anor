@@ -20,7 +20,7 @@ var _ anor.AuthService = &AuthServiceMock{}
 //		// make and configure a mocked anor.AuthService
 //		mockedAuthService := &AuthServiceMock{
 //			GetUserFunc: func(ctx context.Context, id int64) (*anor.User, error) {
-//				panic("mock out the GetUser method")
+//				panic("mock out the getUser method")
 //			},
 //			ResendOTPFunc: func(ctx context.Context, email string) error {
 //				panic("mock out the ResendOTP method")
@@ -156,7 +156,7 @@ type AuthServiceMock struct {
 // GetUser calls GetUserFunc.
 func (mock *AuthServiceMock) GetUser(ctx context.Context, id int64) (*anor.User, error) {
 	if mock.GetUserFunc == nil {
-		panic("AuthServiceMock.GetUserFunc: method is nil but AuthService.GetUser was just called")
+		panic("AuthServiceMock.GetUserFunc: method is nil but AuthService.getUser was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context

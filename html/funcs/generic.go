@@ -5,6 +5,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
 	"html/template"
+	"strconv"
 )
 
 // Basic arithmetic functions
@@ -130,4 +131,11 @@ func CurrencySymbol(code string) string {
 	default:
 		return code
 	}
+}
+
+func Pluralize(n int, word string) string {
+	if n > 1 {
+		word = word + "s"
+	}
+	return strconv.Itoa(n) + " " + word
 }

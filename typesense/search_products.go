@@ -118,16 +118,14 @@ func (ts Searcher) SearchProducts(ctx context.Context, q string, p search.Produc
 		}
 
 		r.Products = append(r.Products, anor.Product{
-			BaseProduct: anor.BaseProduct{
-				ID:         pd.ID,
-				CategoryID: pd.CategoryID,
-				Name:       pd.Name,
-				Brand:      pd.Brand,
-				Handle:     pd.Handle,
-				ImageUrls:  pd.ImageUrls,
-				CreatedAt:  pd.CreatedAt,
-				UpdatedAt:  pd.UpdatedAt,
-			},
+			ID:         pd.ID,
+			CategoryID: pd.CategoryID,
+			Name:       pd.Name,
+			Brand:      pd.Brand,
+			Handle:     pd.Handle,
+			ImageUrls:  pd.ImageUrls,
+			CreatedAt:  pd.CreatedAt,
+			UpdatedAt:  pd.UpdatedAt,
 			Rating: anor.Rating{
 				Rating:      pd.Rating,
 				RatingCount: pd.NumReviews,

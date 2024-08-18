@@ -2,8 +2,25 @@ package anor
 
 import (
 	"context"
+	"github.com/aliml92/anor/relation"
 	"github.com/shopspring/decimal"
 	"time"
+)
+
+type PaymentMethod string
+
+const (
+	PaymentMethodStripeCard      PaymentMethod = "StripeCard"
+	PaymentMethodPaypal          PaymentMethod = "Paypal"
+	PaymentMethodAnorInstallment PaymentMethod = "AnorInstallment"
+	PaymentMethodPayOnDelivery   PaymentMethod = "PayOnDelivery"
+)
+
+type PaymentStatus string
+
+const (
+	PaymentStatusPending PaymentStatus = "Pending"
+	PaymentStatusPaid    PaymentStatus = "Paid"
 )
 
 type OrderStatus string
@@ -17,18 +34,24 @@ const (
 )
 
 type Order struct {
-	ID              int64
-	CartID          int64
-	UserID          int64
-	Status          OrderStatus
-	TotalAmount     decimal.Decimal
-	PaymentIntentID string
-	ShippingAddress map[string]string
-	BillingAddress  map[string]string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID                int64
+	UserID            int64
+	CartID            int64
+	PaymentMethod     PaymentMethod
+	PaymentStatus     PaymentStatus
+	Status            OrderStatus
+	ShippingAddressID int64
+	IsPickup          bool
+	Amount            decimal.Decimal
+	Currency          string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 
-	OrderItems []*OrderItem
+	// Related structs that can be eagerly loaded
+	OrderItems        []*OrderItem
+	ShippingAddress   Address
+	StripeCardPayment StripeCardPayment
+	DeliveryDate      time.Time
 }
 
 type OrderItem struct {
@@ -44,16 +67,27 @@ type OrderItem struct {
 	UpdatedAt         time.Time
 }
 
-type OrderService interface {
-	ConvertCartToOrder(ctx context.Context, cart Cart, piID string) (Order, error)
+type OrderCreateParams struct {
+	Cart              Cart
+	PaymentMethod     PaymentMethod
+	PaymentStatus     PaymentStatus
+	ShippingAddressID int64
+	IsPickup          bool
+	Amount            decimal.Decimal
+	Currency          string
 }
 
-//type CreateOrderItemsParams struct {
-//	OrderID           int64
-//	VariantID         int64
-//	Qty               int32
-//	Price             decimal.Decimal
-//	Thumbnail         string
-//	ProductName       string
-//	VariantAttributes []byte
-//}
+type OrderListParams struct {
+	UserID        int64
+	WithRelations relation.Set
+	Page          int
+	PageSize      int
+}
+
+type OrderService interface {
+	Create(ctx context.Context, params OrderCreateParams) (int64, error)
+	Get(ctx context.Context, orderID int64, withItems bool) (Order, error)
+	List(ctx context.Context, params OrderListParams) ([]Order, error)
+	ListActive(ctx context.Context, params OrderListParams) ([]Order, error)
+	ListUnpaid(ctx context.Context, params OrderListParams) ([]Order, error)
+}

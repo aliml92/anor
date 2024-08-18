@@ -6,24 +6,6 @@ import (
 	"time"
 )
 
-const (
-	userKey = "userKey"
-)
-
-// NewContextWithUser NewContext returns a new Context that carries value u.
-func NewContextWithUser(ctx context.Context, u *User) context.Context {
-	return context.WithValue(ctx, userKey, u)
-}
-
-// UserFromContext FromContext returns the User value stored in ctx, if any.
-func UserFromContext(ctx context.Context) *User {
-	u, ok := ctx.Value(userKey).(*User)
-	if !ok {
-		return nil
-	}
-	return u
-}
-
 type UserStatus string
 
 const (
@@ -32,12 +14,12 @@ const (
 	UserStatusActive              UserStatus = "Active"
 )
 
-type Role string
+type UserRole string
 
 const (
-	RoleCustomer Role = "customer"
-	RoleSeller   Role = "seller"
-	RoleAdmin    Role = "admin"
+	RoleCustomer UserRole = "customer"
+	RoleSeller   UserRole = "seller"
+	RoleAdmin    UserRole = "admin"
 )
 
 type User struct {
@@ -50,9 +32,9 @@ type User struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 
-	Roles []Role
+	Roles []UserRole
 	Cart  *Cart
-	//Wishlist    Wishlist
+	//Wishlist     Wishlist
 	Orders         []Order
 	ActivityCounts UserActivityCounts
 }
@@ -67,12 +49,27 @@ func (u User) GetFirstname() string {
 	return strings.Fields(u.FullName)[0]
 }
 
-type UserService interface {
-	CreateUser(ctx context.Context, user User) error
-	GetUser(ctx context.Context, id int64) (User, error)
-	GetUserByEmail(ctx context.Context, email string) (User, error)
-	UpdateUserStatusByEmail(ctx context.Context, status UserStatus, email string) error
-	UpdateUserPassword(ctx context.Context, id int64, password string) error
+type AuthProvider string
 
-	GetUserActivityCounts(ctx context.Context, id int64) (UserActivityCounts, error)
+const (
+	ProviderBuiltin AuthProvider = "builtin"
+	ProviderGoogle  AuthProvider = "google"
+)
+
+type UserCreateParams struct {
+	Name        string
+	Email       string
+	Password    string
+	Provider    AuthProvider
+	PhoneNumber string
+	Status      UserStatus
+}
+
+type UserService interface {
+	Create(ctx context.Context, params UserCreateParams) (User, error)
+	Get(ctx context.Context, id int64) (User, error)
+	GetByEmail(ctx context.Context, email string) (User, error)
+	UpdateStatusByEmail(ctx context.Context, status UserStatus, email string) error // switch status and email
+	UpdatePassword(ctx context.Context, id int64, password string) error
+	GetActivityCounts(ctx context.Context, id int64) (UserActivityCounts, error)
 }

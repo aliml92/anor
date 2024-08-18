@@ -481,7 +481,7 @@ func cartesianProduct(input ...[]map[string]string) []map[string]string {
 
 		// Iterate over the values for the current map
 		for _, value := range input[index] {
-			// Include the current map in the combination
+			// Relation the current map in the combination
 			for k, v := range value {
 				current[k] = v
 			}

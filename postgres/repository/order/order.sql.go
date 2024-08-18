@@ -11,48 +11,535 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const countActiveOrders = `-- name: CountActiveOrders :one
-SELECT COUNT(*) FROM orders
-WHERE user_id = $1
-  AND status IN ('Pending', 'Processing', 'Shipped')
-`
-
-func (q *Queries) CountActiveOrders(ctx context.Context, userID *int64) (int64, error) {
-	row := q.db.QueryRow(ctx, countActiveOrders, userID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const createOrder = `-- name: CreateOrder :one
+const create = `-- name: Create :one
 INSERT INTO orders (
-    cart_id, user_id, total_amount, payment_intent_id, shipping_address, billing_address
+   user_id, cart_id, payment_method, payment_status, status, shipping_address_id, is_pickup, amount, currency
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
-) RETURNING id, cart_id, user_id, status, total_amount, payment_intent_id, shipping_address, billing_address, created_at, updated_at
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
+) RETURNING id, user_id, cart_id, payment_method, payment_status, status, shipping_address_id, is_pickup, amount, currency, created_at, updated_at
 `
 
-func (q *Queries) CreateOrder(ctx context.Context, cartID int64, userID *int64, totalAmount decimal.Decimal, paymentIntentID string, shippingAddress []byte, billingAddress []byte) (*Order, error) {
-	row := q.db.QueryRow(ctx, createOrder,
-		cartID,
+func (q *Queries) Create(ctx context.Context, userID int64, cartID int64, paymentMethod PaymentMethod, paymentStatus PaymentStatus, status OrderStatus, shippingAddressID int64, isPickup bool, amount decimal.Decimal, currency string) (*Order, error) {
+	row := q.db.QueryRow(ctx, create,
 		userID,
-		totalAmount,
-		paymentIntentID,
-		shippingAddress,
-		billingAddress,
+		cartID,
+		paymentMethod,
+		paymentStatus,
+		status,
+		shippingAddressID,
+		isPickup,
+		amount,
+		currency,
 	)
 	var i Order
 	err := row.Scan(
 		&i.ID,
-		&i.CartID,
 		&i.UserID,
+		&i.CartID,
+		&i.PaymentMethod,
+		&i.PaymentStatus,
 		&i.Status,
-		&i.TotalAmount,
-		&i.PaymentIntentID,
-		&i.ShippingAddress,
-		&i.BillingAddress,
+		&i.ShippingAddressID,
+		&i.IsPickup,
+		&i.Amount,
+		&i.Currency,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return &i, err
+}
+
+const get = `-- name: Get :one
+SELECT id, user_id, cart_id, payment_method, payment_status, status, shipping_address_id, is_pickup, amount, currency, created_at, updated_at FROM orders
+WHERE id = $1
+`
+
+func (q *Queries) Get(ctx context.Context, id int64) (*Order, error) {
+	row := q.db.QueryRow(ctx, get, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CartID,
+		&i.PaymentMethod,
+		&i.PaymentStatus,
+		&i.Status,
+		&i.ShippingAddressID,
+		&i.IsPickup,
+		&i.Amount,
+		&i.Currency,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const getItemByOrderIds = `-- name: GetItemByOrderIds :many
+SELECT id, order_id, variant_id, qty, price, thumbnail, product_name, variant_attributes, created_at, updated_at FROM order_items
+WHERE order_id = ANY($1::BIGINT[])
+`
+
+func (q *Queries) GetItemByOrderIds(ctx context.Context, orderids []int64) ([]*OrderItem, error) {
+	rows, err := q.db.Query(ctx, getItemByOrderIds, orderids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*OrderItem
+	for rows.Next() {
+		var i OrderItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.VariantID,
+			&i.Qty,
+			&i.Price,
+			&i.Thumbnail,
+			&i.ProductName,
+			&i.VariantAttributes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOrders = `-- name: GetOrders :many
+SELECT id, user_id, cart_id, payment_method, payment_status, status, shipping_address_id, is_pickup, amount, currency, created_at, updated_at FROM orders
+WHERE cart_id = $1
+`
+
+func (q *Queries) GetOrders(ctx context.Context, cartID int64) ([]*Order, error) {
+	rows, err := q.db.Query(ctx, getOrders, cartID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CartID,
+			&i.PaymentMethod,
+			&i.PaymentStatus,
+			&i.Status,
+			&i.ShippingAddressID,
+			&i.IsPickup,
+			&i.Amount,
+			&i.Currency,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveByUserID = `-- name: ListActiveByUserID :many
+SELECT id, user_id, cart_id, payment_method, payment_status, status, shipping_address_id, is_pickup, amount, currency, created_at, updated_at
+FROM orders
+WHERE user_id = $1
+  AND (
+    (payment_status = 'Paid' AND status IN ('Processing', 'Shipped', 'Delivered'))
+        OR
+    (payment_status = 'Pending' AND payment_method = 'PayOnDelivery')
+    )
+ORDER BY created_at DESC
+LIMIT $2
+    OFFSET $3
+`
+
+func (q *Queries) ListActiveByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*Order, error) {
+	rows, err := q.db.Query(ctx, listActiveByUserID, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CartID,
+			&i.PaymentMethod,
+			&i.PaymentStatus,
+			&i.Status,
+			&i.ShippingAddressID,
+			&i.IsPickup,
+			&i.Amount,
+			&i.Currency,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveWithPaymentAndAddressByUserID = `-- name: ListActiveWithPaymentAndAddressByUserID :many
+SELECT
+    o.id, o.user_id, o.cart_id, o.payment_method, o.payment_status, o.status, o.shipping_address_id, o.is_pickup, o.amount, o.currency, o.created_at, o.updated_at,
+    a.id, a.user_id, a.default_for, a.name, a.address_line_1, a.address_line_2, a.city, a.state_province, a.postal_code, a.country, a.phone, a.created_at, a.updated_at,
+    scp.id, scp.order_id, scp.user_id, scp.billing_address_id, scp.payment_intent_id, scp.payment_method_id, scp.amount, scp.currency, scp.status, scp.client_secret, scp.last_error, scp.card_last4, scp.card_brand, scp.created_at, scp.updated_at
+FROM
+    orders o
+        LEFT JOIN
+    addresses a ON o.shipping_address_id = a.id
+        LEFT JOIN
+    stripe_card_payments scp ON o.id = scp.order_id
+WHERE
+    o.user_id = $1
+  AND (
+    (o.payment_status = 'Paid' AND o.status IN ('Processing', 'Shipped', 'Delivered'))
+        OR
+    (o.payment_status = 'Pending' AND o.payment_method = 'PayOnDelivery')
+    )
+ORDER BY
+    o.created_at DESC
+LIMIT $2
+    OFFSET $3
+`
+
+type ListActiveWithPaymentAndAddressByUserIDRow struct {
+	Order             Order
+	Address           Address
+	StripeCardPayment StripeCardPayment
+}
+
+func (q *Queries) ListActiveWithPaymentAndAddressByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*ListActiveWithPaymentAndAddressByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, listActiveWithPaymentAndAddressByUserID, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListActiveWithPaymentAndAddressByUserIDRow
+	for rows.Next() {
+		var i ListActiveWithPaymentAndAddressByUserIDRow
+		if err := rows.Scan(
+			&i.Order.ID,
+			&i.Order.UserID,
+			&i.Order.CartID,
+			&i.Order.PaymentMethod,
+			&i.Order.PaymentStatus,
+			&i.Order.Status,
+			&i.Order.ShippingAddressID,
+			&i.Order.IsPickup,
+			&i.Order.Amount,
+			&i.Order.Currency,
+			&i.Order.CreatedAt,
+			&i.Order.UpdatedAt,
+			&i.Address.ID,
+			&i.Address.UserID,
+			&i.Address.DefaultFor,
+			&i.Address.Name,
+			&i.Address.AddressLine1,
+			&i.Address.AddressLine2,
+			&i.Address.City,
+			&i.Address.StateProvince,
+			&i.Address.PostalCode,
+			&i.Address.Country,
+			&i.Address.Phone,
+			&i.Address.CreatedAt,
+			&i.Address.UpdatedAt,
+			&i.StripeCardPayment.ID,
+			&i.StripeCardPayment.OrderID,
+			&i.StripeCardPayment.UserID,
+			&i.StripeCardPayment.BillingAddressID,
+			&i.StripeCardPayment.PaymentIntentID,
+			&i.StripeCardPayment.PaymentMethodID,
+			&i.StripeCardPayment.Amount,
+			&i.StripeCardPayment.Currency,
+			&i.StripeCardPayment.Status,
+			&i.StripeCardPayment.ClientSecret,
+			&i.StripeCardPayment.LastError,
+			&i.StripeCardPayment.CardLast4,
+			&i.StripeCardPayment.CardBrand,
+			&i.StripeCardPayment.CreatedAt,
+			&i.StripeCardPayment.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listByUserID = `-- name: ListByUserID :many
+SELECT id, user_id, cart_id, payment_method, payment_status, status, shipping_address_id, is_pickup, amount, currency, created_at, updated_at
+FROM orders
+WHERE user_id = $1
+ORDER BY created_at DESC
+LIMIT $2
+    OFFSET $3
+`
+
+func (q *Queries) ListByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*Order, error) {
+	rows, err := q.db.Query(ctx, listByUserID, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CartID,
+			&i.PaymentMethod,
+			&i.PaymentStatus,
+			&i.Status,
+			&i.ShippingAddressID,
+			&i.IsPickup,
+			&i.Amount,
+			&i.Currency,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnpaidPaymentByUserID = `-- name: ListUnpaidPaymentByUserID :many
+SELECT id, user_id, cart_id, payment_method, payment_status, status, shipping_address_id, is_pickup, amount, currency, created_at, updated_at
+FROM orders
+WHERE user_id = $1
+  AND payment_status = 'Pending'
+  AND payment_method IN ('Stripe', 'Paypal', 'AnorInstallment')
+ORDER BY created_at DESC
+LIMIT $2
+    OFFSET $3
+`
+
+func (q *Queries) ListUnpaidPaymentByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*Order, error) {
+	rows, err := q.db.Query(ctx, listUnpaidPaymentByUserID, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CartID,
+			&i.PaymentMethod,
+			&i.PaymentStatus,
+			&i.Status,
+			&i.ShippingAddressID,
+			&i.IsPickup,
+			&i.Amount,
+			&i.Currency,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnpaidWithPaymentAndAddressByUserID = `-- name: ListUnpaidWithPaymentAndAddressByUserID :many
+SELECT
+    o.id, o.user_id, o.cart_id, o.payment_method, o.payment_status, o.status, o.shipping_address_id, o.is_pickup, o.amount, o.currency, o.created_at, o.updated_at,
+    a.id, a.user_id, a.default_for, a.name, a.address_line_1, a.address_line_2, a.city, a.state_province, a.postal_code, a.country, a.phone, a.created_at, a.updated_at,
+    scp.id, scp.order_id, scp.user_id, scp.billing_address_id, scp.payment_intent_id, scp.payment_method_id, scp.amount, scp.currency, scp.status, scp.client_secret, scp.last_error, scp.card_last4, scp.card_brand, scp.created_at, scp.updated_at
+FROM
+    orders o
+        LEFT JOIN
+    addresses a ON o.shipping_address_id = a.id
+        LEFT JOIN
+    stripe_card_payments scp ON o.id = scp.order_id
+WHERE
+    o.user_id = $1
+  AND payment_status = 'Pending'
+  AND payment_method IN ('Stripe', 'Paypal', 'AnorInstallment')
+ORDER BY
+    o.created_at DESC
+LIMIT $2
+    OFFSET $3
+`
+
+type ListUnpaidWithPaymentAndAddressByUserIDRow struct {
+	Order             Order
+	Address           Address
+	StripeCardPayment StripeCardPayment
+}
+
+func (q *Queries) ListUnpaidWithPaymentAndAddressByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*ListUnpaidWithPaymentAndAddressByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, listUnpaidWithPaymentAndAddressByUserID, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListUnpaidWithPaymentAndAddressByUserIDRow
+	for rows.Next() {
+		var i ListUnpaidWithPaymentAndAddressByUserIDRow
+		if err := rows.Scan(
+			&i.Order.ID,
+			&i.Order.UserID,
+			&i.Order.CartID,
+			&i.Order.PaymentMethod,
+			&i.Order.PaymentStatus,
+			&i.Order.Status,
+			&i.Order.ShippingAddressID,
+			&i.Order.IsPickup,
+			&i.Order.Amount,
+			&i.Order.Currency,
+			&i.Order.CreatedAt,
+			&i.Order.UpdatedAt,
+			&i.Address.ID,
+			&i.Address.UserID,
+			&i.Address.DefaultFor,
+			&i.Address.Name,
+			&i.Address.AddressLine1,
+			&i.Address.AddressLine2,
+			&i.Address.City,
+			&i.Address.StateProvince,
+			&i.Address.PostalCode,
+			&i.Address.Country,
+			&i.Address.Phone,
+			&i.Address.CreatedAt,
+			&i.Address.UpdatedAt,
+			&i.StripeCardPayment.ID,
+			&i.StripeCardPayment.OrderID,
+			&i.StripeCardPayment.UserID,
+			&i.StripeCardPayment.BillingAddressID,
+			&i.StripeCardPayment.PaymentIntentID,
+			&i.StripeCardPayment.PaymentMethodID,
+			&i.StripeCardPayment.Amount,
+			&i.StripeCardPayment.Currency,
+			&i.StripeCardPayment.Status,
+			&i.StripeCardPayment.ClientSecret,
+			&i.StripeCardPayment.LastError,
+			&i.StripeCardPayment.CardLast4,
+			&i.StripeCardPayment.CardBrand,
+			&i.StripeCardPayment.CreatedAt,
+			&i.StripeCardPayment.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWithPaymentAndAddressByUserID = `-- name: ListWithPaymentAndAddressByUserID :many
+SELECT
+    o.id, o.user_id, o.cart_id, o.payment_method, o.payment_status, o.status, o.shipping_address_id, o.is_pickup, o.amount, o.currency, o.created_at, o.updated_at,
+    a.id, a.user_id, a.default_for, a.name, a.address_line_1, a.address_line_2, a.city, a.state_province, a.postal_code, a.country, a.phone, a.created_at, a.updated_at,
+    scp.id, scp.order_id, scp.user_id, scp.billing_address_id, scp.payment_intent_id, scp.payment_method_id, scp.amount, scp.currency, scp.status, scp.client_secret, scp.last_error, scp.card_last4, scp.card_brand, scp.created_at, scp.updated_at
+FROM
+    orders o
+        LEFT JOIN
+    addresses a ON o.shipping_address_id = a.id
+        LEFT JOIN
+    stripe_card_payments scp ON o.id = scp.order_id
+WHERE o.user_id = $1
+ORDER BY o.created_at DESC
+LIMIT $2
+    OFFSET $3
+`
+
+type ListWithPaymentAndAddressByUserIDRow struct {
+	Order             Order
+	Address           Address
+	StripeCardPayment StripeCardPayment
+}
+
+func (q *Queries) ListWithPaymentAndAddressByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*ListWithPaymentAndAddressByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, listWithPaymentAndAddressByUserID, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListWithPaymentAndAddressByUserIDRow
+	for rows.Next() {
+		var i ListWithPaymentAndAddressByUserIDRow
+		if err := rows.Scan(
+			&i.Order.ID,
+			&i.Order.UserID,
+			&i.Order.CartID,
+			&i.Order.PaymentMethod,
+			&i.Order.PaymentStatus,
+			&i.Order.Status,
+			&i.Order.ShippingAddressID,
+			&i.Order.IsPickup,
+			&i.Order.Amount,
+			&i.Order.Currency,
+			&i.Order.CreatedAt,
+			&i.Order.UpdatedAt,
+			&i.Address.ID,
+			&i.Address.UserID,
+			&i.Address.DefaultFor,
+			&i.Address.Name,
+			&i.Address.AddressLine1,
+			&i.Address.AddressLine2,
+			&i.Address.City,
+			&i.Address.StateProvince,
+			&i.Address.PostalCode,
+			&i.Address.Country,
+			&i.Address.Phone,
+			&i.Address.CreatedAt,
+			&i.Address.UpdatedAt,
+			&i.StripeCardPayment.ID,
+			&i.StripeCardPayment.OrderID,
+			&i.StripeCardPayment.UserID,
+			&i.StripeCardPayment.BillingAddressID,
+			&i.StripeCardPayment.PaymentIntentID,
+			&i.StripeCardPayment.PaymentMethodID,
+			&i.StripeCardPayment.Amount,
+			&i.StripeCardPayment.Currency,
+			&i.StripeCardPayment.Status,
+			&i.StripeCardPayment.ClientSecret,
+			&i.StripeCardPayment.LastError,
+			&i.StripeCardPayment.CardLast4,
+			&i.StripeCardPayment.CardBrand,
+			&i.StripeCardPayment.CreatedAt,
+			&i.StripeCardPayment.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -20,22 +20,22 @@ var _ anor.UserService = &UserServiceMock{}
 //		// make and configure a mocked anor.UserService
 //		mockedUserService := &UserServiceMock{
 //			CreateUserFunc: func(ctx context.Context, user anor.User) error {
-//				panic("mock out the CreateUser method")
+//				panic("mock out the Create method")
 //			},
 //			GetUserFunc: func(ctx context.Context, id int64) (anor.User, error) {
-//				panic("mock out the GetUser method")
+//				panic("mock out the getUser method")
 //			},
 //			GetUserActivityCountsFunc: func(ctx context.Context, id int64) (anor.UserActivityCounts, error) {
-//				panic("mock out the GetUserActivityCounts method")
+//				panic("mock out the GetActivityCounts method")
 //			},
 //			GetUserByEmailFunc: func(ctx context.Context, email string) (anor.User, error) {
-//				panic("mock out the GetUserByEmail method")
+//				panic("mock out the GetByEmail method")
 //			},
 //			UpdateUserPasswordFunc: func(ctx context.Context, id int64, password string) error {
-//				panic("mock out the UpdateUserPassword method")
+//				panic("mock out the UpdatePassword method")
 //			},
 //			UpdateUserStatusByEmailFunc: func(ctx context.Context, status anor.UserStatus, email string) error {
-//				panic("mock out the UpdateUserStatusByEmail method")
+//				panic("mock out the UpdateStatusByEmail method")
 //			},
 //		}
 //
@@ -44,7 +44,7 @@ var _ anor.UserService = &UserServiceMock{}
 //
 //	}
 type UserServiceMock struct {
-	// CreateUserFunc mocks the CreateUser method.
+	// CreateUserFunc mocks the Create method.
 	CreateUserFunc func(ctx context.Context, user anor.User) error
 
 	// GetUserFunc mocks the GetUser method.
@@ -64,7 +64,7 @@ type UserServiceMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// CreateUser holds details about calls to the CreateUser method.
+		// Create holds details about calls to the Create method.
 		CreateUser []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
@@ -119,10 +119,10 @@ type UserServiceMock struct {
 	lockUpdateUserStatusByEmail sync.RWMutex
 }
 
-// CreateUser calls CreateUserFunc.
-func (mock *UserServiceMock) CreateUser(ctx context.Context, user anor.User) error {
+// Create calls CreateUserFunc.
+func (mock *UserServiceMock) Create(ctx context.Context, user anor.User) error {
 	if mock.CreateUserFunc == nil {
-		panic("UserServiceMock.CreateUserFunc: method is nil but UserService.CreateUser was just called")
+		panic("UserServiceMock.CreateUserFunc: method is nil but UserService.Create was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
@@ -137,7 +137,7 @@ func (mock *UserServiceMock) CreateUser(ctx context.Context, user anor.User) err
 	return mock.CreateUserFunc(ctx, user)
 }
 
-// CreateUserCalls gets all the calls that were made to CreateUser.
+// CreateUserCalls gets all the calls that were made to Create.
 // Check the length with:
 //
 //	len(mockedUserService.CreateUserCalls())
@@ -158,7 +158,7 @@ func (mock *UserServiceMock) CreateUserCalls() []struct {
 // GetUser calls GetUserFunc.
 func (mock *UserServiceMock) GetUser(ctx context.Context, id int64) (anor.User, error) {
 	if mock.GetUserFunc == nil {
-		panic("UserServiceMock.GetUserFunc: method is nil but UserService.GetUser was just called")
+		panic("UserServiceMock.GetUserFunc: method is nil but UserService.getUser was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -194,7 +194,7 @@ func (mock *UserServiceMock) GetUserCalls() []struct {
 // GetUserActivityCounts calls GetUserActivityCountsFunc.
 func (mock *UserServiceMock) GetUserActivityCounts(ctx context.Context, id int64) (anor.UserActivityCounts, error) {
 	if mock.GetUserActivityCountsFunc == nil {
-		panic("UserServiceMock.GetUserActivityCountsFunc: method is nil but UserService.GetUserActivityCounts was just called")
+		panic("UserServiceMock.GetUserActivityCountsFunc: method is nil but UserService.GetActivityCounts was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -230,7 +230,7 @@ func (mock *UserServiceMock) GetUserActivityCountsCalls() []struct {
 // GetUserByEmail calls GetUserByEmailFunc.
 func (mock *UserServiceMock) GetUserByEmail(ctx context.Context, email string) (anor.User, error) {
 	if mock.GetUserByEmailFunc == nil {
-		panic("UserServiceMock.GetUserByEmailFunc: method is nil but UserService.GetUserByEmail was just called")
+		panic("UserServiceMock.GetUserByEmailFunc: method is nil but UserService.GetByEmail was just called")
 	}
 	callInfo := struct {
 		Ctx   context.Context
@@ -266,7 +266,7 @@ func (mock *UserServiceMock) GetUserByEmailCalls() []struct {
 // UpdateUserPassword calls UpdateUserPasswordFunc.
 func (mock *UserServiceMock) UpdateUserPassword(ctx context.Context, id int64, password string) error {
 	if mock.UpdateUserPasswordFunc == nil {
-		panic("UserServiceMock.UpdateUserPasswordFunc: method is nil but UserService.UpdateUserPassword was just called")
+		panic("UserServiceMock.UpdateUserPasswordFunc: method is nil but UserService.UpdatePassword was just called")
 	}
 	callInfo := struct {
 		Ctx      context.Context
@@ -306,7 +306,7 @@ func (mock *UserServiceMock) UpdateUserPasswordCalls() []struct {
 // UpdateUserStatusByEmail calls UpdateUserStatusByEmailFunc.
 func (mock *UserServiceMock) UpdateUserStatusByEmail(ctx context.Context, status anor.UserStatus, email string) error {
 	if mock.UpdateUserStatusByEmailFunc == nil {
-		panic("UserServiceMock.UpdateUserStatusByEmailFunc: method is nil but UserService.UpdateUserStatusByEmail was just called")
+		panic("UserServiceMock.UpdateUserStatusByEmailFunc: method is nil but UserService.UpdateStatusByEmail was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context

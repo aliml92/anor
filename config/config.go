@@ -20,20 +20,22 @@ const (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server    ServerConfig    `mapstructure:"server"`
-	Email     EmailConfig     `mapstructure:"email"`
-	Database  DatabaseConfig  `mapstructure:"database"`
-	Redis     RedisConfig     `mapstructure:"redis"`
-	Session   SessionConfig   `mapstructure:"session"`
-	Typesense TypesenseConfig `mapstructure:"typesense"`
-	Stripe    StripeConfig    `mapstructure:"stripe"`
-	Logger    LoggerConfig    `mapstructure:"logger"`
+	Server      ServerConfig      `mapstructure:"server"`
+	Email       EmailConfig       `mapstructure:"email"`
+	Database    DatabaseConfig    `mapstructure:"database"`
+	Redis       RedisConfig       `mapstructure:"redis"`
+	Session     SessionConfig     `mapstructure:"session"`
+	Typesense   TypesenseConfig   `mapstructure:"typesense"`
+	Stripe      StripeConfig      `mapstructure:"stripe"`
+	GoogleOAuth GoogleOAuthConfig `mapstructure:"google_oauth"`
+	Logger      LoggerConfig      `mapstructure:"logger"`
 }
 
 // ServerConfig holds server-specific configuration
 type ServerConfig struct {
-	Host string
-	Port string
+	Host    string
+	Port    string
+	IsHTTPS bool
 }
 
 // EmailConfig holds email-specific configuration
@@ -67,10 +69,9 @@ type RedisConfig struct {
 }
 
 type SessionConfig struct {
-	AuthCookieName  string
-	AuthLifetime    time.Duration
-	GuestCookieName string
-	GuestLifetime   time.Duration
+	CookieName    string
+	AuthLifetime  time.Duration
+	GuestLifetime time.Duration
 }
 
 type TypesenseConfig struct {
@@ -90,6 +91,13 @@ type LoggerConfig struct {
 	Format     string
 	AddSource  bool
 	TimeFormat string
+}
+
+type GoogleOAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+	Scopes       []string
 }
 
 // New creates and returns a new Config instance

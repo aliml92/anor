@@ -3,7 +3,7 @@ INSERT INTO product_attributes (
     product_id, attribute
 ) VALUES (
     $1, $2
-) RETURNING id;
+) RETURNING *;
 
 -- name: CreateProductVariantAttributeValues :exec
 INSERT INTO product_variant_attributes (

@@ -12,8 +12,8 @@ import (
 
 type Repository interface {
 	Querier
-	GetProductsByLeafCategoryID(ctx context.Context, categoryID int32, p anor.GetProductsByCategoryParams) ([]ProductsByCategoryRow, error)
-	GetProductsByLeafCategoryIDs(ctx context.Context, categoryID []int32, p anor.GetProductsByCategoryParams) ([]ProductsByCategoryRow, error)
+	GetProductsByLeafCategoryID(ctx context.Context, categoryID int32, p anor.ListByCategoryParams) ([]ProductsByCategoryRow, error)
+	GetProductsByLeafCategoryIDs(ctx context.Context, categoryID []int32, p anor.ListByCategoryParams) ([]ProductsByCategoryRow, error)
 	WithTx(ctx context.Context, fn func(tx pgx.Tx) error) error
 }
 
@@ -51,7 +51,7 @@ type ProductsByCategoryRow struct {
 func (s repository) GetProductsByLeafCategoryID(
 	ctx context.Context,
 	categoryID int32,
-	p anor.GetProductsByCategoryParams,
+	p anor.ListByCategoryParams,
 ) ([]ProductsByCategoryRow, error) {
 	// TODO: filtering by color, size, rating
 
@@ -147,7 +147,7 @@ func (s repository) GetProductsByLeafCategoryID(
 func (s repository) GetProductsByLeafCategoryIDs(
 	ctx context.Context,
 	categoryIDs []int32,
-	p anor.GetProductsByCategoryParams,
+	p anor.ListByCategoryParams,
 ) ([]ProductsByCategoryRow, error) {
 	// TODO: filtering by color, size, rating
 

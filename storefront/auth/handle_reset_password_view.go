@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	resetpassword "github.com/aliml92/anor/html/templates/pages/auth/reset_password"
 	"net/http"
 )
 
@@ -13,7 +14,7 @@ func (h *Handler) ResetPasswordView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	ok, err := h.svc.VerifyResetPasswordToken(ctx, token)
+	ok, err := h.authService.VerifyResetPasswordToken(ctx, token)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
@@ -24,9 +25,6 @@ func (h *Handler) ResetPasswordView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isHXRequest(r) {
-		h.view.Render(w, "pages/reset-password/content.gohtml", nil)
-		return
-	}
-	h.view.Render(w, "pages/reset-password/base.gohtml", nil)
+	rc := resetpassword.Content{}
+	h.Render(w, r, "pages/auth/reset_password/content.gohtml", rc)
 }

@@ -1,12 +1,11 @@
 package cart
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"github.com/alexedwards/scs/v2"
 	"github.com/aliml92/anor"
-	"github.com/aliml92/anor/html/dtos/partials"
+	"github.com/aliml92/anor/html/templates/shared/header/components"
+	"github.com/aliml92/anor/session"
 	"github.com/invopop/validation"
 	"io"
 	"net/http"
@@ -44,9 +43,8 @@ func (req *AddToCartRequest) Validate() error {
 }
 
 func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
-	req := &AddToCartRequest{}
-
-	err := anor.BindValid(r, req)
+	var req AddToCartRequest
+	err := anor.BindValid(r, &req)
 	if err != nil {
 		if errors.Is(err, errInternal) {
 			h.serverInternalError(w, err)
@@ -57,26 +55,32 @@ func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	u := anor.UserFromContext(ctx)
+	u := session.UserFromContext(ctx)
 
-	var cartID int64
+	cartID := u.CartID
+	if cartID == 0 {
+		params := anor.CartCreateParams{}
 
-	if u != nil {
-		cartID, err = h.getOrCreateCart(ctx, u.ID)
+		if u.IsAuth {
+			params.UserID = u.ID
+		} else {
+			params.ExpiresAt = h.session.GetExpiry(ctx)
+		}
+
+		cart, err := h.cartService.Create(ctx, params)
 		if err != nil {
 			h.serverInternalError(w, err)
 			return
 		}
-	} else {
-		guestSession := h.session.Guest
-		cartID, err = h.getOrCreateGuestCart(ctx, guestSession)
-		if err != nil {
-			h.serverInternalError(w, err)
-			return
-		}
+
+		cartID = cart.ID
+
+		// save created cart id in the session
+		h.session.Put(ctx, session.CartIDKey, cart.ID)
 	}
 
-	_, err = h.cartSvc.AddCartItem(ctx, cartID, anor.AddCartItemParam{
+	_, err = h.cartService.AddItem(ctx, anor.CartItemAddParams{
+		CartID:    cartID,
 		VariantID: req.VariantID,
 		Qty:       req.Qty,
 	})
@@ -85,48 +89,17 @@ func (h *Handler) AddToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemCount, err := h.cartSvc.CountCartItems(ctx, cartID)
+	itemCount, err := h.cartService.CountItems(ctx, cartID)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
 	}
 
 	w.Header().Add("HX-Trigger-After-Settle", `{"anor:showToast":"item added to your cart successfully"}`)
-	v := partials.CartNavItem{
-		HxSwapOOB:      "true",
+	c := components.CartNavItem{
+		HxSwapOOB:      true,
 		CartItemsCount: int(itemCount),
 	}
-	h.view.RenderComponent(w, "partials/header/cart_nav_item.gohtml", v)
-}
 
-func (h *Handler) getOrCreateCart(ctx context.Context, userID int64) (int64, error) {
-	c, err := h.cartSvc.GetCart(ctx, userID, false)
-	if errors.Is(err, anor.ErrNotFound) {
-		cart, err := h.cartSvc.CreateCart(ctx, userID)
-		if err != nil {
-			return 0, err
-		}
-
-		return cart.ID, nil
-
-	} else if err != nil {
-		return 0, err
-	}
-
-	return c.ID, nil
-}
-
-func (h *Handler) getOrCreateGuestCart(ctx context.Context, guestSession *scs.SessionManager) (int64, error) {
-	cartID := guestSession.GetInt64(ctx, "guest_cart_id")
-	if cartID == 0 {
-		cart, err := h.cartSvc.CreateCart(ctx, -1)
-		if err != nil {
-			return 0, err
-		}
-		guestSession.Put(ctx, "guest_cart_id", cart.ID)
-
-		return cart.ID, nil
-	}
-
-	return cartID, nil
+	h.Render(w, r, "shared/header/components/cart_nav_item.gohtml", c)
 }

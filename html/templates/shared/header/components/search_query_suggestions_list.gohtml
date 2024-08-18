@@ -1,0 +1,17 @@
+{{ define "search_query_suggestions_list" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/shared/header/components.SearchQuerySuggestionsList*/ -}}
+    {{ $productNameSuggesstions := .ProductNameSuggestions }}
+
+    <ul id="search-dropdown-list"  class="list-group rounded-0">
+        {{ $last := sub1 (len $productNameSuggesstions) }}
+        {{ range $index, $suggestion := $productNameSuggesstions }}
+            {{ if ne $index $last  }}
+                <a class="list-group-item list-group-item-action border-bottom-0"
+                >{{ $suggestion }}</a>
+            {{ else }}
+                <a class="list-group-item list-group-item-action"
+                >{{ $suggestion }}</a>
+            {{ end }}
+        {{ end }}
+    </ul>
+{{ end }}

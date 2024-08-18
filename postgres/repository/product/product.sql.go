@@ -158,6 +158,44 @@ func (q *Queries) GetProductBrandsByCategoryIDs(ctx context.Context, leafcategor
 }
 
 const getProductByID = `-- name: GetProductByID :one
+SELECT id, store_id, category_id, name, brand, handle, image_urls, short_information, specifications, status, created_at, updated_at FROM products
+WHERE id = $1
+`
+
+func (q *Queries) GetProductByID(ctx context.Context, id int64) (*Product, error) {
+	row := q.db.QueryRow(ctx, getProductByID, id)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.StoreID,
+		&i.CategoryID,
+		&i.Name,
+		&i.Brand,
+		&i.Handle,
+		&i.ImageUrls,
+		&i.ShortInformation,
+		&i.Specifications,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const getProductImageURLsByID = `-- name: GetProductImageURLsByID :one
+SELECT image_urls
+FROM products
+WHERE id = $1
+`
+
+func (q *Queries) GetProductImageURLsByID(ctx context.Context, id int64) (ImageUrls, error) {
+	row := q.db.QueryRow(ctx, getProductImageURLsByID, id)
+	var image_urls ImageUrls
+	err := row.Scan(&image_urls)
+	return image_urls, err
+}
+
+const getProductWithStoreAndPricingByID = `-- name: GetProductWithStoreAndPricingByID :one
 SELECT
     p.id, p.store_id, p.category_id, p.name, p.brand, p.handle, p.image_urls, p.short_information, p.specifications, p.status, p.created_at, p.updated_at,
     s.id, s.handle, s.user_id, s.name, s.description, s.created_at, s.updated_at,
@@ -172,15 +210,15 @@ WHERE
     p.id = $1
 `
 
-type GetProductByIDRow struct {
+type GetProductWithStoreAndPricingByIDRow struct {
 	Product        Product
 	Store          Store
 	ProductPricing ProductPricing
 }
 
-func (q *Queries) GetProductByID(ctx context.Context, id int64) (*GetProductByIDRow, error) {
-	row := q.db.QueryRow(ctx, getProductByID, id)
-	var i GetProductByIDRow
+func (q *Queries) GetProductWithStoreAndPricingByID(ctx context.Context, id int64) (*GetProductWithStoreAndPricingByIDRow, error) {
+	row := q.db.QueryRow(ctx, getProductWithStoreAndPricingByID, id)
+	var i GetProductWithStoreAndPricingByIDRow
 	err := row.Scan(
 		&i.Product.ID,
 		&i.Product.StoreID,
@@ -211,40 +249,29 @@ func (q *Queries) GetProductByID(ctx context.Context, id int64) (*GetProductByID
 	return &i, err
 }
 
-const getProductImageURLsByID = `-- name: GetProductImageURLsByID :one
-SELECT image_urls
-FROM products
-WHERE id = $1
-`
-
-func (q *Queries) GetProductImageURLsByID(ctx context.Context, id int64) (ImageUrls, error) {
-	row := q.db.QueryRow(ctx, getProductImageURLsByID, id)
-	var image_urls ImageUrls
-	err := row.Scan(&image_urls)
-	return image_urls, err
-}
-
-const getProductsByCreatedAtDesc = `-- name: GetProductsByCreatedAtDesc :many
+const listPopularProducts = `-- name: ListPopularProducts :many
 SELECT p.id, p.store_id, p.category_id, p.name, p.brand, p.handle, p.image_urls, p.short_information, p.specifications, p.status, p.created_at, p.updated_at, pp.product_id, pp.base_price, pp.currency_code, pp.discount, pp.discounted_price, pp.is_on_sale FROM products p
 LEFT JOIN product_pricing pp ON p.id = pp.product_id
+WHERE p.id = ANY($3::BIGINT[])
 ORDER BY p.created_at DESC
 LIMIT $1
+    OFFSET $2
 `
 
-type GetProductsByCreatedAtDescRow struct {
+type ListPopularProductsRow struct {
 	Product        Product
 	ProductPricing ProductPricing
 }
 
-func (q *Queries) GetProductsByCreatedAtDesc(ctx context.Context, limit int32) ([]*GetProductsByCreatedAtDescRow, error) {
-	rows, err := q.db.Query(ctx, getProductsByCreatedAtDesc, limit)
+func (q *Queries) ListPopularProducts(ctx context.Context, limit int32, offset int32, productIDs []int64) ([]*ListPopularProductsRow, error) {
+	rows, err := q.db.Query(ctx, listPopularProducts, limit, offset, productIDs)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*GetProductsByCreatedAtDescRow
+	var items []*ListPopularProductsRow
 	for rows.Next() {
-		var i GetProductsByCreatedAtDescRow
+		var i ListPopularProductsRow
 		if err := rows.Scan(
 			&i.Product.ID,
 			&i.Product.StoreID,

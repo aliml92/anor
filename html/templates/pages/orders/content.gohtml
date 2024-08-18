@@ -1,0 +1,171 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/orders.Content*/ -}}
+    {{ $orders := .Orders }}
+    <section class="padding-bottom mt-4">
+        <div class="container">
+            <div class="row">
+                {{ template "profile_side_nav" "orders" }}
+                <main class="col-xl-10 col-lg-9 col-12">
+                    {{ $orderCount := len .Orders }}
+                    <div class="container mt-4">
+                        <div class="mb-3">
+                            <div class="btn-group" role="group" aria-label="Order filters">
+                                <button type="button" class="btn btn-outline-dark rounded-pill me-2 active no-flex">All orders</button>
+                                <button type="button" class="btn btn-outline-dark rounded-pill me-2 no-flex">Not paid</button>
+                                <button type="button" class="btn btn-outline-dark rounded-pill no-flex">Active</button>
+                            </div>
+                        </div>
+
+                        <div class="order-list">
+                            {{ range $index, $order := $orders }}
+                            <div class="mb-3">
+                                <div class="card rounded-0 border-bottom-0">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="card-title mb-0">Order #{{ $order.ID }}</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <dl class="row order-details">
+                                            <dt class="col-sm-3 text-muted">Order Status:</dt>
+                                            <dd class="col-sm-9">
+                                                <span class="badge bg-warning" style="font-size: 14px">{{ $order.Status }}</span>
+                                                <span class="text-muted">Refreshed at <time id="refreshTime"></time></span>
+                                            </dd>
+                                            <dt class="col-sm-3 text-muted">Order Date:</dt>
+                                            <dd class="col-sm-9"> <time class="js-format-datetime" datetime="{{ $order.CreatedAt | formatTimeForJS }}">{{ $order.CreatedAt  | formatDateTime}}</time></dd>
+
+                                            <dt class="col-sm-3 text-muted">Delivery Date:</dt>
+                                            <dd class="col-sm-9"><time class="js-format-date" datetime="{{ $order.DeliveryDate | formatTimeForJS}}">{{ $order.DeliveryDate | formatDate}}</time></dd>
+
+                                            <dt class="col-sm-3 text-muted">Total Amount:</dt>
+                                            <dd class="col-sm-9">${{ $order.Amount }}</dd>
+
+                                            <dt class="col-sm-3 text-muted">Payment Method:</dt>
+                                            <dd class="col-sm-9">{{ $order.StripeCardPayment.CardBrand }} **** {{ $order.StripeCardPayment.CardLast4 }}</dd>
+
+                                            <dt class="col-sm-3 text-muted">Shipping Address:</dt>
+                                            <dd class="col-sm-9">
+                                                <div class="address-wrapper">
+                                                    <span class="address">
+                                                       {{ formatAddress $order.ShippingAddress }}
+                                                    </span>
+                                                </div>
+                                            </dd>
+                                            <dt class="col-sm-3 text-muted mt-2">
+                                                <a href="#" class="link-dark fs-6 text-decoration-none cursor-pointer">
+                                                    <i class="bi bi-receipt"></i>
+                                                    Receipt
+                                                </a>
+                                            </dt>
+                                        </dl>
+
+                                        <div class="mt-3">
+                                            <a href="#" class="link-danger fs-6 text-decoration-none cursor-pointer">
+                                                <i class="bi bi-trash3-fill"></i>
+                                                Cancel order
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion rounded-0 border-top-0" id="orderItems8924">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingItems8924">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseItems8924" aria-expanded="false" aria-controls="collapseItems8924">
+                                                {{ pluralize (len $order.OrderItems) "item" }}
+                                            </button>
+                                        </h2>
+                                        <div id="collapseItems8924" class="accordion-collapse collapse" aria-labelledby="headingItems8924" data-bs-parent="#orderItems8924">
+                                            <div class="accordion-body">
+                                                <table class="table mb-0">
+                                                    <tbody>
+                                                    {{ $itemCount := len $order.OrderItems }}
+                                                    {{ range $itemIndex, $item := $order.OrderItems }}
+                                                    <tr>
+                                                        <td {{ if eq (add1 $itemIndex) $itemCount }} class="border-bottom-0" {{ end }}>
+                                                            <img src="{{ modifyImgURL $item.Thumbnail 140 }}" alt="T-shirt" class="cart-item-thumb img-thumbnail" >
+                                                        </td>
+                                                        <td {{ if eq (add1 $itemIndex) $itemCount }} class="border-bottom-0" {{ end }}>
+                                                            <dl class="row order-details">
+                                                                <dt class="col-sm-2 text-muted">Name:</dt>
+                                                                <dd class="col-sm-10">{{ $item.ProductName }}</dd>
+                                                                {{ range $k, $v := $item.VariantAttributes }}
+                                                                    <dt class="col-sm-2 text-muted">{{ $k }}:</dt>
+                                                                    <dd class="col-sm-10">{{ $v }}</dd>
+                                                                {{ end }}
+                                                                <dt class="col-sm-2 text-muted">Qty:</dt>
+                                                                <dd class="col-sm-10">{{ $item.Qty }}</dd>
+                                                                <dt class="col-sm-2 text-muted">Price:</dt>
+                                                                <dd class="col-sm-10">${{ $item.Price }}</dd>
+                                                            </dl>
+                                                        </td>
+                                                        <td style="height: 100%;" {{ if eq (add1 $itemIndex) $itemCount }} class="border-bottom-0" {{ end }}>
+                                                            <div class="d-flex flex-column justify-content-between" style="height: 100%; min-height: 100px;">
+                                                                <div>Delivered</div>
+                                                                <div>
+                                                                    <a href="#" class="link-danger fs-6 text-decoration-none" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                                                                        <i class="bi bi-pencil-fill"></i>
+                                                                        Write a review
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {{ end }}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{ end }}
+                            <!-- Add more order cards here -->
+                        </div>
+                    </div>
+                </main>
+            </div> <!-- row.// -->
+            <br><br>
+        </div>
+    </section>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const dateTimeElements = document.querySelectorAll('.js-format-datetime');
+        const dateElements = document.querySelectorAll('.js-format-date');
+
+        dateTimeElements.forEach(function(element) {
+          const dateTime = new Date(element.getAttribute('datetime'));
+          element.textContent = dateTime.toLocaleString(undefined, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        });
+
+        dateElements.forEach(function(element) {
+          const date = new Date(element.getAttribute('datetime'));
+          element.textContent = date.toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        });
+      });
+
+      function updateRefreshTime() {
+        const now = new Date();
+        document.getElementById('refreshTime').textContent = now.toLocaleString(undefined, {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+
+      // Update refresh time immediately when the page loads
+      updateRefreshTime();
+    </script>
+{{ end }}

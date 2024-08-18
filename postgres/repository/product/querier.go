@@ -13,7 +13,7 @@ import (
 type Querier interface {
 	CollectCartData(ctx context.Context, id int64) (*CollectCartDataRow, error)
 	CreateProduct(ctx context.Context, storeID int32, categoryID int32, name string, brand *string, handle string, shortInformation []string, imageUrls ImageUrls, specifications Specifications, status ProductStatus) (*Product, error)
-	CreateProductAttribute(ctx context.Context, productID int64, attribute string) (int64, error)
+	CreateProductAttribute(ctx context.Context, productID int64, attribute string) (*ProductAttribute, error)
 	CreateProductPricing(ctx context.Context, productID int64, basePrice decimal.Decimal, currencyCode string, discount decimal.Decimal, discountedPrice decimal.Decimal, isOnSale bool) error
 	CreateProductVariant(ctx context.Context, productID int64, sku string, qty int32, isCustomPriced bool, imageIdentifiers []int16) (int64, error)
 	CreateProductVariantAttributeValues(ctx context.Context, variantID int64, productAttributeID int64, attributeValue string) error
@@ -25,14 +25,15 @@ type Querier interface {
 	GetProductAttributesByProductID(ctx context.Context, productID int64) ([]*GetProductAttributesByProductIDRow, error)
 	GetProductBrandsByCategoryID(ctx context.Context, categoryID int32) ([][]string, error)
 	GetProductBrandsByCategoryIDs(ctx context.Context, leafcategoryids []int32) ([][]string, error)
-	GetProductByID(ctx context.Context, id int64) (*GetProductByIDRow, error)
+	GetProductByID(ctx context.Context, id int64) (*Product, error)
 	GetProductImageURLsByID(ctx context.Context, id int64) (ImageUrls, error)
 	GetProductPricingByProductID(ctx context.Context, productID int64) (*ProductPricing, error)
 	GetProductVariantByID(ctx context.Context, id int64) (*ProductVariant, error)
 	GetProductVariantPricingByVariantID(ctx context.Context, variantID int64) (*ProductVariantPricing, error)
 	GetProductVariantQtyInBulk(ctx context.Context, variantids []int64) ([]*GetProductVariantQtyInBulkRow, error)
 	GetProductVariantsByProductID(ctx context.Context, productID int64) ([]*GetProductVariantsByProductIDRow, error)
-	GetProductsByCreatedAtDesc(ctx context.Context, limit int32) ([]*GetProductsByCreatedAtDescRow, error)
+	GetProductWithStoreAndPricingByID(ctx context.Context, id int64) (*GetProductWithStoreAndPricingByIDRow, error)
+	ListPopularProducts(ctx context.Context, limit int32, offset int32, productIDs []int64) ([]*ListPopularProductsRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

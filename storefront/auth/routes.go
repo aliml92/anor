@@ -6,13 +6,13 @@ import (
 
 func RegisterRoutes(h *Handler, router *anor.Router) {
 	authRouter := router.Group("/auth")
-	authRouter.HandleFunc("GET /signup", h.SignupView, h.RedirectAuthUserMiddleware)
+	authRouter.HandleFunc("GET /signup", h.SignupView, h.RedirectAuth)
 	authRouter.HandleFunc("POST /signup", h.Signup)
 
 	authRouter.HandleFunc("POST /confirmation", h.SignupConfirmation)
 	authRouter.HandleFunc("POST /confirmation/resend", h.ResendOTP)
 
-	authRouter.HandleFunc("GET /signin", h.SigninView, h.RedirectAuthUserMiddleware)
+	authRouter.HandleFunc("GET /signin", h.SigninView, h.RedirectAuth)
 	authRouter.HandleFunc("POST /signin", h.Signin)
 
 	authRouter.HandleFunc("GET /forgot-password", h.ForgotPasswordView)
@@ -20,4 +20,7 @@ func RegisterRoutes(h *Handler, router *anor.Router) {
 
 	authRouter.HandleFunc("GET /reset-password", h.ResetPasswordView)
 	authRouter.HandleFunc("POST /reset-password", h.ResetPassword)
+
+	authRouter.HandleFunc("GET /google", h.GoogleSignin)
+	authRouter.HandleFunc("GET /google/callback", h.GoogleCallback)
 }

@@ -39,7 +39,7 @@
     - [x] Price: Lowest
     - [x] Price: Highest
     - [ ] Highest rated
-    - [ ] New arrivals
+    - [x] New arrivals
     - [ ] Best sellers
   - Filter by:
     - [x] Price range
@@ -91,8 +91,9 @@
   - [x] Update cart item quantity for authenticated user
   - [x] Update cart item quantity for guest user
   - [ ] Apply coupon
-- **Checkout Page**
-  - [x] Create stripe payment intent
+  - [ ] Related products section
+- **Checkout Page (for authenticated users only)**
+  - [x] Create stripe payment intent 
   - [ ] Set delivery/billing addresses
   - [ ] Set payment method
   - [x] Pay

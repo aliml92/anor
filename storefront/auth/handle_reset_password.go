@@ -2,7 +2,9 @@ package auth
 
 import (
 	"errors"
-	"github.com/aliml92/anor/html/dtos/pages/signin"
+	"fmt"
+	"github.com/aliml92/anor"
+	"github.com/aliml92/anor/html/templates/pages/auth/signin"
 	"github.com/invopop/validation"
 	"net/http"
 )
@@ -42,20 +44,18 @@ func (f *ResetPasswordForm) Validate() error {
 }
 
 func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	f := &ResetPasswordForm{}
-
-	err := bindValid(r, f)
+	var f ResetPasswordForm
+	err := anor.BindValid(r, &f)
 	if err != nil {
-		h.logClientError(err)
 		h.clientError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
-	err = h.svc.ResetPassword(ctx, f.Token, f.Password)
+	err = h.authService.ResetPassword(ctx, f.Token, f.Password)
 	if err != nil {
 		if errors.Is(err, ErrInvalidOrExpiredResetURL) {
-			err := errors.New("invalid or expired reset password url. Request a new reset password link to proceed")
+			err := fmt.Errorf("%w. Request a new reset password link to proceed", err)
 			h.clientError(w, err, http.StatusBadRequest)
 			return
 		}
@@ -66,5 +66,5 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	message := "Your password has been successfully updated! &#129395"
 	sc := signin.Content{Message: formatMessage(message, "success")}
-	h.view.Render(w, "pages/signin/content.gohtml", sc)
+	h.Render(w, r, "pages/auth/signin/content.gohtml", sc)
 }

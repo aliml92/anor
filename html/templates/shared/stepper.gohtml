@@ -1,0 +1,26 @@
+{{ define "stepper" }}
+    {{- /*gotype: github.com/aliml92/anor/html/dtos/shared.Stepper*/ -}}
+    {{ $currentStep := .CurrentStep }}
+    <div class="stepper">
+        <div class="step {{ stepperClass 1 $currentStep }}">
+            <div class="step-circle">1</div>
+            <div class="step-label">Signin</div>
+        </div>
+        <div class="step {{ stepperClass 2 $currentStep }}">
+            <div class="step-circle">2</div>
+            <div class="step-label">Address</div>
+        </div>
+        <div class="step {{ stepperClass 3 $currentStep }}">
+            <div class="step-circle">3</div>
+            <div class="step-label">Payment</div>
+        </div>
+        <div class="step {{ stepperClass 4 $currentStep }}">
+            <div class="step-circle">4</div>
+            <div class="step-label">Confirm</div>
+        </div>
+        <div class="step {{ stepperClass 5 $currentStep }}">
+            <div class="step-circle">5</div>
+            <div class="step-label">Done</div>
+        </div>
+    </div>
+{{ end }}

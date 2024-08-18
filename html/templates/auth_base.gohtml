@@ -1,0 +1,34 @@
+{{ define "base" }}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="Anor Market sells huge variety of products" />
+        <meta name="author" content="Alisher Muzaffarov" />
+
+        <title></title>
+        {{ template "head_assets"}}
+    </head>
+
+    <body hx-ext="response-targets" id="body">
+    <div id="content" style="min-height: 70vh">
+        <section class="padding-y bg-light" style="min-height:90vh">
+            <div class="container">
+                <div class="card mx-auto p-0 bg-transparent border-0 mb-2" style="max-width:460px; min-height: 45px; box-shadow: none;" id="err-wrapper">
+                    <a href="/" class="brand-wrap me-3">
+                        <img class="logo" height="60" src="static/images/logo.svg">
+                    </a>
+                </div>
+                <div id="auth-content">
+                    {{ block "content" .Content }}{{ end }}
+                </div>
+                <br><br>
+            </div>
+        </section>
+    </div>
+    {{ template "bottom_scripts" }}
+    <script src="static/js/auth-script.js"></script>
+    </body>
+    </html>
+{{ end }}

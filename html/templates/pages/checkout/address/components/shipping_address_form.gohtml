@@ -1,0 +1,122 @@
+{{ define "shipping_address_form" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/checkout/address/components.ShippingAddressForm*/ -}}
+    <div style="max-width: 600px; width: 100%">
+        <h4 style="font-weight: 600; font-size: 20px; line-height: 24px;">Shipping Address</h4>
+
+        <!-- pickup & my address radio-like cards -->
+        {{ template "shipping_address_kind_selector" .ShippingAddressKindSelector }}
+        <!-- pickup & my address radio-like cards end -->
+
+        <div class="mt-4">
+            <!-- available address option -->
+            <div class="form-check mb-3 position-relative">
+                <input class="form-check-input custom-radio" type="radio" name="addressOption" id="defaultShipping" checked>
+                <label class="form-check-label ms-3" for="defaultShipping">
+                    <span id="shippingDisplay">
+                        <address style="font-size: 14px">
+                            <!-- address data here -->
+                        </address>
+                    </span>
+                    <span id="editShippingText" style="display: none; font-size: 16px;">Edit address</span>
+                </label>
+                <i class="bi bi-pencil edit-shipping-icon"></i>
+                <i class="bi bi-chevron-up default-shipping-collapse-icon" style="display: none;"></i>
+            </div>
+
+            <!-- address option edit form -->
+            <div class="d-flex justify-content-center mb-4">
+                <div id="editShippingForm" class="mt-3" style="display: none; width: 100%; max-width: 500px;">
+                    <div class="mb-3">
+                        <label for="editFullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editFullName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAddressLine1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editAddressLine1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAddressLine2" class="form-label">Address Line 2</label>
+                        <input type="text" class="form-control" id="editAddressLine2">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editCity" class="form-label">City <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editCity" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editState" class="form-label">State <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editState" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editZipCode" class="form-label">Zip Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editZipCode" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editCountry" class="form-label">Country <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editCountry" required>
+                    </div>
+                    <button type="button" class="btn btn-dark w-100" id="saveEditButton">Save Changes</button>
+                </div>
+            </div>
+            <!-- address option edit form end -->
+
+            <!-- available address option end -->
+
+            <!-- add new address radio -->
+            <div class="form-check  position-relative">
+                <input class="form-check-input custom-radio" type="radio" name="addressOption"
+                       id="addNewShipping"
+                >
+                <label class="form-check-label ms-3" for="addNewShipping">
+                    Add new address
+                </label>
+                <i class="bi bi-chevron-up shipping-collapse-icon ms-2" style="display: none;"></i>
+            </div>
+
+            <!-- new address add form -->
+            <div class="d-flex flex-column align-items-center justify-content-center mb-4">
+                <div class="card mx-auto mb-2 p-0 bg-transparent border-0" style="max-width:460px; box-shadow: none;" id="err-wrapper">
+                    <div class="card-body p-0" id="alert-msg"></div>
+                </div>
+                <form id="newShippingForm" class="mt-3" style="width: 100%; max-width: 500px;"
+                      hx-post="/user/addresses?redirect_url=/checkout/address"
+                      hx-target="#content"
+                      hx-target-error="#alert-msg"
+                >
+                    <input type="hidden" name="address-type" value="Shipping">
+                    <div class="mb-3">
+                        <label for="fullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-0" id="fullName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addressLine1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-0" id="addressLine1" name="address-line-1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addressLine2" class="form-label">Address Line 2</label>
+                        <input type="text" class="form-control rounded-0" id="addressLine2" name="address-line-2">
+                    </div>
+                    <div class="mb-3">
+                        <label for="city" class="form-label">City <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-0" id="city" name="city" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="state" class="form-label">State/Province<span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-0" id="state" name="state-province" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="postalCode" class="form-label">Postal Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-0" id="postalCode" name="postal-code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="country" class="form-label">Country <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-0" id="country" name="country" required>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100 rounded-0" id="nextBtn">Next</button>
+                </form>
+            </div>
+            <!-- new address add form end -->
+
+            <!-- add new address radio end -->
+        </div>
+    </div>
+{{ end }}

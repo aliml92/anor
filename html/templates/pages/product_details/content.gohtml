@@ -1,29 +1,34 @@
 {{ define "content" }}
-    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/product-details.Content*/ -}}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/product_details.Content*/ -}}
+    {{ $categoryBreadcrumb := .CategoryBreadcrumb }}
+    {{ $productMain := .ProductMain }}
+    {{ $productSpecs := .ProductSpecs }}
+    {{ $productVariantMatrix := .ProductVariantMatrix }}
+    {{ $lenProductAttibutes := len $productMain.Product.Attributes }}
     <section class="py-4">
         <div class="container" >
-            {{ template "category-breadcrumb" .CategoryBreadcrumb }}
+            {{ template "category_breadcrumb" $categoryBreadcrumb }}
         </div>
     </section>
 
     <section>
         <div class="container">
-            {{ template "product-main" .ProductMain }}
+            {{ template "product_main" $productMain }}
         </div>
     </section>
 
     <section>
         <div class="container">
-            {{ template "product-specs" .ProductSpecs }}
+            {{ template "product_specs" $productSpecs }}
         </div>
     </section>
 
     <section>
         <div class="container">
-            {{ template "related-products" . }}
+            {{ template "related_products" }}
         </div>
     </section>
 
     <script id="no-content"></script>
-    <script id="product-variant-matrix" data-dim="{{ len .ProductMain.Product.Attributes }}" data-product-variant-id="" type="application/json">{{ .ProductVariantMatrix | jsonify }}</script>
+    <script id="product-variant-matrix" data-dim="{{ $lenProductAttibutes }}" data-product-variant-id="" type="application/json">{{ $productVariantMatrix | jsonify }}</script>
 {{ end }}

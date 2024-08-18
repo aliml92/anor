@@ -2,124 +2,91 @@ package checkout
 
 import (
 	"context"
+	"fmt"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/config"
-	checkoutpage "github.com/aliml92/anor/html/dtos/pages/checkout"
-	notfoundpage "github.com/aliml92/anor/html/dtos/pages/not_found"
-	"github.com/aliml92/anor/html/dtos/partials"
-	"github.com/aliml92/anor/redis/cache/session"
+	"github.com/aliml92/anor/html/templates"
+	"github.com/aliml92/anor/redis/session"
 	"log/slog"
 	"net/http"
-	"path"
+	"strings"
 	"unicode"
 
 	"github.com/aliml92/anor/html"
 )
 
+// HandlerConfig contains the dependencies for creating a new Handler.
+type HandlerConfig struct {
+	UserService          anor.UserService
+	CartService          anor.CartService
+	StripePaymentService anor.StripePaymentService
+	OrderService         anor.OrderService
+	CategorySvc          anor.CategoryService
+	AddressService       anor.AddressService
+	View                 *html.View
+	SessionManager       *session.Manager
+	Logger               *slog.Logger
+	Config               *config.Config
+}
+
+// Handler manages HTTP requests for checkout operations.
 type Handler struct {
-	userSvc     anor.UserService
-	cartSvc     anor.CartService
-	orderSvc    anor.OrderService
-	categorySvc anor.CategoryService
-	session     *session.Manager
-	view        *html.View
-	logger      *slog.Logger
-	cfg         *config.Config
+	userService          anor.UserService
+	cartService          anor.CartService
+	stripePaymentService anor.StripePaymentService
+	orderService         anor.OrderService
+	categorySvc          anor.CategoryService
+	addressService       anor.AddressService
+	session              *session.Manager
+	view                 *html.View
+	logger               *slog.Logger
+	cfg                  *config.Config
 }
 
-func NewHandler(
-	userSvc anor.UserService,
-	cartSvc anor.CartService,
-	orderSvc anor.OrderService,
-	categorySvc anor.CategoryService,
-	view *html.View,
-	session *session.Manager,
-	logger *slog.Logger,
-	cfg *config.Config,
-) *Handler {
+// NewHandler creates and returns a new Handler instance.
+func NewHandler(cfg HandlerConfig) *Handler {
 	return &Handler{
-		userSvc:     userSvc,
-		cartSvc:     cartSvc,
-		orderSvc:    orderSvc,
-		categorySvc: categorySvc,
-		view:        view,
-		session:     session,
-		logger:      logger,
-		cfg:         cfg,
+		userService:          cfg.UserService,
+		cartService:          cfg.CartService,
+		stripePaymentService: cfg.StripePaymentService,
+		orderService:         cfg.OrderService,
+		categorySvc:          cfg.CategorySvc,
+		addressService:       cfg.AddressService,
+		view:                 cfg.View,
+		session:              cfg.SessionManager,
+		logger:               cfg.Logger,
+		cfg:                  cfg.Config,
 	}
 }
 
-func (h *Handler) Render(w http.ResponseWriter, r *http.Request, page string, data interface{}) {
-	ctx := r.Context()
-	if isHXRequest(r) {
-		v := path.Join(page, "content.gohtml")
-		h.view.Render(w, v, data)
+func (h *Handler) Render(w http.ResponseWriter, r *http.Request, templatePath string, td templates.TemplateData) {
+	s := strings.Split(templatePath, "/")
+	templateFilename := s[len(s)-1]
+
+	// TODO: remove on production
+	if templateFilename != td.GetTemplateFilename() {
+		panic(fmt.Sprintf("Template-DTO mismatch: Template '%s' does not match DTO for '%s'",
+			templateFilename, td.GetTemplateFilename()))
 	}
 
-	hc, err := h.headerContent(ctx)
-	if err != nil {
-		h.serverInternalError(w, err)
-		return
-	}
+	switch templateFilename {
+	case "base.gohtml":
+		h.view.Render(w, templatePath, td)
+	case "content.gohtml":
+		if isHXRequest(r) {
+			h.view.Render(w, templatePath, td)
+			return
+		}
 
-	v := path.Join(page, "base.gohtml")
-	switch data.(type) {
-	case checkoutpage.Content:
-		c, _ := data.(checkoutpage.Content)
-		base := checkoutpage.Base{
-			Header:  hc,
-			Content: c,
+		base := templates.CheckoutBase{
+			Content: td,
 		}
-		h.view.Render(w, v, base)
-	case notfoundpage.Content:
-		c, _ := data.(notfoundpage.Content)
-		base := notfoundpage.Base{
-			Header:  hc,
-			Content: c,
-		}
-		h.view.Render(w, v, base)
+
+		newTemplatePath := strings.ReplaceAll(templatePath, "content.gohtml", "base.gohtml")
+		h.view.Render(w, newTemplatePath, base)
 	default:
-		base := notfoundpage.Base{
-			Header: hc,
-			Content: notfoundpage.Content{
-				Message: "Page not found",
-			},
-		}
-		h.view.Render(w, v, base)
+		h.view.RenderComponent(w, templatePath, td)
 	}
-}
-
-func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
-	u := anor.UserFromContext(ctx)
-	header := partials.Header{User: u}
-	if u != nil {
-		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
-		if err != nil {
-			return partials.Header{}, err
-		}
-
-		header.CartNavItem = partials.CartNavItem{CartItemsCount: ac.CartItemsCount}
-		header.WishlistNavItem = partials.WishlistNavItem{WishlistItemsCount: ac.WishlistItemsCount}
-		header.OrdersNavItem = partials.OrdersNavItem{ActiveOrdersCount: ac.ActiveOrdersCount}
-
-	} else {
-		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
-		if cartId != 0 {
-			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
-			if err != nil {
-				return partials.Header{}, err
-			}
-			header.CartNavItem = partials.CartNavItem{CartItemsCount: int(guestCartItemCount)}
-		}
-	}
-
-	rc, err := h.categorySvc.GetRootCategories(ctx)
-	if err != nil {
-		return header, err
-	}
-	header.RootCategories = rc
-
-	return header, nil
 }
 
 func (h *Handler) clientError(w http.ResponseWriter, err error, statusCode int) {
@@ -128,6 +95,14 @@ func (h *Handler) clientError(w http.ResponseWriter, err error, statusCode int) 
 
 func (h *Handler) serverInternalError(w http.ResponseWriter, err error) {
 	anor.ServerInternalError(h.logger, w, err)
+}
+
+func (h *Handler) jsonClientError(w http.ResponseWriter, err error, statusCode int) {
+	anor.JSONClientError(h.logger, w, err, statusCode)
+}
+
+func (h *Handler) jsonServerInternalError(w http.ResponseWriter, err error) {
+	anor.JSONServerInternalError(h.logger, w, err)
 }
 
 func (h *Handler) redirect(w http.ResponseWriter, url string) {
@@ -141,10 +116,6 @@ func (h *Handler) redirect(w http.ResponseWriter, url string) {
 
 	w.Header().Add("HX-Redirect", url)
 	w.WriteHeader(http.StatusOK)
-}
-
-func (h *Handler) logClientError(err error) {
-	anor.LogClientError(h.logger, err)
 }
 
 func capitalizeFirst(s string) string {

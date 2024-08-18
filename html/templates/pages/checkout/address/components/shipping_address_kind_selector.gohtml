@@ -1,0 +1,99 @@
+{{ define "shipping_address_kind_selector" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/checkout/address/components.ShippingAddressKindSelector*/ -}}
+    {{ $selectedKind := .SelectedAddressKind }}
+    {{ $noUserAddresses := .NoUserAddresses }}
+    <div  style="max-width: 600px; width: 100%" >
+        <div class="row mt-3">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 clickable-card {{ if eq $selectedKind "PickupPoint" }} selected {{end}}">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <i class="bi bi-geo-alt mb-2" style="font-size: 2rem;"></i>
+                        <p class="card-text" style="font-size: 12px;">Pick-up point</p>
+                        <span class="badge bg-info ms-2" style="color: black" data-bs-toggle="tooltip" data-bs-placement="top" title="Coming soon: A whole new way to receive your orders with local pickups!">Coming Soon</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 clickable-card {{ if eq $selectedKind "MyAddress" }} selected {{end}}"
+                        {{ if $noUserAddresses }}
+                            _="on click
+                      add .selected to me
+                      hide #selectionNote
+                      remove .d-none from #newAddressFormSection
+                   end"
+                        {{ end }}
+                >
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <i class="bi bi-house mb-2" style="font-size: 2rem;"></i>
+                        <p class="card-text" style="font-size: 12px;">My address</p>
+                    </div>
+                </div>
+            </div>
+            <div id="selectionNote" style="font-weight: 400; font-size: 0.875em; color: #66676e">
+                <p>Choose your preferred delivery method above. Select a convenient pickup point or use your saved address for direct delivery.
+                    You can modify your choice later before finalizing your order.</p>
+            </div>
+        </div>
+        {{ if $noUserAddresses }}
+            <div class="mt-4 d-none" id="newAddressFormSection">
+                <!-- add new address radio -->
+                <div class="form-check position-relative">
+                    <input class="form-check-input custom-radio" type="radio" name="addressOption"
+                           id="addNewAddress"
+                           checked
+                    >
+                    <label class="form-check-label ms-3" for="addNewAddress">
+                        Add new address
+                    </label>
+                </div>
+
+                <!-- new address add form -->
+                <div class="d-flex flex-column align-items-center justify-content-center mb-4">
+                    <div class="card mx-auto mb-2 p-0 bg-transparent border-0" style="max-width:460px; box-shadow: none;" id="err-wrapper">
+                        <div class="card-body p-0" id="alert-msg"></div>
+                    </div>
+                    <form id="newShippingForm" class="mt-3" style="width: 100%; max-width: 500px;"
+                          hx-post="/user/addresses?redirect_url=/checkout/address"
+                          hx-target="#content"
+                          hx-target-error="#alert-msg"
+                    >
+                        <input type="hidden" name="selected-as" value="Both">
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-0" id="fullName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addressLine1" class="form-label">Address Line 1 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-0" id="addressLine1" name="address-line-1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addressLine2" class="form-label">Address Line 2</label>
+                            <input type="text" class="form-control rounded-0" id="addressLine2" name="address-line-2">
+                        </div>
+                        <div class="mb-3">
+                            <label for="city" class="form-label">City <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-0" id="city" name="city" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="state" class="form-label">State/Province<span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-0" id="state" name="state-province" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="postalCode" class="form-label">Postal Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-0" id="postalCode" name="postal-code" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="country" class="form-label">Country <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-0" id="country" name="country" required>
+                        </div>
+                        <button type="submit" class="btn btn-dark w-100 rounded-0" id="nextBtn">Next</button>
+                    </form>
+                </div>
+                <!-- new address add form end -->
+
+                <!-- add new address radio end -->
+            </div>
+        {{ end }}
+    </div>
+
+{{ end }}

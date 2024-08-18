@@ -2,43 +2,48 @@ package cart
 
 import (
 	"context"
+	"fmt"
 	"github.com/aliml92/anor"
-	cartpage "github.com/aliml92/anor/html/dtos/pages/cart"
-	notfoundpage "github.com/aliml92/anor/html/dtos/pages/not_found"
-	"github.com/aliml92/anor/html/dtos/partials"
-	"github.com/aliml92/anor/redis/cache/session"
+	"github.com/aliml92/anor/html/templates"
+	"github.com/aliml92/anor/html/templates/shared/header"
+	"github.com/aliml92/anor/redis/session"
 	"log/slog"
 	"net/http"
-	"path"
+	"strings"
 	"unicode"
 
 	"github.com/aliml92/anor/html"
 )
 
-type Handler struct {
-	userSvc     anor.UserService
-	cartSvc     anor.CartService
-	categorySvc anor.CategoryService
-	session     *session.Manager
-	view        *html.View
-	logger      *slog.Logger
+type HandlerConfig struct {
+	UserService       anor.UserService
+	CartService       anor.CartService
+	CategoryService   anor.CategoryService
+	Session           *session.Manager
+	View              *html.View
+	Logger            *slog.Logger
+	GetHeaderDataFunc func(ctx context.Context) (header.Base, error)
 }
 
-func NewHandler(
-	userSvc anor.UserService,
-	cartSvc anor.CartService,
-	categorySvc anor.CategoryService,
-	view *html.View,
-	session *session.Manager,
-	logger *slog.Logger,
-) *Handler {
+type Handler struct {
+	userService       anor.UserService
+	cartService       anor.CartService
+	categoryService   anor.CategoryService
+	session           *session.Manager
+	view              *html.View
+	logger            *slog.Logger
+	getHeaderDataFunc func(ctx context.Context) (header.Base, error)
+}
+
+func NewHandler(cfg *HandlerConfig) *Handler {
 	return &Handler{
-		userSvc:     userSvc,
-		cartSvc:     cartSvc,
-		categorySvc: categorySvc,
-		view:        view,
-		session:     session,
-		logger:      logger,
+		userService:       cfg.UserService,
+		cartService:       cfg.CartService,
+		categoryService:   cfg.CategoryService,
+		view:              cfg.View,
+		session:           cfg.Session,
+		logger:            cfg.Logger,
+		getHeaderDataFunc: cfg.GetHeaderDataFunc,
 	}
 }
 
@@ -51,7 +56,6 @@ func (h *Handler) serverInternalError(w http.ResponseWriter, err error) {
 }
 
 func (h *Handler) redirect(w http.ResponseWriter, url string) {
-	// Log redirection
 	h.logger.LogAttrs(
 		context.TODO(),
 		slog.LevelInfo,
@@ -63,81 +67,46 @@ func (h *Handler) redirect(w http.ResponseWriter, url string) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) Render(w http.ResponseWriter, r *http.Request, page string, data interface{}) {
-	ctx := r.Context()
-	if isHXRequest(r) {
-		v := path.Join(page, "content.gohtml")
-		h.view.Render(w, v, data)
+func (h *Handler) Render(w http.ResponseWriter, r *http.Request, templatePath string, td templates.TemplateData) {
+	s := strings.Split(templatePath, "/")
+	templateFilename := s[len(s)-1]
+
+	// TODO: remove on production
+	if templateFilename != td.GetTemplateFilename() {
+		panic(fmt.Sprintf("Template-DTO mismatch: Template '%s' does not match DTO for '%s'",
+			templateFilename, td.GetTemplateFilename()))
 	}
 
-	hc, err := h.headerContent(ctx)
-	if err != nil {
-		h.serverInternalError(w, err)
-		return
-	}
+	switch templateFilename {
+	case "base.gohtml":
+		h.view.Render(w, templatePath, td)
+	case "content.gohtml":
+		if isHXRequest(r) {
+			h.view.Render(w, templatePath, td)
+			return
+		}
 
-	v := path.Join(page, "base.gohtml")
-	switch data.(type) {
-	case cartpage.Content:
-		c, _ := data.(cartpage.Content)
-		base := cartpage.Base{
-			Header:  hc,
-			Content: c,
-		}
-		h.view.Render(w, v, base)
-	case notfoundpage.Content:
-		c, _ := data.(notfoundpage.Content)
-		base := notfoundpage.Base{
-			Header:  hc,
-			Content: c,
-		}
-		h.view.Render(w, v, base)
-	default:
-		base := notfoundpage.Base{
-			Header: hc,
-			Content: notfoundpage.Content{
-				Message: "Page not found",
-			},
-		}
-		h.view.Render(w, v, base)
-	}
-}
-
-func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
-	u := anor.UserFromContext(ctx)
-	header := partials.Header{User: u}
-	if u != nil {
-		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
+		ctx := r.Context()
+		hc, err := h.getHeaderDataFunc(ctx)
 		if err != nil {
-			return partials.Header{}, err
+			h.serverInternalError(w, err)
+			return
 		}
 
-		header.CartNavItem = partials.CartNavItem{CartItemsCount: ac.CartItemsCount}
-		header.WishlistNavItem = partials.WishlistNavItem{WishlistItemsCount: ac.WishlistItemsCount}
-		header.OrdersNavItem = partials.OrdersNavItem{ActiveOrdersCount: ac.ActiveOrdersCount}
-
-	} else {
-		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
-		if cartId != 0 {
-			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
-			if err != nil {
-				return partials.Header{}, err
-			}
-			header.CartNavItem = partials.CartNavItem{CartItemsCount: int(guestCartItemCount)}
+		base := templates.Base{
+			Header:  hc,
+			Content: td,
 		}
-	}
 
-	rc, err := h.categorySvc.GetRootCategories(ctx)
-	if err != nil {
-		return header, err
+		newTemplatePath := strings.ReplaceAll(templatePath, "content.gohtml", "base.gohtml")
+		h.view.Render(w, newTemplatePath, base)
+	default:
+		h.view.RenderComponent(w, templatePath, td)
 	}
-	header.RootCategories = rc
-
-	return header, nil
 }
 
-func (h *Handler) logClientError(err error) {
-	anor.LogClientError(h.logger, err)
+func (h *Handler) logError(err error) {
+	anor.LogError(h.logger, err)
 }
 
 func capitalizeFirst(s string) string {

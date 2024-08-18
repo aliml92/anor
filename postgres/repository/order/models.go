@@ -12,47 +12,46 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type CartStatus string
+type AddressDefaultType string
 
 const (
-	CartStatusActive    CartStatus = "Active"
-	CartStatusCheckout  CartStatus = "Checkout"
-	CartStatusCompleted CartStatus = "Completed"
+	AddressDefaultTypeShipping AddressDefaultType = "Shipping"
+	AddressDefaultTypeBilling  AddressDefaultType = "Billing"
 )
 
-func (e *CartStatus) Scan(src interface{}) error {
+func (e *AddressDefaultType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = CartStatus(s)
+		*e = AddressDefaultType(s)
 	case string:
-		*e = CartStatus(s)
+		*e = AddressDefaultType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for CartStatus: %T", src)
+		return fmt.Errorf("unsupported scan type for AddressDefaultType: %T", src)
 	}
 	return nil
 }
 
-type NullCartStatus struct {
-	CartStatus CartStatus
-	Valid      bool // Valid is true if CartStatus is not NULL
+type NullAddressDefaultType struct {
+	AddressDefaultType AddressDefaultType
+	Valid              bool // Valid is true if AddressDefaultType is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullCartStatus) Scan(value interface{}) error {
+func (ns *NullAddressDefaultType) Scan(value interface{}) error {
 	if value == nil {
-		ns.CartStatus, ns.Valid = "", false
+		ns.AddressDefaultType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.CartStatus.Scan(value)
+	return ns.AddressDefaultType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullCartStatus) Value() (driver.Value, error) {
+func (ns NullAddressDefaultType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.CartStatus), nil
+	return string(ns.AddressDefaultType), nil
 }
 
 type OrderStatus string
@@ -62,7 +61,8 @@ const (
 	OrderStatusProcessing OrderStatus = "Processing"
 	OrderStatusShipped    OrderStatus = "Shipped"
 	OrderStatusDelivered  OrderStatus = "Delivered"
-	OrderStatusCanceled   OrderStatus = "Canceled"
+	OrderStatusCancelled  OrderStatus = "Cancelled"
+	OrderStatusFulfilled  OrderStatus = "Fulfilled"
 )
 
 func (e *OrderStatus) Scan(src interface{}) error {
@@ -100,174 +100,121 @@ func (ns NullOrderStatus) Value() (driver.Value, error) {
 	return string(ns.OrderStatus), nil
 }
 
-type ProductStatus string
+type PaymentMethod string
 
 const (
-	ProductStatusDraft           ProductStatus = "Draft"
-	ProductStatusPendingApproval ProductStatus = "PendingApproval"
-	ProductStatusPublished       ProductStatus = "Published"
+	PaymentMethodStripeCard      PaymentMethod = "StripeCard"
+	PaymentMethodPaypal          PaymentMethod = "Paypal"
+	PaymentMethodAnorInstallment PaymentMethod = "AnorInstallment"
+	PaymentMethodPayOnDelivery   PaymentMethod = "PayOnDelivery"
 )
 
-func (e *ProductStatus) Scan(src interface{}) error {
+func (e *PaymentMethod) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = ProductStatus(s)
+		*e = PaymentMethod(s)
 	case string:
-		*e = ProductStatus(s)
+		*e = PaymentMethod(s)
 	default:
-		return fmt.Errorf("unsupported scan type for ProductStatus: %T", src)
+		return fmt.Errorf("unsupported scan type for PaymentMethod: %T", src)
 	}
 	return nil
 }
 
-type NullProductStatus struct {
-	ProductStatus ProductStatus
-	Valid         bool // Valid is true if ProductStatus is not NULL
+type NullPaymentMethod struct {
+	PaymentMethod PaymentMethod
+	Valid         bool // Valid is true if PaymentMethod is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullProductStatus) Scan(value interface{}) error {
+func (ns *NullPaymentMethod) Scan(value interface{}) error {
 	if value == nil {
-		ns.ProductStatus, ns.Valid = "", false
+		ns.PaymentMethod, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.ProductStatus.Scan(value)
+	return ns.PaymentMethod.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullProductStatus) Value() (driver.Value, error) {
+func (ns NullPaymentMethod) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.ProductStatus), nil
+	return string(ns.PaymentMethod), nil
 }
 
-type UserStatus string
+type PaymentStatus string
 
 const (
-	UserStatusBlocked             UserStatus = "Blocked"
-	UserStatusRegistrationPending UserStatus = "RegistrationPending"
-	UserStatusActive              UserStatus = "Active"
+	PaymentStatusPending PaymentStatus = "Pending"
+	PaymentStatusPaid    PaymentStatus = "Paid"
 )
 
-func (e *UserStatus) Scan(src interface{}) error {
+func (e *PaymentStatus) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = UserStatus(s)
+		*e = PaymentStatus(s)
 	case string:
-		*e = UserStatus(s)
+		*e = PaymentStatus(s)
 	default:
-		return fmt.Errorf("unsupported scan type for UserStatus: %T", src)
+		return fmt.Errorf("unsupported scan type for PaymentStatus: %T", src)
 	}
 	return nil
 }
 
-type NullUserStatus struct {
-	UserStatus UserStatus
-	Valid      bool // Valid is true if UserStatus is not NULL
+type NullPaymentStatus struct {
+	PaymentStatus PaymentStatus
+	Valid         bool // Valid is true if PaymentStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullUserStatus) Scan(value interface{}) error {
+func (ns *NullPaymentStatus) Scan(value interface{}) error {
 	if value == nil {
-		ns.UserStatus, ns.Valid = "", false
+		ns.PaymentStatus, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.UserStatus.Scan(value)
+	return ns.PaymentStatus.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullUserStatus) Value() (driver.Value, error) {
+func (ns NullPaymentStatus) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.UserStatus), nil
+	return string(ns.PaymentStatus), nil
 }
 
-type Cart struct {
-	ID             int64
-	UserID         *int64
-	Status         CartStatus
-	CreatedAt      pgtype.Timestamptz
-	DeletedAt      pgtype.Timestamptz
-	PiClientSecret *string
-}
-
-type CartItem struct {
-	ID                int64
-	CartID            int64
-	VariantID         int64
-	Qty               int32
-	Price             decimal.Decimal
-	Thumbnail         string
-	ProductName       string
-	VariantAttributes []byte
-	IsRemoved         bool
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-	CurrencyCode      string
-	ProductPath       string
-}
-
-type Category struct {
-	ID       int32
-	Category string
-	Handle   string
-	ParentID *int32
-}
-
-type Collection struct {
-	ID          int32
-	Name        string
-	Handle      string
-	Description *string
-}
-
-type Coupon struct {
-	ID             int32
-	Code           string
-	Description    *string
-	DiscountType   string
-	DiscountValue  decimal.Decimal
-	MaxUses        *int32
-	ExpirationDate pgtype.Date
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-}
-
-type CouponUsage struct {
-	ID         int64
-	CouponCode string
-	UserID     int64
-	CartID     int64
-	AppliedAt  pgtype.Timestamptz
-}
-
-type FeaturedPromotion struct {
-	ID           int64
-	Title        string
-	ImageUrl     string
-	Type         string
-	TargetID     *int32
-	FilterParams []byte
-	StartDate    pgtype.Date
-	EndDate      pgtype.Date
-	DisplayOrder *int32
+type Address struct {
+	ID            int64
+	UserID        int64
+	DefaultFor    NullAddressDefaultType
+	Name          string
+	AddressLine1  string
+	AddressLine2  *string
+	City          string
+	StateProvince *string
+	PostalCode    *string
+	Country       *string
+	Phone         *string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 type Order struct {
-	ID              int64
-	CartID          int64
-	UserID          *int64
-	Status          OrderStatus
-	TotalAmount     decimal.Decimal
-	PaymentIntentID string
-	ShippingAddress []byte
-	BillingAddress  []byte
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	ID                int64
+	UserID            int64
+	CartID            int64
+	PaymentMethod     PaymentMethod
+	PaymentStatus     PaymentStatus
+	Status            OrderStatus
+	ShippingAddressID int64
+	IsPickup          bool
+	Amount            decimal.Decimal
+	Currency          string
+	CreatedAt         pgtype.Timestamptz
+	UpdatedAt         pgtype.Timestamptz
 }
 
 type OrderItem struct {
@@ -283,133 +230,20 @@ type OrderItem struct {
 	UpdatedAt         pgtype.Timestamptz
 }
 
-type Product struct {
+type StripeCardPayment struct {
 	ID               int64
-	StoreID          int32
-	CategoryID       int32
-	Name             string
-	Brand            *string
-	Handle           string
-	ImageUrls        []byte
-	ShortInformation []string
-	Specifications   []byte
-	Status           ProductStatus
+	OrderID          int64
+	UserID           *int64
+	BillingAddressID int64
+	PaymentIntentID  string
+	PaymentMethodID  *string
+	Amount           decimal.Decimal
+	Currency         string
+	Status           string
+	ClientSecret     *string
+	LastError        *string
+	CardLast4        string
+	CardBrand        string
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
-}
-
-type ProductAttribute struct {
-	ID        int64
-	ProductID int64
-	Attribute string
-}
-
-type ProductCollection struct {
-	ProductID    int64
-	CollectionID int32
-}
-
-type ProductPricing struct {
-	ProductID       int64
-	BasePrice       decimal.Decimal
-	CurrencyCode    string
-	Discount        decimal.Decimal
-	DiscountedPrice decimal.Decimal
-	IsOnSale        bool
-}
-
-type ProductRating struct {
-	ID        int64
-	ProductID int64
-	UserID    *int64
-	Rating    int16
-	Review    *string
-	ImageUrls []string
-	CreatedAt pgtype.Timestamptz
-}
-
-type ProductVariant struct {
-	ID               int64
-	ProductID        int64
-	Sku              string
-	Qty              int32
-	IsCustomPriced   bool
-	ImageIdentifiers []int16
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
-}
-
-type ProductVariantAttribute struct {
-	VariantID          int64
-	ProductAttributeID int64
-	AttributeValue     string
-}
-
-type ProductVariantPricing struct {
-	VariantID       int64
-	BasePrice       decimal.Decimal
-	CurrencyCode    string
-	Discount        decimal.Decimal
-	DiscountedPrice decimal.Decimal
-	IsOnSale        bool
-}
-
-type Role struct {
-	ID   int16
-	Role string
-}
-
-type Store struct {
-	ID          int32
-	Handle      string
-	UserID      int64
-	Name        string
-	Description string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-}
-
-type User struct {
-	ID          int64
-	Email       string
-	Password    string
-	PhoneNumber *string
-	FullName    string
-	Status      UserStatus
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-}
-
-type UserRole struct {
-	UserID int64
-	RoleID int16
-}
-
-type Wishlist struct {
-	ID        int64
-	UserID    int64
-	Name      string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	DeletedAt pgtype.Timestamptz
-}
-
-type WishlistItem struct {
-	ID                int64
-	WishlistID        int64
-	VariantID         int64
-	Price             decimal.Decimal
-	Thumbnail         string
-	ProductName       string
-	VariantAttributes []byte
-	IsRemoved         bool
-	AddedAt           pgtype.Timestamptz
-}
-
-type WishlistShare struct {
-	ID                   int64
-	WishlistID           int64
-	ShareToken           string
-	ShareTokenExpiration pgtype.Timestamptz
-	CreatedAt            pgtype.Timestamptz
 }

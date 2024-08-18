@@ -1,38 +1,35 @@
 package product
 
 import (
-	homepage "github.com/aliml92/anor/html/dtos/pages/home"
-	"github.com/aliml92/anor/html/dtos/pages/home/components"
+	"github.com/aliml92/anor"
+	"github.com/aliml92/anor/html/templates/pages/home"
+	"github.com/aliml92/anor/html/templates/pages/home/components"
 	"net/http"
 )
 
-// HomeView handles the request for the home page.
 func (h *Handler) HomeView(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	newArrivals, err := h.productSvc.GetNewArrivals(ctx, 10)
+
+	featuredSelections, err := h.featuredSelectionService.ListAllActive(ctx)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
 	}
 
-	featuredPromotions, err := h.featuredSvc.GetFeaturedPromotions(ctx, 5)
-	if err != nil {
-		h.serverInternalError(w, err)
-		return
-	}
+	// TODO: this service does not bring actual popular products
+	popular, err := h.productService.ListPopularProducts(ctx, anor.PopularProductListParams{})
 
 	// Prepare home page content
-	hc := homepage.Content{
+	hc := home.Content{
 		Featured: components.Featured{
-			Promotions: featuredPromotions,
-		},
-		NewArrivals: components.Collection{
-			Products: newArrivals,
+			Selections: featuredSelections,
 		},
 		Popular: components.Collection{
-			Products: nil, // TODO: get popular products
+			Title:        "Popular Products",
+			ResourcePath: "/categories/popular-products-101",
+			Products:     popular,
 		},
 	}
 
-	h.Render(w, r, "pages/home", hc)
+	h.Render(w, r, "pages/home/content.gohtml", hc)
 }

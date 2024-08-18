@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aliml92/anor"
-	notfoundpage "github.com/aliml92/anor/html/dtos/pages/not_found"
-	productdetailspage "github.com/aliml92/anor/html/dtos/pages/product_details"
-	"github.com/aliml92/anor/html/dtos/pages/product_details/components"
-	"github.com/aliml92/anor/html/dtos/shared"
+	notfound "github.com/aliml92/anor/html/templates/pages/not_found"
+	productdetails "github.com/aliml92/anor/html/templates/pages/product_details"
+	"github.com/aliml92/anor/html/templates/pages/product_details/components"
+	"github.com/aliml92/anor/html/templates/shared"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,7 +15,6 @@ import (
 
 // ProductDetailsView handles the request for the product details page.
 func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
-	h.logger.Debug("handling product details view...")
 	ctx := r.Context()
 
 	handle := r.PathValue("handle")
@@ -25,7 +24,7 @@ func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := h.productSvc.GetProduct(ctx, productID)
+	p, err := h.productService.Get(ctx, productID)
 	if err != nil {
 		if errors.Is(err, anor.ErrNotFound) {
 			h.renderNotFound(w, r, "Product not found")
@@ -35,19 +34,19 @@ func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := h.categorySvc.GetCategory(ctx, p.CategoryID)
+	c, err := h.categoryService.GetCategory(ctx, p.CategoryID)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
 	}
 
-	ac, err := h.categorySvc.GetAncestorCategories(ctx, p.CategoryID)
+	ac, err := h.categoryService.GetAncestorCategories(ctx, p.CategoryID)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
 	}
 
-	pdc := productdetailspage.Content{
+	pdc := productdetails.Content{
 		CategoryBreadcrumb: shared.CategoryBreadcrumb{
 			Category:           c,
 			AncestorCategories: ac,
@@ -61,14 +60,13 @@ func (h *Handler) ProductDetailsView(w http.ResponseWriter, r *http.Request) {
 		ProductVariantMatrix: constructProductVariantMatrix(p.ProductVariants, p.Attributes),
 	}
 
-	h.Render(w, r, "pages/product_details", pdc)
+	h.Render(w, r, "pages/product_details/content.gohtml", pdc)
 }
 
 // renderNotFound renders `not found` page with given message
 func (h *Handler) renderNotFound(w http.ResponseWriter, r *http.Request, message string) {
-	fmt.Println("rendering not found page")
-	c := notfoundpage.Content{Message: message}
-	h.Render(w, r, "pages/not_found", c)
+	c := notfound.Content{Message: message}
+	h.Render(w, r, "pages/not_found/content.gohtml", c)
 }
 
 // extractProductID extracts product id from handle

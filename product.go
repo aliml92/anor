@@ -2,6 +2,7 @@ package anor
 
 import (
 	"context"
+	"github.com/aliml92/anor/relation"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -56,24 +57,36 @@ type BaseProduct struct {
 	Handle           string
 	ShortInformation []string
 	ImageUrls        map[int]string
-	Specifications   map[string]string // product item specifications, e.g. Ebay
+	Specifications   map[string]string
 	Status           ProductStatus
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
 
 type Product struct {
-	BaseProduct
+	ID               int64
+	StoreID          int32
+	CategoryID       int32
+	Name             string
+	Brand            string
+	Handle           string
+	ShortInformation []string
+	ImageUrls        map[int]string
+	Specifications   map[string]string
+	Status           ProductStatus
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+
 	Store           Store
 	Category        Category
 	ProductVariants []ProductVariant
+	Attributes      []ProductAttribute
 	Pricing         ProductPricing
 	Rating          Rating
-	Reviews         []ProductRating // Product Reviews
-	SoldCount       int
-	LeftCount       int
+	Reviews         []ProductRating
 
-	Attributes []ProductAttribute
+	SoldCount int
+	LeftCount int
 }
 
 type ProductAttribute struct {
@@ -87,10 +100,11 @@ type ProductVariant struct {
 	Qty              int32                 `json:"quantity"`
 	IsCustomPriced   bool                  `json:"-"` // TODO: implement
 	ImageIdentifiers []int16               `json:"-"` // TODO: implement
-	Attributes       map[string]string     `json:"attributes"`
 	Pricing          ProductVariantPricing `json:"-"` // TODO: implement
 	CreatedAt        time.Time             `json:"-"`
 	UpdatedAt        time.Time             `json:"-"`
+
+	Attributes map[string]string `json:"attributes"`
 }
 
 type ProductPricing struct {
@@ -126,19 +140,23 @@ type Rating struct {
 	RatingCount int
 }
 
-type GetProductsByCategoryParams struct {
+type ListByCategoryParams struct {
+	With   relation.Set
 	Filter FilterParam
 	Sort   SortParam
 	Paging Paging
 }
 
+type PopularProductListParams struct {
+	Page     int
+	PageSize int
+}
+
 type ProductService interface {
-	GetProduct(ctx context.Context, id int64) (*Product, error)
-	GetProductsByLeafCategoryID(ctx context.Context, categoryID int32, params GetProductsByCategoryParams) ([]Product, int64, error)
-	GetProductsByNonLeafCategoryID(ctx context.Context, categoryID int32, params GetProductsByCategoryParams) ([]Product, int64, error)
-	GetProductsByCategory(ctx context.Context, category Category, params GetProductsByCategoryParams) ([]Product, int64, error)
-	GetProductBrandsByCategory(ctx context.Context, category Category) ([]string, error)
+	Get(ctx context.Context, id int64, with relation.Set) (*Product, error)
+	ListByCategory(ctx context.Context, category Category, params ListByCategoryParams) ([]Product, int64, error)
+	ListAllBrandsByCategory(ctx context.Context, category Category) ([]string, error)
 	GetMinMaxPricesByCategory(ctx context.Context, category Category) ([2]decimal.Decimal, error)
 
-	GetNewArrivals(ctx context.Context, limit int) ([]Product, error)
+	ListPopularProducts(ctx context.Context, params PopularProductListParams) ([]Product, error)
 }

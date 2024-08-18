@@ -1,0 +1,232 @@
+{{ define "header" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/partials/header.Base*/ -}}
+    {{ $user := .User }}
+    {{ $cartNavItem := .CartNavItem }}
+    {{ $wishlistNavItem := .WishlistNavItem }}
+    {{ $rootCategories := .RootCategories }}
+    <header class="section-header">
+        <section class="header-main bg-white pt-lg-3 pt-3 pb-lg-2 pb-2">
+            <div class="container">
+                <div class="row gx-2 align-items-center">
+                    <div class="col-xl-3 col-lg col-6 col-sm-6 col-md flex-grow-0">
+                        <a href="" class="brand-wrap me-3"
+                           hx-get="/"
+                           hx-target="#content"
+                           hx-push-url="true"
+                        >
+                            <img class="logo" height="50" src="static/images/logo.svg">
+                        </a> <!-- brand-wrap end.// -->
+                    </div> <!-- col end.// -->
+
+                    <!-- Mobile Icons and Toggle -->
+                    <div class="col-6 d-lg-none mobile-icons">
+                        <div class="d-flex justify-content-end align-items-center">
+                            <div class="widget-header mx-2 text-center menu-item me-0">
+                                {{ if $user.IsAuth }}
+                                    <a href="" class="d-inline-block align-middle"
+                                       hx-get="/user"
+                                       hx-target="#content"
+                                       hx-push-url="true"
+                                    >
+                                        <span class="fs-5 d-inline-block position-relative">
+                                            <i class="bi bi-person" style="font-size: 22px;"></i>
+                                        </span>
+                                        <small class="d-block text-truncate"> {{ $user.Firstname }} </small>
+                                    </a>
+                                {{ else }}
+                                    <a href="/auth/signin" class="d-inline-block align-middle">
+                                    <span class="fs-5 d-inline-block position-relative">
+                                        <i class="bi bi-person" style="font-size: 22px;"></i>
+                                    </span>
+                                        <small class="d-block text-truncate"> Signin </small>
+                                    </a>
+                                {{ end }}
+                            </div>
+
+                            {{ template "cart_nav_item" $cartNavItem }}
+
+                            <button class="navbar-toggler ms-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="col-lg-5 col-12 mt-3 mt-lg-0">
+                        <div class="search my-3 my-lg-0">
+                            <div class="input-group justify-content-center">
+                                <div class="w-100 position-relative">
+                                    <span class="bi bi-search form-control-feedback"></span>
+                                    <input type="search" class="form-control rounded-0" id="searchInput" autocomplete="off"
+                                           name="q" placeholder="Search anything"
+                                           _ = "on click or keyup[event.key=='Backspace' or event.key=='Delete']
+                                                    if my.value is '' and #search-dropdown match .invisible
+                                                        then call populateSearchDropdownListWithRecentSearches()
+                                                        remove .invisible from #search-dropdown
+                                                        log 'history and trending search queries fired' end
+                                                on keyup[event.key=='ArrowDown' or event.key=='ArrowUp' ]
+                                                   call selectActiveItem(event)
+                                                        log 'selecting list items fired' end
+                                                on keyup[
+                                                    (event.keyCode >= 65 and event.keyCode <= 90) or
+                                                    (event.keyCode >= 48 and event.keyCode <= 57) or
+                                                    (event.keyCode >= 96 and event.keyCode <= 105) or
+                                                    event.keyCode == 8
+                                                ]
+                                                    if my.value is not ''
+                                                        then
+                                                            set #query-suggestion.value to my.value
+                                                            send searchQuerySugTrigger to #query-suggestion
+                                                            log 'query suggestion search fired'
+                                                        end
+                                                on search
+                                                    send searchTrigger
+                                                    log 'search fired'
+
+                                                    call addSearchQuery(my.value)
+                                                    log 'search query saved in local storage'
+
+                                                    if #search-dropdown does not match .invisible
+                                                        then add .invisible to #search-dropdown
+                                                    end
+                                                on focusout
+                                                    log 'focusout event fired'
+                                                    log `relatedTarget: ${event.relatedTarget}`
+
+                                                    if event.relatedTarget is null
+                                                        if #search-dropdown does not match .invisible
+                                                            then add .invisible to #search-dropdown
+                                                            log 'search dropdown hidden'
+                                                        end
+                                                    else
+                                                        if not event.relatedTarget.classList.contains('history')
+                                                            if #search-dropdown does not match .invisible
+                                                                then add .invisible to #search-dropdown
+                                                                log 'search dropdown hidden'
+                                                            end
+                                                        end
+                                                        log 'search dropdown remains visible'
+                                                    end
+                                                    "
+                                           hx-get="/search"
+                                           hx-push-url="true"
+                                           hx-trigger="searchTrigger"
+                                           hx-target="#content"
+                                    >
+                                    <input type="hidden" name="q" id="query-suggestion"
+                                           hx-get="/search-query-suggestions"
+                                           hx-trigger="searchQuerySugTrigger"
+                                           hx-target="#search-dropdown"
+                                    >
+                                    <div id="search-dropdown" class="position-absolute invisible" style="z-index: 9999; width: 100%;">
+                                        <ul id="search-dropdown-list" class="list-group rounded-0">
+                                            <a href="#" class="list-group-item list-group-item-action border-bottom-0 d-flex"
+                                               _ = "on click log 'a clicked'"
+                                            >
+                                                <i class="bi bi-clock-history me-3"></i>
+                                                <span> your recent search 1 </span>
+                                                <i class="bi bi-x ms-auto" aria-hidden="true"></i>
+                                            </a>
+                                            <a href="#" class="list-group-item list-group-item-action d-flex"
+                                               _ = "on click log 'a clicked'"
+                                            >
+                                                <i class="bi bi-clock-history me-3"></i>
+                                                <span> your recent search 1 </span>
+                                                <i class="bi bi-x ms-auto" aria-hidden="true"></i>
+                                            </a>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div> <!-- input-group end.// -->
+                        </div> <!-- search-wrap end.// -->
+                    </div>
+
+                    <!-- Desktop Icons -->
+                    <div class="col-lg-4 d-none d-lg-block">
+                        <div class="d-flex justify-content-end align-items-center">
+                            <div class="widget-header mx-2 text-center menu-item me-0">
+                                {{ if $user.IsAuth  }}
+                                    <a href="" class="d-inline-block align-middle"
+                                       hx-get="/user"
+                                       hx-target="#content"
+                                       hx-push-url="true"
+                                    >
+                                        <span class="fs-5 d-inline-block position-relative">
+                                            <i class="bi bi-person" style="font-size: 22px;"></i>
+                                        </span>
+                                        <small class="d-block text-truncate"> {{ $user.Firstname }} </small>
+                                    </a>
+                                {{ else }}
+                                    <a href="/auth/signin" class="d-inline-block align-middle">
+                                    <span class="fs-5 d-inline-block position-relative">
+                                        <i class="bi bi-person" style="font-size: 22px;"></i>
+                                    </span>
+                                        <small class="d-block text-truncate"> Signin </small>
+                                    </a>
+                                {{ end }}
+                            </div>
+
+                            {{ template "wishlist_nav_item" $wishlistNavItem }}
+
+                            {{ template "cart_nav_item" $cartNavItem }}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+        <!-- Offcanvas Navigation for Mobile -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="collapse" href="#categoryCollapse" role="button" aria-expanded="false" aria-controls="collapseExample">Categories</a></li>
+                    <div class="collapse" id="categoryCollapse">
+                        <ul class="nav flex-column ms-2">
+                            {{ range $index, $category :=  $rootCategories }}
+                            <li class="nav-item">
+                                <a class="nav-link" href="/categories/{{ $category.Handle }}-{{ $category.ID }}"
+                                    hx-get="/categories/{{ $category.Handle }}-{{ $category.ID }}"
+                                    hx-target="#content"
+                                    hx-push-url="true"
+                                >{{ getRootCategoryAlias $category.Category }}</a>
+                            </li>
+                            {{ end }}
+                        </ul>
+                    </div>
+                    <li class="nav-item"><a class="nav-link" href="#">Deals</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Sell on Anor</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Help</a></li>
+                    <hr>
+                    {{ if ne $user nil }}
+                    <li class="nav-item">
+                        <a class="nav-link" hx-delete="/user/logout">Sign out</a>
+                    </li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <nav class="navbar navbar-light bg-white navbar-expand-lg">
+            <div class="container">
+                <div class="collapse navbar-collapse" id="navbar_main">
+                    <ul class="navbar-nav">
+                        {{ range $index, $category := $rootCategories }}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/categories/{{ $category.Handle }}-{{ $category.ID }}"
+                               hx-get="/categories/{{ $category.Handle }}-{{ $category.ID }}"
+                               hx-target="#content"
+                               hx-push-url="true"
+                            >{{ getRootCategoryAlias $category.Category }}</a>
+                        </li>
+                        {{ end }}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+{{ end }}

@@ -1,16 +1,14 @@
-cmd/ebay-data-importer/clothes_baby.jsonl
-cmd/ebay-data-importer/clothes_kids.jsonl
-cmd/ebay-data-importer/clothes_men.jsonl
-cmd/ebay-data-importer/clothes_specialty.jsonl
-cmd/ebay-data-importer/electronics.jsonl
-cmd/ebay-data-importer/jewelry.jsonl
-cmd/ebay-data-importer/collectibles.jsonl
-cmd/ebay-data-importer/home_garden.jsonl
 
+cmd/ebay-data-importer/dataset/clothes_baby.jsonl
+cmd/ebay-data-importer/dataset/clothes_kids.jsonl
+cmd/ebay-data-importer/dataset/clothes_men.jsonl
+cmd/ebay-data-importer/dataset/clothes_specialty.jsonl
+cmd/ebay-data-importer/dataset/collectibles.jsonl
+cmd/ebay-data-importer/dataset/electronics.jsonl
+cmd/ebay-data-importer/dataset/home_garden.jsonl
 cmd/ebay-data-importer/dataset/industrial.jsonl
+cmd/ebay-data-importer/dataset/jewelry.jsonl
 cmd/ebay-data-importer/dataset/smartphones.jsonl
-cmd/ebay-data-importer/dataset/sports.jsonl
-cmd/ebay-data-importer/dataset/toy_games.jsonl
-cmd/ebay-data-importer/dataset/toys.jsonl
+cmd/ebay-data-importer/dataset/sports.jsonlcmd/ebay-data-importer/dataset/toys.jsonl
 cmd/ebay-data-importer/dataset/tv.jsonl
 cmd/ebay-data-importer/dataset/winter_sports.jsonl

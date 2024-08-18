@@ -19,8 +19,8 @@ var _ anor.CartService = &CartServiceMock{}
 //
 //		// make and configure a mocked anor.CartService
 //		mockedCartService := &CartServiceMock{
-//			AddCartItemFunc: func(ctx context.Context, cartID int64, p anor.AddCartItemParam) (anor.CartItem, error) {
-//				panic("mock out the AddCartItem method")
+//			AddCartItemFunc: func(ctx context.Context, cartID int64, p anor.AddCartItemParams) (anor.CartItem, error) {
+//				panic("mock out the AddItem method")
 //			},
 //			CountCartItemsFunc: func(ctx context.Context, cartID int64) (int64, error) {
 //				panic("mock out the CountCartItems method")
@@ -29,7 +29,7 @@ var _ anor.CartService = &CartServiceMock{}
 //				panic("mock out the CreateCart method")
 //			},
 //			DeleteCartItemFunc: func(ctx context.Context, cartItemID int64) error {
-//				panic("mock out the DeleteCartItem method")
+//				panic("mock out the DeleteItem method")
 //			},
 //			GetCartFunc: func(ctx context.Context, userID int64, includeCartItems bool) (anor.Cart, error) {
 //				panic("mock out the GetCart method")
@@ -46,8 +46,8 @@ var _ anor.CartService = &CartServiceMock{}
 //			UpdateCartFunc: func(ctx context.Context, c anor.Cart) error {
 //				panic("mock out the UpdateCart method")
 //			},
-//			UpdateCartItemFunc: func(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParam) error {
-//				panic("mock out the UpdateCartItem method")
+//			UpdateCartItemFunc: func(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParams) error {
+//				panic("mock out the UpdateItem method")
 //			},
 //		}
 //
@@ -57,7 +57,7 @@ var _ anor.CartService = &CartServiceMock{}
 //	}
 type CartServiceMock struct {
 	// AddCartItemFunc mocks the AddCartItem method.
-	AddCartItemFunc func(ctx context.Context, cartID int64, p anor.AddCartItemParam) (anor.CartItem, error)
+	AddCartItemFunc func(ctx context.Context, cartID int64, p anor.AddCartItemParams) (anor.CartItem, error)
 
 	// CountCartItemsFunc mocks the CountCartItems method.
 	CountCartItemsFunc func(ctx context.Context, cartID int64) (int64, error)
@@ -84,7 +84,7 @@ type CartServiceMock struct {
 	UpdateCartFunc func(ctx context.Context, c anor.Cart) error
 
 	// UpdateCartItemFunc mocks the UpdateCartItem method.
-	UpdateCartItemFunc func(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParam) error
+	UpdateCartItemFunc func(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParams) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -95,7 +95,7 @@ type CartServiceMock struct {
 			// CartID is the cartID argument value.
 			CartID int64
 			// P is the p argument value.
-			P anor.AddCartItemParam
+			P anor.AddCartItemParams
 		}
 		// CountCartItems holds details about calls to the CountCartItems method.
 		CountCartItems []struct {
@@ -166,7 +166,7 @@ type CartServiceMock struct {
 			// CartItemID is the cartItemID argument value.
 			CartItemID int64
 			// P is the p argument value.
-			P anor.UpdateCartItemParam
+			P anor.UpdateCartItemParams
 		}
 	}
 	lockAddCartItem          sync.RWMutex
@@ -182,14 +182,14 @@ type CartServiceMock struct {
 }
 
 // AddCartItem calls AddCartItemFunc.
-func (mock *CartServiceMock) AddCartItem(ctx context.Context, cartID int64, p anor.AddCartItemParam) (anor.CartItem, error) {
+func (mock *CartServiceMock) AddCartItem(ctx context.Context, cartID int64, p anor.AddCartItemParams) (anor.CartItem, error) {
 	if mock.AddCartItemFunc == nil {
-		panic("CartServiceMock.AddCartItemFunc: method is nil but CartService.AddCartItem was just called")
+		panic("CartServiceMock.AddCartItemFunc: method is nil but CartService.AddItem was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
 		CartID int64
-		P      anor.AddCartItemParam
+		P      anor.AddCartItemParams
 	}{
 		Ctx:    ctx,
 		CartID: cartID,
@@ -208,12 +208,12 @@ func (mock *CartServiceMock) AddCartItem(ctx context.Context, cartID int64, p an
 func (mock *CartServiceMock) AddCartItemCalls() []struct {
 	Ctx    context.Context
 	CartID int64
-	P      anor.AddCartItemParam
+	P      anor.AddCartItemParams
 } {
 	var calls []struct {
 		Ctx    context.Context
 		CartID int64
-		P      anor.AddCartItemParam
+		P      anor.AddCartItemParams
 	}
 	mock.lockAddCartItem.RLock()
 	calls = mock.calls.AddCartItem
@@ -296,7 +296,7 @@ func (mock *CartServiceMock) CreateCartCalls() []struct {
 // DeleteCartItem calls DeleteCartItemFunc.
 func (mock *CartServiceMock) DeleteCartItem(ctx context.Context, cartItemID int64) error {
 	if mock.DeleteCartItemFunc == nil {
-		panic("CartServiceMock.DeleteCartItemFunc: method is nil but CartService.DeleteCartItem was just called")
+		panic("CartServiceMock.DeleteCartItemFunc: method is nil but CartService.DeleteItem was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
@@ -522,14 +522,14 @@ func (mock *CartServiceMock) UpdateCartCalls() []struct {
 }
 
 // UpdateCartItem calls UpdateCartItemFunc.
-func (mock *CartServiceMock) UpdateCartItem(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParam) error {
+func (mock *CartServiceMock) UpdateCartItem(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParams) error {
 	if mock.UpdateCartItemFunc == nil {
-		panic("CartServiceMock.UpdateCartItemFunc: method is nil but CartService.UpdateCartItem was just called")
+		panic("CartServiceMock.UpdateCartItemFunc: method is nil but CartService.UpdateItem was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
 		CartItemID int64
-		P          anor.UpdateCartItemParam
+		P          anor.UpdateCartItemParams
 	}{
 		Ctx:        ctx,
 		CartItemID: cartItemID,
@@ -548,12 +548,12 @@ func (mock *CartServiceMock) UpdateCartItem(ctx context.Context, cartItemID int6
 func (mock *CartServiceMock) UpdateCartItemCalls() []struct {
 	Ctx        context.Context
 	CartItemID int64
-	P          anor.UpdateCartItemParam
+	P          anor.UpdateCartItemParams
 } {
 	var calls []struct {
 		Ctx        context.Context
 		CartItemID int64
-		P          anor.UpdateCartItemParam
+		P          anor.UpdateCartItemParams
 	}
 	mock.lockUpdateCartItem.RLock()
 	calls = mock.calls.UpdateCartItem

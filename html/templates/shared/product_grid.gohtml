@@ -1,16 +1,16 @@
-{{ define "product-grid" }}
-    {{- /*gotype: github.com/aliml92/anor/html/dtos/shared.ProductGrid*/ -}}
-    {{ range .Products }}
+{{ define "product_grid" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/shared.ProductGrid*/ -}}
+    {{ range $product := .Products }}
         <div class="col-6 col-md-4 col-lg-3">
-            <figure class="card card-product-grid" data-product-id="{{ .BaseProduct.ID }}">
+            <figure class="card card-product-grid" data-product-id="{{ $product.ID }}">
                 <div class="position-relative rounded-top">
-                    <a href="/products/{{ .BaseProduct.Handle }}-{{ .BaseProduct.ID }}" class="img-wrap rounded-top"
+                    <a href="/products/{{ $product.Handle }}-{{ $product.ID }}" class="img-wrap rounded-top"
                        hx-push-url="true"
-                       hx-get="/products/{{ .BaseProduct.Handle }}-{{ .BaseProduct.ID }}"
+                       hx-get="/products/{{ $product.Handle }}-{{ $product.ID }}"
                        hx-target="#content"
                        hx-swap="innerHTML show:window:top"
                     >
-                        <img src="{{ modifyImgURL (index .BaseProduct.ImageUrls 0) 500 }}">
+                        <img loading="lazy" src="{{ modifyImgURL (index $product.ImageUrls 0) 500 }}">
                     </a>
                     <span class="saved-item-icon d-inline-block py-2 px-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-heart" viewBox="0 0 16 16">
@@ -20,25 +20,25 @@
                 </div>
                 <figcaption class="p-3 border-0 card-product-grid-body">
                     <a class="title mb-1"
-                       href="/products/{{ .BaseProduct.Handle }}-{{ .BaseProduct.ID }}"
+                       href="/products/{{ $product.Handle }}-{{ $product.ID }}"
                        hx-push-url="true"
-                       hx-get="/products/{{ .BaseProduct.Handle }}-{{ .BaseProduct.ID }}"
+                       hx-get="/products/{{ $product.Handle }}-{{ $product.ID }}"
                        hx-target="#content"
                        hx-swap="innerHTML show:window:top"
 
-                    >{{ .BaseProduct.Name }}</a>
+                    >{{ $product.Name }}</a>
                     <div class="mb-3 item-rating-card">
                         <p class="d-inline text-warning"><i class="bi bi-star"></i></p>
                         <span class="text-muted">4.5</span>
                         <span class="text-muted ms-0">(34 reviews)</span>
                     </div>
                     <div class="price-wrap">
-                        {{ if (eqd0 .Pricing.Discount ) }}
-                            <span class="price">${{ .Pricing.BasePrice }}</span>
-                            <span class="price-old" style="visibility: hidden" >${{ .Pricing.BasePrice }}</span>
+                        {{ if (eqd0 $product.Pricing.Discount ) }}
+                            <span class="price">${{ $product.Pricing.BasePrice }}</span>
+                            <span class="price-old" style="visibility: hidden" >${{ $product.Pricing.BasePrice }}</span>
                         {{ else }}
-                            <span class="price">${{ .Pricing.DiscountedPrice }}</span>
-                            <span class="price-old">${{ .Pricing.BasePrice }}</span>
+                            <span class="price">${{ $product.Pricing.DiscountedPrice }}</span>
+                            <span class="price-old">${{ $product.Pricing.BasePrice }}</span>
                         {{ end }}
                     </div>
                 </figcaption>

@@ -10,7 +10,10 @@ import (
 
 type Querier interface {
 	CreateSeller(ctx context.Context, email string, password string, fullName string, status UserStatus) (int64, error)
-	CreateUser(ctx context.Context, email string, password string, fullName string) error
+	CreateUser(ctx context.Context, email string, password string, fullName string) (*User, error)
+	CreateUserWithPhone(ctx context.Context, email string, password string, fullName string, phoneNumber *string) (*User, error)
+	CreateUserWithStatus(ctx context.Context, email string, password string, fullName string, status UserStatus) (*User, error)
+	CreateUserWithStatusAndPhone(ctx context.Context, email string, password string, fullName string, status UserStatus, phoneNumber *string) (*User, error)
 	GetUser(ctx context.Context, id int64) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	UpdateUserPassword(ctx context.Context, password string, iD int64) error

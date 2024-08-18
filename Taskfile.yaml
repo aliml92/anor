@@ -6,29 +6,29 @@ env:
   MIGRATION_DIR: ./postgres/migrations
 
 tasks:
-  create-migration:
+  goose:create:
     desc: "creates a migration file"
     cmds:
       - GOOSE_DRIVER=postgres GOOSE_DBSTRING=$POSTGRES GOOSE_MIGRATION_DIR=$MIGRATION_DIR goose -s create {{.CLI_ARGS}} sql
 
-  compose-up:
+  compose:up:
     cmds:
-      - docker compose -f docker-compose.dev.yaml up -d
+      - docker compose -f docker-compose.yaml up -d
 
-  compose-down:
+  compose:down:
     cmds:
-      - docker compose -f docker-compose.dev.yaml down
+      - docker compose -f docker-compose.yaml down
 
-  compose-logs:
+  compose:logs:
     cmds:
-      - docker compose -f docker-compose.dev.yaml logs
+      - docker compose -f docker-compose.yaml logs
 
-  compose-restart:
+  compose:restart:
     cmds:
-      - docker compose -f docker-compose.dev.yaml down
-      - docker compose -f docker-compose.dev.yaml up -d --build --force-recreate --remove-orphans
+      - docker compose -f docker-compose.yaml down
+      - docker compose -f docker-compose.yaml up -d --build --force-recreate --remove-orphans
 
-  compose-clean-restart:
+  compose:clean-restart:
     cmds:
       - task: compose-down
       - docker volume rm anor_anor_data
@@ -38,11 +38,11 @@ tasks:
       - task: goose-up
 
 
-  goose-up:
+  goose:up:
     cmds:
       - GOOSE_DRIVER=postgres GOOSE_DBSTRING=$POSTGRES goose -dir ./postgres/migrations up
 
-  sqlc-gen: sqlc generate
+  sqlc:generate: sqlc generate
 
   import-dataset:
     cmds:

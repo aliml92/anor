@@ -3,7 +3,8 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"github.com/aliml92/anor/html/dtos/pages/signup"
+	"github.com/aliml92/anor"
+	"github.com/aliml92/anor/html/templates/pages/auth/signup/components"
 	"github.com/invopop/validation"
 	"github.com/invopop/validation/is"
 	"net/http"
@@ -61,19 +62,24 @@ func (f *SignupForm) Validate() error {
 }
 
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
-	f := &SignupForm{}
-
-	err := bindValid(r, f)
+	var f SignupForm
+	err := anor.BindValid(r, &f)
 	if err != nil {
 		h.clientError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
-	if err := h.svc.Signup(ctx, f.Name, f.Email, f.Password); err != nil {
+	_, err = h.authService.Signup(ctx, f.Name, f.Email, f.Password)
+	if err != nil {
 		if errors.Is(err, ErrEmailAlreadyTaken) {
 			err = errors.New("the email address is already registered. Please sign in or use a different email address to signup")
 			h.clientError(w, err, http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, ErrOAuth2RegisteredAccount) {
+			err = fmt.Errorf("this email is associated with a Google Sign-In account. You have two options:\\n1. Sign in with Google\\n2. Set up a password for traditional login in your profile settings after signing in with Google")
+			h.clientError(w, err, http.StatusConflict)
 			return
 		}
 		h.serverInternalError(w, err)
@@ -83,9 +89,10 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	message := fmt.Sprintf("We've sent a one time password (OTP) to %s. If you haven't received the OTP, "+
 		"please check your spam folder or request a new one.", f.Email)
 
-	sc := signup.Confirmation{
+	sc := components.Confirmation{
 		Message: formatMessage(message, "success"),
 		Email:   f.Email,
 	}
-	h.view.RenderComponent(w, "pages/signup/components/signup-confirmation.gohtml", sc)
+
+	h.Render(w, r, "pages/auth/signup/components/signup_confirmation.gohtml", sc)
 }

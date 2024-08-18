@@ -1,4 +1,7 @@
 {{ define "base" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates.Base*/ -}}
+    {{ $header := .Header }}
+    {{ $content := .Content }}
     <!DOCTYPE html>
     <html lang="en">
         <head>
@@ -8,18 +11,18 @@
             <meta name="author" content="Alisher Muzaffarov" />
 
             <title></title>
-            {{ template "head-assets"}}
+            {{ template "head_assets"}}
+            {{ template "bottom_scripts" }}
         </head>
 
         <body hx-ext="response-targets" id="body">
-            {{ template "header" . }}
+            {{ template "header" $header }}
 
-            <div id="content">
-                {{ block "content" . }}{{ end }}
+            <div id="content" style="min-height: 70vh">
+                {{ block "content" $content }}{{ end }}
             </div>
 
             {{ template "footer" }}
-            {{ template "bottom-scripts" }}
         </body>
     </html>
 {{ end }}

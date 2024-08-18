@@ -29,16 +29,116 @@ func (q *Queries) CreateSeller(ctx context.Context, email string, password strin
 	return id, err
 }
 
-const createUser = `-- name: CreateUser :exec
+const createUser = `-- name: CreateUser :one
 INSERT INTO users 
     (email, password, full_name)
 VALUES 
     ($1, $2, $3)
+RETURNING id, email, password, phone_number, full_name, status, created_at, updated_at
 `
 
-func (q *Queries) CreateUser(ctx context.Context, email string, password string, fullName string) error {
-	_, err := q.db.Exec(ctx, createUser, email, password, fullName)
-	return err
+func (q *Queries) CreateUser(ctx context.Context, email string, password string, fullName string) (*User, error) {
+	row := q.db.QueryRow(ctx, createUser, email, password, fullName)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.PhoneNumber,
+		&i.FullName,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const createUserWithPhone = `-- name: CreateUserWithPhone :one
+INSERT INTO users
+(email, password, full_name, phone_number)
+VALUES
+    ($1, $2, $3, $4)
+RETURNING id, email, password, phone_number, full_name, status, created_at, updated_at
+`
+
+func (q *Queries) CreateUserWithPhone(ctx context.Context, email string, password string, fullName string, phoneNumber *string) (*User, error) {
+	row := q.db.QueryRow(ctx, createUserWithPhone,
+		email,
+		password,
+		fullName,
+		phoneNumber,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.PhoneNumber,
+		&i.FullName,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const createUserWithStatus = `-- name: CreateUserWithStatus :one
+INSERT INTO users
+    (email, password, full_name, status)
+VALUES
+    ($1, $2, $3, $4)
+RETURNING id, email, password, phone_number, full_name, status, created_at, updated_at
+`
+
+func (q *Queries) CreateUserWithStatus(ctx context.Context, email string, password string, fullName string, status UserStatus) (*User, error) {
+	row := q.db.QueryRow(ctx, createUserWithStatus,
+		email,
+		password,
+		fullName,
+		status,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.PhoneNumber,
+		&i.FullName,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const createUserWithStatusAndPhone = `-- name: CreateUserWithStatusAndPhone :one
+INSERT INTO users
+(email, password, full_name, status, phone_number)
+VALUES
+    ($1, $2, $3, $4, $5)
+RETURNING id, email, password, phone_number, full_name, status, created_at, updated_at
+`
+
+func (q *Queries) CreateUserWithStatusAndPhone(ctx context.Context, email string, password string, fullName string, status UserStatus, phoneNumber *string) (*User, error) {
+	row := q.db.QueryRow(ctx, createUserWithStatusAndPhone,
+		email,
+		password,
+		fullName,
+		status,
+		phoneNumber,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.PhoneNumber,
+		&i.FullName,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
 }
 
 const getUser = `-- name: GetUser :one

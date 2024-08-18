@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aliml92/anor"
-	"github.com/aliml92/anor/html/dtos/pages/signup"
+	"github.com/aliml92/anor/html/templates/pages/auth/signup/components"
 	"github.com/invopop/validation"
 	"github.com/invopop/validation/is"
 	"net/http"
@@ -31,19 +31,17 @@ func (f *ResendOTPForm) Validate() error {
 }
 
 func (h *Handler) ResendOTP(w http.ResponseWriter, r *http.Request) {
-	f := &ResendOTPForm{}
-
-	err := bindValid(r, f)
+	var f ResendOTPForm
+	err := anor.BindValid(r, &f)
 	if err != nil {
-		h.logClientError(err)
 		h.clientError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
-	if err := h.svc.ResendOTP(ctx, f.Email); err != nil {
+	if err := h.authService.ResendOTP(ctx, f.Email); err != nil {
 		switch {
-		case errors.Is(err, anor.ErrNotFound):
+		case errors.Is(err, anor.ErrUserNotFound):
 			err = errors.New("if this email exists in our server, you will receive a new OTP code")
 			h.clientError(w, err, http.StatusBadRequest)
 		default:
@@ -55,9 +53,10 @@ func (h *Handler) ResendOTP(w http.ResponseWriter, r *http.Request) {
 	message := fmt.Sprintf("We've sent a one time password (OTP) to %s. If you haven't received the OTP, "+
 		"please check your spam folder or request a new one.", f.Email)
 
-	sc := signup.Confirmation{
+	sc := components.Confirmation{
 		Message: formatMessage(message, "success"),
 		Email:   f.Email,
 	}
-	h.view.RenderComponent(w, "pages/signup/components/signup-confirmation.gohtml", sc)
+
+	h.Render(w, r, "pages/auth/signup/components/signup_confirmation.gohtml", sc)
 }

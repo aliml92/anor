@@ -1,4 +1,12 @@
-{{ define "cart-empty" }}
+{{ define "cart_empty" }}
     <img src="static/images/empty-cart.png" class="img-fluid d-block mx-auto w-25">
     <p class="text-center top-50 start-50 fs-3">Your cart is empty</p>
+    <div class="d-flex justify-content-center">
+        <a href="/" class="btn btn-dark btn-lg"
+            hx-get="/"
+            hx-target="#content"
+        >
+            </i>Continue Shopping
+        </a>
+    </div>
 {{ end }}

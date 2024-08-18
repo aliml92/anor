@@ -1294,6 +1294,27 @@ li.side-category-item-current {
     color: rgb(31, 32, 38);
 }
 
+nav.side-profile-nav  a {
+    font-size: 0.9rem;
+    font-weight: normal;
+    line-height: 18px;
+    display: inline-block;
+    padding: 6px 8px;
+    border-radius: 0 !important;
+}
+
+nav.side-profile-nav a:hover {
+    cursor: pointer;
+    background-color: #f4f5f8;
+    text-decoration: none;
+    color: rgb(86, 86, 86);
+}
+
+nav.side-profile-nav a.active {
+    background-color: #f4f5f8;
+    color: rgb(31, 32, 38);
+}
+
 /* base changes */
 :root {
     --bs-body-font-family: 'Inter', sans-serif;
@@ -1592,7 +1613,7 @@ span.eye {
 }
 
 .cart-item-thumb {
-    width: 100px;
+    width: 120px;
     padding: 0 !important;
     border-radius: 0 !important;
 }
@@ -1840,8 +1861,8 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     }
 }
 
-#carouselMain .carousel-control-prev-icon,
-#carouselMain .carousel-control-next-icon {
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -1850,33 +1871,152 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     background-color: rgba(76, 85, 72, 0.7);
 }
 
-#carouselMain .carousel-control-next-icon {
+.carousel-control-next-icon {
     background-position-x: 60%;
 }
 
-#carouselMain .carousel-control-prev-icon {
+.carousel-control-prev-icon {
     background-position-x: 30%;
 }
 
 @media (max-width: 767px) {
-    #carouselMain .carousel-control-prev-icon,
-    #carouselMain .carousel-control-next-icon {
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
         width: 30px;
         height: 27px;
         background-size: 60% 60%;
         background-color: rgba(76, 85, 72, 0.8);
     }
 
-    #carouselMain .carousel-control-next-icon {
+    .carousel-control-next-icon {
         background-position-x: 65%;
     }
 
-    #carouselMain .carousel-control-prev-icon {
+    .carousel-control-prev-icon {
         background-position-x: 35%;
     }
 
-    #carouselMain .carousel-control-prev,
-    #carouselMain .carousel-control-next {
+    .carousel-control-prev,
+    .carousel-control-next {
         width: 10%;
     }
+}
+
+.custom-badge {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.btn-x-sm {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.825rem;
+    border-radius: 0.2rem
+}
+
+.qty-select {
+    width: 60px !important;
+    padding: 0.4rem 1.64rem 0.4rem 0.64rem;
+    font-size: 0.875rem;
+    border-radius: 0.3rem;
+}
+
+.cart-action-link {
+    color: rgb(153, 153, 153);
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.cart-action-link:hover {
+    text-decoration: none !important;
+    color: rgb(100, 100, 100); !important;
+}
+
+.custom-checkout-btn {
+    background-color: #212529;
+    border-color: #212529;
+    color: #ffffff;
+    transition: all 0.2s ease-in-out;
+}
+.custom-checkout-btn:hover:not(:disabled),
+.custom-checkout-btn:focus:not(:disabled) {
+    background-color: #495057;
+    border-color: #495057;
+    color: #f8f9fa;
+}
+.custom-checkout-btn:active:not(:disabled) {
+    background-color: #343a40;
+    border-color: #343a40;
+    color: #f8f9fa;
+}
+.custom-checkout-btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(248, 249, 250, 0.5);
+    outline: none;
+}
+.custom-checkout-btn:disabled {
+    background-color: #212529;
+    border-color: #212529;
+    opacity: 0.65;
+}
+
+.no-flex {
+    flex: 0 0 auto !important;
+}
+
+.order-details dt {
+    font-weight: normal !important;
+    color: #7e818c !important;
+    font-size: 14px !important;
+}
+
+.order-details dd {
+    font-weight: normal !important;
+    font-size: 14px !important;
+}
+
+.accordion-item dd, .accordion-item dl {
+    line-height: 1.2;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.accordion-item, .accordion-button  {
+    border-radius: 0 !important;
+}
+
+.address-wrapper {
+    display: flex;
+    align-items: flex-start;
+}
+
+.address {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.address.full {
+    white-space: pre-wrap;
+    max-width: none;
+}
+
+.view-full-btn {
+    background: none;
+    border: none;
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 0.9em;
+    outline: none;
+}
+
+.view-full-btn:focus {
+    outline: none;
+}
+
+.bi::before, [class*=" bi-"]::before, [class^=bi-]::before {
+    vertical-align: -.075em !important;
 }

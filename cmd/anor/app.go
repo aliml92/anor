@@ -6,9 +6,19 @@ import (
 	"fmt"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/brevo"
-	"github.com/aliml92/anor/postgres/repository/featured_promotion"
+	"github.com/aliml92/anor/html/templates/shared/header"
+	"github.com/aliml92/anor/html/templates/shared/header/components"
+	"github.com/aliml92/anor/middlewares"
+	redissession "github.com/aliml92/anor/redis/session"
+	"github.com/aliml92/anor/session"
 	"github.com/aliml92/anor/storefront/cart"
 	"github.com/aliml92/anor/storefront/checkout"
+	"github.com/gorilla/sessions"
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/google"
+	"github.com/samber/oops"
 	sloghttp "github.com/samber/slog-http"
 	"io"
 	"log"
@@ -23,15 +33,17 @@ import (
 	"github.com/aliml92/anor/config"
 	"github.com/aliml92/anor/html"
 	"github.com/aliml92/anor/postgres"
+	addressRepo "github.com/aliml92/anor/postgres/repository/address"
 	cartRepo "github.com/aliml92/anor/postgres/repository/cart"
 	categoryRepo "github.com/aliml92/anor/postgres/repository/category"
+	featuredSelectionRepo "github.com/aliml92/anor/postgres/repository/featured_selection"
 	orderRepo "github.com/aliml92/anor/postgres/repository/order"
+	paymentRepo "github.com/aliml92/anor/postgres/repository/payment"
 	productRepo "github.com/aliml92/anor/postgres/repository/product"
 	userRepo "github.com/aliml92/anor/postgres/repository/user"
 	"github.com/aliml92/anor/redis"
 	rs "github.com/aliml92/anor/redis/cache"
 	authCache "github.com/aliml92/anor/redis/cache/auth"
-	"github.com/aliml92/anor/redis/cache/session"
 	"github.com/aliml92/anor/storefront/auth"
 	"github.com/aliml92/anor/storefront/product"
 	"github.com/aliml92/anor/storefront/user"
@@ -75,62 +87,179 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// setup brevo emailer
 	brevoEmailer := brevo.NewEmailer(cfg.Email)
 
+	redisStore := redissession.NewRedisStore(redisClient).WithPrefix("keys:session:")
+
 	// setup session manager
-	sessionManager := session.NewManager(cfg.Session, redisClient)
+	sessionManager := redissession.NewManager(
+		redissession.WithCookieName(cfg.Session.CookieName),
+		redissession.WithAuthLifetime(cfg.Session.AuthLifetime),
+		redissession.WithGuestLifetime(cfg.Session.GuestLifetime),
+		redissession.WithGuestSkipPaths(map[string][]string{
+			"/auth/signin":     {"POST"},
+			"/auth/signup":     {"POST"},
+			"/static":          {"GET"},
+			"/auth/static":     {"GET"},
+			"/products/static": {"GET"},
+			"/category/static": {"GET"},
+			"/user/static":     {"GET"},
+			"/checkout/static": {"GET"},
+			"/favicon.ico":     {"GET"},
+		}),
+		redissession.WithStore(redisStore),
+		redissession.WithCodec(redissession.MessagePackCodec{}),
+	)
+
+	store := sessions.NewCookieStore([]byte("My_Secure_key"))
+	store.MaxAge(86400 * 30)
+	store.Options.Path = "/"
+	store.Options.HttpOnly = true
+	store.Options.Secure = false
+	store.Options.SameSite = http.SameSiteLaxMode
+
+	gothic.Store = store
+	// setup goth store
+	oauthCfg := cfg.GoogleOAuth
+	goth.UseProviders(
+		google.New(oauthCfg.ClientID, oauthCfg.ClientSecret, oauthCfg.RedirectURL, oauthCfg.Scopes...),
+	)
 
 	userRepository := userRepo.NewRepository(dbPool)
 	productRepository := productRepo.NewRepository(dbPool)
 	categoryRepository := categoryRepo.NewRepository(dbPool)
-	featurePromotionRepository := featured_promotion.NewRepository(dbPool)
+	featuredSelectionRepository := featuredSelectionRepo.NewRepository(dbPool)
 	cartRepository := cartRepo.NewRepository(dbPool)
 	orderRepository := orderRepo.NewRepository(dbPool)
+	addressRepository := addressRepo.NewRepository(dbPool)
+	paymentRepository := paymentRepo.NewRepository(dbPool)
 
 	userService := postgres.NewUserService(userRepository, cartRepository, orderRepository)
 	productService := postgres.NewProductService(productRepository, categoryRepository)
 	categoryService := postgres.NewCategoryService(categoryRepository, categoryCacher)
-	featuredPromotionsService := postgres.NewFeaturedPromotionService(featurePromotionRepository)
+	featuredSelectionService := postgres.NewFeaturedSelectionService(featuredSelectionRepository, productRepository, categoryRepository)
 	cartService := postgres.NewCartService(cartRepository, productRepository)
+	addressService := postgres.NewAddressService(addressRepository)
 	orderService := postgres.NewOrderService(orderRepository)
-	authService := auth.NewAuthService(userService, brevoEmailer, otpCacher, rpCacher)
+	stripePaymentService := postgres.NewStipePaymentService(paymentRepository)
+
+	authServiceCfg := auth.ServiceConfig{
+		UserService:                 userService,
+		Emailer:                     brevoEmailer,
+		SignupConfirmationOTPCacher: otpCacher,
+		ResetPasswordTokenCacher:    rpCacher,
+	}
+	authService := auth.NewAuthService(authServiceCfg)
 
 	view := html.NewView()
+	getHeaderDataFunc := func(ctx context.Context) (header.Base, error) {
+		u := session.UserFromContext(ctx)
+		rc, err := categoryService.GetRootCategories(ctx)
+		if err != nil {
+			return header.Base{}, err
+		}
+
+		h := header.Base{
+			User:           *u,
+			RootCategories: rc,
+		}
+
+		if u.CartID != 0 {
+			cartItemCount, err := cartService.CountItems(ctx, u.CartID)
+			if err != nil {
+				return header.Base{}, err
+			}
+			h.CartNavItem = components.CartNavItem{CartItemsCount: int(cartItemCount)}
+		}
+
+		return h, nil
+	}
 
 	logger := newSlogLogger(cfg.Logger)
 	slog.SetDefault(logger)
+	oops.StackTraceMaxDepth = 2
 
-	authHandler := auth.NewHandler(authService, cartService, view, sessionManager, logger)
-	productcatalogHandler := product.NewHandler(
-		userService,
-		productService,
-		categoryService,
-		featuredPromotionsService,
-		cartService,
-		searcher,
-		view,
-		logger,
-		sessionManager,
-	)
-	userHandler := user.NewHandler(userService, cartService, categoryService, view, sessionManager, logger)
-	cartHandler := cart.NewHandler(userService, cartService, categoryService, view, sessionManager, logger)
-	checkoutHandler := checkout.NewHandler(userService, cartService, orderService, categoryService, view, sessionManager, logger, cfg)
+	authCfg := &auth.HandlerConfig{
+		AuthService: authService,
+		CartService: cartService,
+		Session:     sessionManager,
+		View:        view,
+		Logger:      logger,
+	}
+
+	authHandler := auth.NewHandler(authCfg)
+
+	productCfg := &product.HandlerConfig{
+		UserService:             userService,
+		ProductService:          productService,
+		CategoryService:         categoryService,
+		FeatureSelectionService: featuredSelectionService,
+		CartService:             cartService,
+		Session:                 sessionManager,
+		Searcher:                searcher,
+		View:                    view,
+		Logger:                  logger,
+		GetHeaderDataFunc:       getHeaderDataFunc,
+	}
+	productcatalogHandler := product.NewHandler(productCfg)
+
+	userCfg := &user.HandlerConfig{
+		UserService:       userService,
+		OrderService:      orderService,
+		AddressService:    addressService,
+		Session:           sessionManager,
+		View:              view,
+		Logger:            logger,
+		Config:            cfg,
+		GetHeaderDataFunc: getHeaderDataFunc,
+	}
+	userHandler := user.NewHandler(userCfg)
+
+	cartConfig := &cart.HandlerConfig{
+		UserService:       userService,
+		CartService:       cartService,
+		CategoryService:   categoryService,
+		Session:           sessionManager,
+		View:              view,
+		Logger:            logger,
+		GetHeaderDataFunc: getHeaderDataFunc,
+	}
+	cartHandler := cart.NewHandler(cartConfig)
+
+	checkoutHandlerCfg := checkout.HandlerConfig{
+		UserService:          userService,
+		CartService:          cartService,
+		OrderService:         orderService,
+		CategorySvc:          categoryService,
+		AddressService:       addressService,
+		StripePaymentService: stripePaymentService,
+		View:                 view,
+		SessionManager:       sessionManager,
+		Logger:               logger,
+		Config:               cfg,
+	}
+	checkoutHandler := checkout.NewHandler(checkoutHandlerCfg)
 
 	mux := anor.NewRouter()
 
 	addStaticRoutes(mux)
 
+	//corsConfig := middlewares.DefaultCORSConfig()
+	//corsConfig.AllowedOrigins = []string{"*"}
+
 	mux.Use(
 		//middlewares.RequestID,
 		sloghttp.New(logger.WithGroup("http")),
 		sloghttp.Recovery,
-		sessionManager.Auth.LoadAndSave,
-		userHandler.AuthInjector,
-		authHandler.SessionMiddleware,
+		sessionManager.LoadAndSave,
+		sessionManager.LoadAndSaveGuest,
+		sessionManager.LoadUser,
+		//middlewares.CORSMiddleware(corsConfig),
 	)
 
 	auth.RegisterRoutes(authHandler, mux)
-	product.RegisterRoutes(productcatalogHandler, mux)
-	user.RegisterRoutes(userHandler, mux)
 	cart.RegisterRoutes(cartHandler, mux)
+	product.RegisterRoutes(productcatalogHandler, mux)
+	mux.Use(middlewares.RequireAuth)
+	user.RegisterRoutes(userHandler, mux)
 	checkout.RegisterRoutes(checkoutHandler, mux)
 
 	var handler http.Handler = mux

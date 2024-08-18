@@ -2,7 +2,7 @@ package product
 
 import (
 	"fmt"
-	"github.com/aliml92/anor/html/dtos/partials"
+	"github.com/aliml92/anor/html/templates/shared/header/components"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -30,9 +30,9 @@ func (h *Handler) SearchQuerySuggestionsView(w http.ResponseWriter, r *http.Requ
 		pns[idx] = template.HTML(sug)
 	}
 
-	sqsl := partials.SearchQuerySuggestionsList{
+	l := components.SearchQuerySuggestionsList{
 		ProductNameSuggestions: pns,
 	}
 
-	h.view.RenderComponent(w, "partials/header/search_query_suggestions_list.gohtml", sqsl)
+	h.Render(w, r, "shared/header/components/search_query_suggestions_list.gohtml", l)
 }

@@ -1,0 +1,32 @@
+{{ define "shipping_info" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/checkout/address/components.ShippingInfo*/ -}}
+    {{ $sAddr := .ShippingAddress }}
+    <div class="d-flex justify-content-between align-items-center">
+        <h4 style="font-weight: 600; font-size: 20px; line-height: 24px;">Shipping Address</h4>
+        <i class="bi bi-pencil {{ if $sAddr.IsZero }} d-none {{ end }}" style="cursor: pointer;" id="ssAddrPenIcon" ></i>
+    </div>
+    <hr class="mt-1">
+    {{ if not $sAddr.IsZero }}
+        <address style="font-size: 14px" data-shipping-address-set="true">
+            {{ formatAddress $sAddr }}
+        </address>
+    {{ else }}
+        <div class="form-check  position-relative my-3">
+            <input class="form-check-input custom-radio" type="radio" name="address" id="addNewShipping_"
+                   _="on change queue last
+                          halt the event
+                          send getAddressForm
+                       end
+                    "
+                   hx-get="/checkout/address"
+                   hx-target="#content"
+                   hx-headers='{"X-Target-Template": "empty-address-form"}'
+                   hx-trigger="getAddressForm"
+            >
+            <label class="form-check-label ms-3" for="addNewShipping_">
+                Add new address
+            </label>
+            <i class="bi bi-chevron-up ms-2 d-none" id="shippingCollapseIcon"></i>
+        </div>
+    {{ end }}
+{{ end }}

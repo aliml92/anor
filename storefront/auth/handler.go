@@ -2,38 +2,75 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/aliml92/anor/redis/cache/session"
+	"github.com/aliml92/anor/html/templates"
+	"github.com/aliml92/anor/redis/session"
+	"github.com/fatih/color"
+	"github.com/samber/oops"
 	"html/template"
 	"log/slog"
 	"net/http"
+	"strings"
 	"unicode"
 
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/html"
 )
 
-type Handler struct {
-	svc     anor.AuthService
-	cartSvc anor.CartService
-	session *session.Manager
-	view    *html.View
-	logger  *slog.Logger
+type HandlerConfig struct {
+	AuthService anor.AuthService
+	CartService anor.CartService
+	Session     *session.Manager
+	View        *html.View
+	Logger      *slog.Logger
 }
 
-func NewHandler(
-	svc anor.AuthService,
-	cartSvc anor.CartService,
-	view *html.View,
-	session *session.Manager,
-	logger *slog.Logger,
-) *Handler {
+type Handler struct {
+	authService anor.AuthService
+	cartService anor.CartService
+	session     *session.Manager
+	view        *html.View
+	logger      *slog.Logger
+}
+
+func NewHandler(cfg *HandlerConfig) *Handler {
 	return &Handler{
-		svc:     svc,
-		cartSvc: cartSvc,
-		view:    view,
-		session: session,
-		logger:  logger,
+		authService: cfg.AuthService,
+		cartService: cfg.CartService,
+		session:     cfg.Session,
+		view:        cfg.View,
+		logger:      cfg.Logger,
+	}
+}
+
+func (h *Handler) Render(w http.ResponseWriter, r *http.Request, templatePath string, td templates.TemplateData) {
+	s := strings.Split(templatePath, "/")
+	templateFilename := s[len(s)-1]
+
+	// TODO: remove on production
+	if templateFilename != td.GetTemplateFilename() {
+		panic(fmt.Sprintf("Template-DTO mismatch: Template '%s' does not match DTO for '%s'",
+			templateFilename, td.GetTemplateFilename()))
+	}
+
+	switch templateFilename {
+	case "base.gohtml":
+		h.view.Render(w, templatePath, td)
+	case "content.gohtml":
+		if isHXRequest(r) {
+			h.view.Render(w, templatePath, td)
+			return
+		}
+
+		base := templates.AuthBase{
+			Content: td,
+		}
+
+		newTemplatePath := strings.ReplaceAll(templatePath, "content.gohtml", "base.gohtml")
+		h.view.Render(w, newTemplatePath, base)
+	default:
+		h.view.RenderComponent(w, templatePath, td)
 	}
 }
 
@@ -42,19 +79,32 @@ func (h *Handler) clientError(w http.ResponseWriter, err error, statusCode int) 
 		err.Error(),
 		slog.Any("error", err),
 	)
-	http.Error(w, formatError(err.Error()), statusCode)
+
+	errString := formatError(err).Error()
+	http.Error(w, errString, statusCode)
 }
 
 func (h *Handler) serverInternalError(w http.ResponseWriter, err error) {
-	h.logger.Error(
-		err.Error(),
-		slog.Any("error", err),
-	)
-	http.Error(w, formatError("Something went wrong. Please try again later."), http.StatusInternalServerError)
+	// TODO: slog not render \n in stacktrace error
+	//logger.Error(
+	//	err.Error(),
+	//	slog.Any("error", err),
+	//)
+	var oopsErr oops.OopsError
+	if ok := errors.As(err, &oopsErr); ok {
+		fmt.Println(colorizeStacktrace(oopsErr.Stacktrace()))
+	} else {
+		fmt.Println(err)
+	}
+
+	http.Error(w, formatStr("Something went wrong. Please try again later."), http.StatusInternalServerError)
+}
+
+func (h *Handler) logError(err error) {
+	anor.LogError(h.logger, err)
 }
 
 func (h *Handler) redirect(w http.ResponseWriter, url string) {
-	// Log redirection
 	h.logger.LogAttrs(
 		context.TODO(),
 		slog.LevelInfo,
@@ -64,33 +114,6 @@ func (h *Handler) redirect(w http.ResponseWriter, url string) {
 
 	w.Header().Add("HX-Redirect", url)
 	w.WriteHeader(http.StatusOK)
-}
-
-type BindValidator interface {
-	Binder
-	Validator
-}
-
-type Binder interface {
-	Bind(r *http.Request) error
-}
-
-type Validator interface {
-	Validate() error
-}
-
-func bindValid[T BindValidator](r *http.Request, v T) error {
-	if err := v.Bind(r); err != nil {
-		return fmt.Errorf("bind request: %w", err)
-	}
-	if err := v.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (h *Handler) logClientError(err error) {
-	anor.LogClientError(h.logger, err)
 }
 
 func capitalizeFirst(s string) string {
@@ -126,7 +149,24 @@ func formatMessage(message string, level string) template.HTML {
 	return template.HTML(fm)
 }
 
-func formatError(errorString string) string {
+func formatError(error error) error {
+	errorString := capitalizeFirst(error.Error())
+	errorString = strings.ReplaceAll(errorString, "\\n", "<br>")
+	fm := fmt.Sprintf(`
+	  <div class="alert alert-danger d-flex my-0" role="alert">
+        <span class="pt-1">
+			<i class="bi bi-x-circle-fill" style="font-size: 24px;"></i>
+		</span>
+		<div class="ms-3" style="font-size: 0.875rem">%s</div>
+	  </div>
+	`, errorString)
+
+	return errors.New(fm)
+}
+
+func formatStr(errorString string) string {
+	errorString = capitalizeFirst(errorString)
+	errorString = strings.ReplaceAll(errorString, "\\n", "<br>")
 	fm := fmt.Sprintf(`
 	  <div class="alert alert-danger d-flex my-0" role="alert">
         <span class="pt-1">
@@ -137,4 +177,48 @@ func formatError(errorString string) string {
 	`, errorString)
 
 	return fm
+}
+
+func colorizeStacktrace(stacktrace string) string {
+	lines := strings.Split(stacktrace, "\n")
+	colorizedLines := make([]string, 0, len(lines))
+
+	for i, line := range lines {
+		if i == 0 {
+			// Colorize the main error message
+			parts := strings.SplitN(line, ": ", 2)
+			if len(parts) == 2 {
+				colorizedLine := fmt.Sprintf("%s: %s", parts[0], color.RedString(parts[1]))
+				colorizedLines = append(colorizedLines, colorizedLine)
+			} else {
+				colorizedLines = append(colorizedLines, line)
+			}
+		} else if strings.Contains(line, "at ") {
+			// Colorize the file and function information
+			parts := strings.SplitN(line, "at ", 2)
+			if len(parts) == 2 {
+				fileAndFunc := strings.SplitN(parts[1], " ", 2)
+				if len(fileAndFunc) == 2 {
+					lastSlash := strings.LastIndex(fileAndFunc[0], "/")
+					path := fileAndFunc[0][:lastSlash+1]
+					fileAndLine := fileAndFunc[0][lastSlash+1:]
+
+					colorizedLine := fmt.Sprintf("%s at %s%s %s",
+						parts[0],
+						path,
+						color.CyanString(fileAndLine),
+						color.GreenString(fileAndFunc[1]))
+					colorizedLines = append(colorizedLines, colorizedLine)
+				} else {
+					colorizedLines = append(colorizedLines, line)
+				}
+			} else {
+				colorizedLines = append(colorizedLines, line)
+			}
+		} else {
+			colorizedLines = append(colorizedLines, line)
+		}
+	}
+
+	return strings.Join(colorizedLines, "\n")
 }

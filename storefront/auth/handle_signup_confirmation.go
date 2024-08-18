@@ -3,7 +3,8 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"github.com/aliml92/anor/html/dtos/pages/signin"
+	"github.com/aliml92/anor"
+	"github.com/aliml92/anor/html/templates/pages/auth/signin"
 	"github.com/invopop/validation"
 	"github.com/invopop/validation/is"
 	"net/http"
@@ -37,20 +38,19 @@ func (f *SignupConfirmationForm) Validate() error {
 }
 
 func (h *Handler) SignupConfirmation(w http.ResponseWriter, r *http.Request) {
-	f := &SignupConfirmationForm{}
-
-	err := bindValid(r, f)
+	var f SignupConfirmationForm
+	err := anor.BindValid(r, &f)
 	if err != nil {
-		h.logClientError(err)
+		h.logError(err)
 		h.clientError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
-	if err := h.svc.SignupConfirm(ctx, f.OTP, f.Email); err != nil {
+	if err := h.authService.SignupConfirm(ctx, f.OTP, f.Email); err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidOTP):
-			err = fmt.Errorf("%s. Please ensure that the OTP is entered correctly and not expired", err.Error())
+			err = fmt.Errorf("%w. Please ensure that the OTP is entered correctly and not expired", err)
 			h.clientError(w, err, http.StatusBadRequest)
 		default:
 			h.serverInternalError(w, err)
@@ -60,5 +60,5 @@ func (h *Handler) SignupConfirmation(w http.ResponseWriter, r *http.Request) {
 
 	message := "You've successfully signed up &#129395"
 	sc := signin.Content{Message: formatMessage(message, "success")}
-	h.view.Render(w, "pages/signin/content.gohtml", sc)
+	h.Render(w, r, "pages/auth/signin/content.gohtml", sc)
 }

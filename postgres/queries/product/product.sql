@@ -5,7 +5,7 @@ INSERT INTO products (
     $1, $2, $3, $4, $5, $6, $7, $8, $9
 ) RETURNING *;
 
--- name: GetProductByID :one
+-- name: GetProductWithStoreAndPricingByID :one
 SELECT
     sqlc.embed(p),
     sqlc.embed(s),
@@ -18,6 +18,10 @@ FROM
             stores s ON s.id = p.store_id
 WHERE
     p.id = $1;
+
+-- name: GetProductByID :one
+SELECT * FROM products
+WHERE id = $1;
 
 -- name: GetProductBrandsByCategoryID :many
 SELECT array_agg(DISTINCT p.brand ORDER BY p.brand)::text[] AS brands FROM products p
@@ -62,8 +66,11 @@ WHERE
 GROUP BY
     p.id, p.name, p.image_urls, pv.sku, pv.qty, pv.is_custom_priced, pv.image_identifiers;
 
--- name: GetProductsByCreatedAtDesc :many
+-- name: ListPopularProducts :many
 SELECT sqlc.embed(p), sqlc.embed(pp) FROM products p
 LEFT JOIN product_pricing pp ON p.id = pp.product_id
+WHERE p.id = ANY(sqlc.arg('productIDs')::BIGINT[])
 ORDER BY p.created_at DESC
-LIMIT $1;
+LIMIT $1
+    OFFSET $2;
+

@@ -1,5 +1,6 @@
-{{ define "product-main" }}
-    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/product-details/components.ProductMain*/ -}}
+{{ define "product_main" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/product_details/components.ProductMain*/ -}}
+    {{ $product := .Product }}
     <article class="card p-3 mb-4 border-0">
         <div class="row">
             <aside class="col-lg-6">
@@ -10,9 +11,9 @@
                                 <div id="vertical-slider" class="splide">
                                     <div class="splide__track">
                                         <ul class="splide__list">
-                                            {{ range $index, $link := .Product.BaseProduct.ImageUrls }}
+                                            {{ range $index, $link := $product.ImageUrls }}
                                                 <li class="splide__slide">
-                                                    <img data-thumb-index="{{ $index }}" alt="" src="{{ modifyImgURL $link 140 }}" />
+                                                    <img loading="lazy"  data-thumb-index="{{ $index }}" alt="" src="{{ modifyImgURL $link 140 }}" />
                                                 </li>
                                             {{ end }}
                                         </ul>
@@ -25,9 +26,9 @@
                                 <div id="main-slider" class="splide">
                                     <div class="splide__track">
                                         <ul class="splide__list">
-                                            {{ range $index, $link := .Product.BaseProduct.ImageUrls }}
+                                            {{ range $index, $link := $product.ImageUrls }}
                                                 <li class="splide__slide">
-                                                    <img data-img-index="{{ $index }}" alt="" src="{{ modifyImgURL $link 960 }}" />
+                                                    <img  loading="lazy"  data-img-index="{{ $index }}" alt="" src="{{ modifyImgURL $link 960 }}" />
                                                 </li>
                                             {{ end }}
                                         </ul>
@@ -47,13 +48,13 @@
                         <span class="label-rating text-muted ms-0">(34 reviews)</span>
                         <span class="label-rating text-muted">  154 sold </span>
                     </div> <!-- rating-wrap.// -->
-                    <h4 class="mb-2" id="product-name">{{ .Product.Name }}</h4>
+                    <h4 class="mb-2" id="product-name">{{ $product.Name }}</h4>
                     <dl class="row">
                         <dt class="col-xxl-3 col-lg-4 fw-normal text-dark">Seller: </dt>
-                        <dd class="col-xxl-9 col-lg-8"><a href="/stores/{{ .Product.Store.Handle }}" style="color: inherit; text-decoration: underline;">{{ .Product.Store.Name }}</a></dd>
+                        <dd class="col-xxl-9 col-lg-8"><a href="/stores/{{ $product.Store.Handle }}" style="color: inherit; text-decoration: underline;">{{ $product.Store.Name }}</a></dd>
                     </dl>
                     <hr class="mb-3">
-                    {{ range $index, $attr := .Product.Attributes }}
+                    {{ range $index, $attr := $product.Attributes }}
                         <div class="row my-4">
                             <label for="size" class="col-sm-3 col-form-label fw-normal text-dark">{{ $attr.Attribute }}:</label>
                             <div class="col-sm-9">
@@ -70,11 +71,11 @@
                         </div>
                     {{ end }}
                     <div class="row my-3">
-                        <label class="form-label text-dark mb-2" style="display: inline-block; width: fit-content;">Quantity:</label> <span id="quantity-in-stock"   style="display: inline-block; width: fit-content;">{{ formatProductQty .Product.LeftCount }}</span>
+                        <label class="form-label text-dark mb-2" style="display: inline-block; width: fit-content;">Quantity:</label> <span id="quantity-in-stock"   style="display: inline-block; width: fit-content;">{{ formatProductQty $product.LeftCount }}</span>
                         <div class="d-flex flex-row justify-content-start">
                             <div class="input-group input-group-counter">
                                 <input type="button" value="-" class="button-minus border" data-field="quantity" disabled>
-                                <input type="number" step="1" min="1" max="{{ .Product.LeftCount }}" value="1" name="quantity" class="quantity-field border" disabled>
+                                <input type="number" step="1" min="1" max="{{ $product.LeftCount }}" value="1" name="quantity" class="quantity-field border" disabled>
                                 <input type="button" value="+" class="button-plus border" data-field="quantity" disabled>
                             </div>
                         </div>
@@ -82,9 +83,9 @@
                     <div class="row my-3">
                         <label class="form-label text-dark mb-2" style="display: inline-block; width: fit-content;">Price:</label>
                         <div class="d-flex flex-row justify-content-start">
-                            <span class="d-inline-block fs-5 fw-bold me-2" style="letter-spacing: 1px;">${{ .Product.Pricing.DiscountedPrice  }}</span>
-                            {{ if (ned .Product.Pricing.BasePrice .Product.Pricing.DiscountedPrice) }}
-                                <span class="d-inline-block fs-5 text-decoration-line-through text-muted" >${{ .Product.Pricing.BasePrice }}</span>
+                            <span class="d-inline-block fs-5 fw-bold me-2" style="letter-spacing: 1px;">${{ $product.Pricing.DiscountedPrice  }}</span>
+                            {{ if (ned $product.Pricing.BasePrice $product.Pricing.DiscountedPrice) }}
+                                <span class="d-inline-block fs-5 text-decoration-line-through text-muted" >${{ $product.Pricing.BasePrice }}</span>
                             {{ end }}
                         </div>
                     </div>
@@ -124,7 +125,7 @@
                         <div class="mt-3">
                             <p class="text-dark">Product overview</p>
                             <ul class="text-dark" style="font-size: .875rem;">
-                                {{ range .Product.BaseProduct.ShortInformation }}
+                                {{ range $product.ShortInformation }}
                                     <li class="mb-1">{{ . }}</li>
                                 {{ end }}
                             </ul>

@@ -59,9 +59,9 @@
 // Used on our SVG icon backgrounds for custom forms.
 //
 // @author Hugo Giraudel
-// @param {String} $string - Initial string
-// @param {String} $search - Substring to replace
-// @param {String} $replace ('') - New value
+// @params {String} $string - Initial string
+// @params {String} $search - Substring to replace
+// @params {String} $replace ('') - New value
 // @return {String} - Updated string
 @function str-replace($string, $search, $replace: "") {
   $index: str-index($string, $search);

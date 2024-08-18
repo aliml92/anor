@@ -1,0 +1,31 @@
+{{ define "profile_side_nav" }}
+    <aside class="col-xl-2 col-lg-3 d-none d-lg-block">
+        <nav class="nav gap-1 flex-lg-column nav-pills mb-4 side-profile-nav">
+            <a class="nav-link {{ if eq . "overview" }} active {{ end }}" href="/user"
+               hx-get="user"
+               hx-target="#content"
+               hx-push-url="true"
+            >
+                Overview</a>
+            <a class="nav-link {{ if eq . "orders" }} active {{ end }}" href="/user/orders"
+               hx-get="user/orders"
+               hx-target="#content"
+               hx-push-url="true"
+            >Orders</a>
+            <a class="nav-link {{ if eq . "wishlist" }} active {{ end }}" href="#">My wishlist</a>
+            <a class="nav-link {{ if eq . "personal_details" }} active {{ end }}" href="/user/details"
+               hx-get="/user/details"
+               hx-target="#content"
+               hx-push-url="true"
+            >Personal details</a>
+            <a class="nav-link {{ if eq . "addresses" }} active {{ end }}" href="/user/addresses"
+               hx-get="/user/addresses"
+               hx-target="#content"
+               hx-push-url="true"
+            >Addresses</a>
+            <a class="nav-link" href="#"
+               hx-delete="/user/logout"
+            >Log out</a>
+        </nav>
+    </aside>
+{{ end }}

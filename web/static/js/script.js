@@ -1,25 +1,11 @@
 // htmx.logAll();
 
-var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+// enable tooltips everywhere
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl)
 })
 
-function passwordShowHide(e){
-    var x = document.getElementById("password");
-    var show_eye = document.getElementById("password-show-eye");
-    var hide_eye = document.getElementById("password-hide-eye");
-    hide_eye.classList.remove("d-none");
-    if (x.type === "password") {
-        x.type = "text";
-        show_eye.style.display = "none";
-        hide_eye.style.display = "block";
-    } else {
-        x.type = "password";
-        show_eye.style.display = "block";
-        hide_eye.style.display = "none";
-    }
-}
 
 document.addEventListener("anor:showToast", showToast);
 
@@ -41,13 +27,6 @@ function showToast(evt){
         onClick: function(){} // Callback after click
     }).showToast();
 }
-
-document.querySelectorAll('.dropdown-menu').forEach(function (element) {
-    element.addEventListener('click', function (e) {
-        e.stopPropagation();
-    });
-});
-// end querySelectorAll
 
 function getPriceRange() {
     let priceRangeSlider = document.querySelector('.js-range-slider');
@@ -115,15 +94,16 @@ function getQ() {
     }
 }
 
-function getResetToken() {
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has('token')) {
-        return searchParams.get('token')
-    }
+document.querySelectorAll('.dropdown-menu').forEach(function (element) {
+    element.addEventListener('click', function (e) {
+        e.stopPropagation();
+    });
+});
 
-    return ''
-}
-
+// the following scripts are used to identify which product items are
+// observed on product listings page and send product ids of these
+// "seen" products as batch to server. The result of such requests
+// are used to calculate popular products index
 var viewedProducts = {};
 var productTimeouts = {};
 var activeObservers = {};
@@ -140,49 +120,9 @@ window.addEventListener('htmx:afterSettle', function(evt) {
     if (evt.detail.requestConfig.path.includes("/categories/")) {
         processProductViews();
     }
-    if (evt.detail.requestConfig.path.includes("/auth")){
-        showAlert();
-    }
 });
 
-function showAlert() {
-    let errMsgEl = document.getElementById("alert-msg");
-    if (errMsgEl.children.length > 0 || errMsgEl.textContent !== '') {
-        let errWrapperEl = errMsgEl.parentElement;
-        errWrapperEl.classList.remove("invisible");
 
-        // Fade in
-        errWrapperEl.style.opacity = '0';
-        let opacity = 0;
-        const fadeInInterval = setInterval(function() {
-            opacity += 0.2; // Increase opacity faster
-            errWrapperEl.style.opacity = opacity;
-            if (opacity >= 1) {
-                clearInterval(fadeInInterval);
-            }
-        }, 40); // Decrease interval for faster fade in
-
-        setTimeout(function() {
-            // Fade out
-            let opacity = 1;
-            const fadeOutInterval = setInterval(function() {
-                opacity -= 0.2; // Decrease opacity faster
-                errWrapperEl.style.opacity = opacity;
-                if (opacity <= 0) {
-                    clearInterval(fadeOutInterval);
-                    errWrapperEl.classList.add("invisible");
-                }
-            }, 40); // Decrease interval for faster fade out
-
-            // Remove child elements after fading out
-            setTimeout(function() {
-                while (errMsgEl.firstChild) {
-                    errMsgEl.removeChild(errMsgEl.firstChild);
-                }
-            }, 500); // Adjust timing as needed
-        }, 5000);
-    }
-}
 function processProductViews() {
     for (let key in activeObservers) {
         if (activeObservers.hasOwnProperty(key)) {
@@ -273,12 +213,7 @@ function sendBatchedProductViews() {
     }
 }
 
-function isAutocomplete(event){
-    console.log("fired")
-    console.log(event.detail.autocomplete)
-    return true
-}
-
+// selectActiveItem get selected text in autocomplete dropdown
 function selectActiveItem(evt) {
     evt.preventDefault();
     const listItems = document.querySelectorAll('#search-dropdown .list-group-item');
@@ -302,28 +237,22 @@ function selectActiveItem(evt) {
     evt.target.value = nextItem.textContent.trim();
 }
 
-document.body.addEventListener("htmx:configRequest", function(configEvent){
+document.addEventListener("htmx:configRequest", function(configEvent){
     const path = configEvent.detail.path;
-    const hasTargetPath = ["/categories", "/search", "/auth"].some(segment => path.includes(segment));
+    const hasTargetPath = ["/categories", "/search"].some(segment => path.includes(segment));
     if (hasTargetPath) {
-        // Log the parameters before removing null values
         console.log("Before:", configEvent.detail.parameters);
 
-        // Object to hold parameters that are not null
         let filteredParameters = {};
 
-        // Iterate over the parameters object
         Object.entries(configEvent.detail.parameters).forEach(([key, value]) => {
-            // If value is not null, add it to the filteredParameters object
             if (value !== null) {
                 filteredParameters[key] = value;
             }
         });
 
-        // Update the original parameters object with filtered parameters
         configEvent.detail.parameters = filteredParameters;
 
-        // Log the parameters after removing null values
         console.log("After:", configEvent.detail.parameters);
     }
 })
@@ -358,7 +287,7 @@ window.addEventListener('DOMContentLoaded', (evt) => {
     }
 })
 
-document.body.addEventListener("htmx:afterSettle", (evt) => {
+document.addEventListener("htmx:afterSettle", (evt) => {
     if (evt.detail.requestConfig.path.includes("/categories/") || evt.detail.requestConfig.path.includes("/search")) {
         // reinit price range slider
         initializePriceRangeSlider();
@@ -675,277 +604,239 @@ function setupProductVariantSelectOptions() {
                 });
             });
 
-        function updateOptions1(select) {
-            const options = select.options;
-            for (let i = 1; i < options.length; i++) {
-                const attrValIndex = options[i].getAttribute("data-attr-val-index");
-                if (productVariantMatrix[parseInt(attrValIndex)].quantity === 0) {
-                    if (!options[i].textContent.includes("(Out of stock)")) {
-                        options[i].textContent += " (Out of stock)";
-                    }
-                    options[i].disabled = true;
-                }
-            }
-        }
-            break;
-
-      // handle productVariant variation options when there are two product attributes
-        case 2:
-            let forwardPerm = true;
-            // loop through both selects
-            selects.forEach(function(select) {
-                // update first select options' values; check if there is
-                // any options that is out of stock; n -> m
-                if (forwardPerm) {
-                    updateOptions2(select, productVariantMatrix, forwardPerm);
-                    // update second select options' values; m -> n
-                } else {
-                    updateOptions2(select, productVariantMatrix, forwardPerm);
-                }
-                forwardPerm = false;
-
-                select.addEventListener('change', function(evt) {
-                    let i = null;
-                    let j = null;
-                    selects.forEach(function(sel) {
-                        const selectedIndex = sel.options[sel.selectedIndex].getAttribute("data-attr-val-index");
-                        if (sel.getAttribute('data-attr-index') === '0') {
-                            i = selectedIndex;
-                        } else if (sel.getAttribute('data-attr-index') === '1') {
-                            j = selectedIndex;
-                        }
-                    });
-
-                    console.log('i:', i);
-                    console.log('j:', j);
-
-                    // hide select error message
-                    if (evt.target.selectedIndex !== 0) {
-                        const invalidFeedback = evt.target.nextElementSibling;
-                        invalidFeedback.classList.remove('show');
-                    }
-
-                    if (i !== null && j !== null) {
-                        enableQuantityToggle(minusButton, plusButton, quantityInput);
-                        let productVariant = productVariantMatrix[i][j];
-                        let qty = productVariant.quantity;
-
-                        productVariantScriptEl.setAttribute('data-product-variant-id', productVariant.id);
-
-                        console.log("selected productVariant: ", productVariant)
-                        if (qty === 0) {
-                            disableQuantityToggle(minusButton, plusButton, quantityInput);
-                            quantitySpan.textContent = "None left";
-                        } else if (qty === 1) {
-                            quantitySpan.textContent = "Only one left";
-                        } else if (qty < 10) {
-                            quantitySpan.textContent = qty + " left";
-                        } else {
-                            quantitySpan.textContent = "More than 10 available";
-                        }
-
-                        quantityInput.max = qty;
-
-                        // update select options
-                        if (evt.target.getAttribute('data-attr-index') === '0') {
-                            const options = document.querySelector('select[data-attr-index="1"]').options;
-                            for (let k = 1; k < options.length; k++) {
-                                let attrValIndex = options[k].getAttribute("data-attr-val-index");
-                                if (productVariantMatrix[i][parseInt(attrValIndex)].quantity === 0) {
-                                    if (!options[k].disabled) {
-                                        console.log("text context before: ", options[k].textContent)
-                                        if (!options[k].textContent.includes("(Out of stock)")) {
-                                            options[k].textContent += " (Out of stock)";
-                                        }
-                                        options[k].disabled = true;
-                                        console.log("text context after: ", options[k].textContent)
-                                    }
-                                } else {
-                                    if (options[k].disabled) {
-                                        console.log("text context before: ", options[k].textContent)
-                                        options[k].textContent = options[k].textContent.replace(" (Out of stock)", "");
-                                        options[k].disabled = false;
-                                        console.log("text context after: ", options[k].textContent)
-                                    }
-                                }
-                            }
-                        } else if (evt.target.getAttribute('data-attr-index') === '1') {
-                            const options = document.querySelector('select[data-attr-index="0"]').options;
-                            for (let k = 1; k < options.length; k++) {
-                                let attrValIndex = options[k].getAttribute("data-attr-val-index");
-                                if (productVariantMatrix[parseInt(attrValIndex)][j].quantity === 0) {
-                                    if (!options[k].disabled) {
-                                        console.log("text context before: ", options[k].textContent)
-                                        if (!options[k].textContent.includes("(Out of stock)")) {
-                                            options[k].textContent += " (Out of stock)";
-                                        }
-                                        options[k].disabled = true;
-                                        console.log("text context after: ", options[k].textContent)
-                                    }
-                                } else {
-                                    if (options[k].disabled) {
-                                        console.log("text context before: ", options[k].textContent)
-                                        options[k].textContent = options[k].textContent.replace(" (Out of stock)", "");
-                                        options[k].disabled = false;
-                                        console.log("text context after: ", options[k].textContent)
-                                    }
-                                }
-                            }
-                        }
-                    } else if (i === null && j !== null) {
-                        disableQuantityToggle(minusButton, plusButton, quantityInput);
-                        const options = document.querySelector('select[data-attr-index="0"]').options;
-                        for (let k = 1; k < options.length; k++) {
-                            let attrValIndex = options[k].getAttribute("data-attr-val-index");
-                            if (productVariantMatrix[parseInt(attrValIndex)][j].quantity === 0) {
-                                if (!options[k].disabled) {
-                                    console.log("text context before: ", options[k].textContent)
-                                    if (!options[k].textContent.includes("(Out of stock)")) {
-                                        options[k].textContent += " (Out of stock)";
-                                    }
-                                    options[k].disabled = true;
-                                    console.log("text context after: ", options[k].textContent)
-                                }
-                            } else {
-                                if (options[k].disabled) {
-                                    console.log("text context before: ", options[k].textContent)
-                                    options[k].textContent = options[k].textContent.replace(" (Out of stock)", "");
-                                    options[k].disabled = false;
-                                    console.log("text context after: ", options[k].textContent)
-                                }
-                            }
-                        }
-                    } else if (i !== null && j === null) {
-                        disableQuantityToggle(minusButton, plusButton, quantityInput);
-                        const options = document.querySelector('select[data-attr-index="1"]').options
-                        for (let k = 1; k < options.length; k++) {
-                            let attrValIndex = options[k].getAttribute("data-attr-val-index");
-                            if (productVariantMatrix[i][parseInt(attrValIndex)].quantity === 0) {
-                                if (!options[k].disabled) {
-                                    console.log("text context before: ", options[k].textContent)
-                                    if (!options[k].textContent.includes("(Out of stock)")) {
-                                        options[k].textContent += " (Out of stock)";
-                                    }
-                                    options[k].disabled = true;
-                                    console.log("text context after: ", options[k].textContent)
-                                }
-                            } else {
-                                if (options[k].disabled) {
-                                    console.log("text context before: ", options[k].textContent)
-                                    options[k].textContent = options[k].textContent.replace(" (Out of stock)", "");
-                                    options[k].disabled = false;
-                                    console.log("text context after: ", options[k].textContent)
-                                }
-                            }
-                        }
-                    } else {
-                        disableQuantityToggle(minusButton, plusButton, quantityInput);
-                        let forwardPerm = true;
-                        // loop through both selects
-                        selects.forEach(function(select) {
-
-                            // update first select options' values; check if there is
-                            // any options that is out of stock; n -> m
-                            if (forwardPerm) {
-                                updateOptions2(select, productVariantMatrix, forwardPerm);
-                                // update second select options' values; m -> n
-                            } else {
-                                updateOptions2(select, productVariantMatrix, forwardPerm);
-                            }
-                            forwardPerm = false;
-                        })
-                    }
-                });
-            });
-
-        function updateOptions2(select, productVariantMatrix, forwardPermutation) {
-            const options = select.options;
-            const currentIndex = parseInt(select.getAttribute('data-attr-index'));
-            const otherIndex = currentIndex === 0 ? 1 : 0;
-
-            // Get the other select element
-            const otherSelect = document.querySelector(`.attr-select[data-attr-index="${otherIndex}"]`);
-            const otherOptions = otherSelect.options;
-
-            for (let i = 0; i < options.length; i++) {
-                if (!options[i].hasAttribute('data-attr-val-index')) {
-                    continue
-                }
-
-                const attrValIndex = options[i].getAttribute("data-attr-val-index");
-
-                let outOfStock = true;
-                for (let j = 0; j < otherOptions.length; j++) {
-                    if (!otherOptions[j].hasAttribute('data-attr-val-index')) {
-                        continue
-                    }
-                    const otherAttrValIndex = otherOptions[j].getAttribute("data-attr-val-index");
-                    if (forwardPermutation) {
-                        if (productVariantMatrix[parseInt(attrValIndex)][parseInt(otherAttrValIndex)].quantity !== 0) {
-                            outOfStock = false
-                            break
-                        }
-                    } else {
-                        if (productVariantMatrix[parseInt(otherAttrValIndex)][parseInt(attrValIndex)].quantity !== 0) {
-                            outOfStock = false
-                            break
-                        }
-                    }
-                }
-
-                if (outOfStock) {
-                    if (!options[i].disabled) {
+            function updateOptions1(select) {
+                const options = select.options;
+                for (let i = 1; i < options.length; i++) {
+                    const attrValIndex = options[i].getAttribute("data-attr-val-index");
+                    if (productVariantMatrix[parseInt(attrValIndex)].quantity === 0) {
                         if (!options[i].textContent.includes("(Out of stock)")) {
                             options[i].textContent += " (Out of stock)";
                         }
                         options[i].disabled = true;
                     }
-                } else {
-                    if (options[i].disabled) {
-                        options[i].textContent = options[i].textContent.replace(" (Out of stock)", "");
-                        options[i].disabled = false;
-                    }
                 }
-
             }
-        }
-
             break;
-        case 3:
-            selects.forEach(function(select) {
-                select.addEventListener('change', function() {
-                    // Initialize variables
-                    let i = null;
-                    let j = null;
-                    let k = null;
 
-                    // Loop through all select elements
-                    selects.forEach(function(sel) {
-                        // Get the selected option's data-attr-val-index value
-                        const selectedIndex = sel.options[sel.selectedIndex].getAttribute("data-attr-val-index");
+       // handle productVariant variation options when there are two product attributes
+        case 2:
+            function updateAvailability(selects, productVariantMatrix) {
+                let selectedIndexes = Array.from(selects).map(select =>
+                  select.options[select.selectedIndex].getAttribute("data-attr-val-index"));
 
-                        // Assign values to variables based on data-attr-index
-                        if (sel.getAttribute('data-attr-index') === '0') {
-                            i = selectedIndex;
-                        } else if (sel.getAttribute('data-attr-index') === '1') {
-                            j = selectedIndex;
-                        } else if (sel.getAttribute('data-attr-index') === '2') {
-                            k = selectedIndex;
+                let [i, j] = selectedIndexes.map(index => index !== null ? parseInt(index) : null);
+
+                if (i !== null && j !== null) {
+                    let productVariant = productVariantMatrix[i][j];
+                    let qty = productVariant.quantity;
+
+                    productVariantScriptEl.setAttribute('data-product-variant-id', productVariant.id);
+
+                    if (qty === 0) {
+                        disableQuantityToggle(minusButton, plusButton, quantityInput);
+                        quantitySpan.textContent = "None left";
+                    } else {
+                        enableQuantityToggle(minusButton, plusButton, quantityInput);
+                        quantitySpan.textContent = qty === 1 ? "Only one left" :
+                          qty < 10 ? qty + " left" :
+                            "More than 10 available";
+                    }
+                    quantityInput.max = qty;
+                } else {
+                    disableQuantityToggle(minusButton, plusButton, quantityInput);
+                    quantitySpan.textContent = "More than 10 available";
+                }
+            }
+
+            function updateOptions2(selects, productVariantMatrix) {
+                Array.from(selects).forEach((currentSelect, currentSelectIndex) => {
+                    const otherSelectIndex = 1 - currentSelectIndex;
+                    const otherSelect = selects[otherSelectIndex];
+                    const selectedOtherIndex = otherSelect.selectedIndex !== 0 ?
+                      parseInt(otherSelect.options[otherSelect.selectedIndex].getAttribute("data-attr-val-index")) : null;
+
+                    Array.from(currentSelect.options).forEach((option, optionIndex) => {
+                        if (optionIndex === 0) return; // Skip the default option
+
+                        const currentAttrValIndex = parseInt(option.getAttribute("data-attr-val-index"));
+
+                        let outOfStock = selectedOtherIndex !== null ?
+                          (currentSelectIndex === 0 ?
+                            productVariantMatrix[currentAttrValIndex][selectedOtherIndex].quantity === 0 :
+                            productVariantMatrix[selectedOtherIndex][currentAttrValIndex].quantity === 0) :
+                          Array.from(otherSelect.options).every((otherOption, otherOptionIndex) => {
+                              if (otherOptionIndex === 0) return true;
+                              const otherAttrValIndex = parseInt(otherOption.getAttribute("data-attr-val-index"));
+                              return currentSelectIndex === 0 ?
+                                productVariantMatrix[currentAttrValIndex][otherAttrValIndex].quantity === 0 :
+                                productVariantMatrix[otherAttrValIndex][currentAttrValIndex].quantity === 0;
+                          });
+
+                        option.disabled = outOfStock;
+                        option.textContent = option.textContent.replace(" (Out of stock)", "");
+                        if (outOfStock) {
+                            option.textContent += " (Out of stock)";
                         }
                     });
+                });
+            }
 
-                    // Use the variables as needed
-                    console.log('i:', i);
-                    console.log('j:', j);
-                    console.log('k:', k);
+            // Initial update
+            updateOptions2(selects, productVariantMatrix);
 
-                    if (i !== null && j !== null && k !== null) {
-                        quantitySpan.textContent = productVariantMatrix[i][j][k].quantity + " left";
-                        quantityInput.max = productVariantMatrix[i][j][k].quantity;
+            selects.forEach((select, selectIndex) => {
+                select.addEventListener('change', function(evt) {
+                    // Hide select error message
+                    if (evt.target.selectedIndex !== 0) {
+                        const invalidFeedback = evt.target.nextElementSibling;
+                        if (invalidFeedback && invalidFeedback.classList.contains('invalid-feedback')) {
+                            invalidFeedback.classList.remove('show');
+                        }
+                    }
+
+                    updateAvailability(selects, productVariantMatrix);
+
+                    // Update options for the other select
+                    const otherSelectIndex = 1 - selectIndex;
+                    const otherSelect = selects[otherSelectIndex];
+                    const selectedIndex = evt.target.options[evt.target.selectedIndex].getAttribute("data-attr-val-index");
+
+                    if (selectedIndex !== null) {
+                        Array.from(otherSelect.options).forEach((option, optionIndex) => {
+                            if (optionIndex === 0) return; // Skip the default option
+
+                            const attrValIndex = parseInt(option.getAttribute("data-attr-val-index"));
+                            const quantity = selectIndex === 0 ?
+                              productVariantMatrix[parseInt(selectedIndex)][attrValIndex].quantity :
+                              productVariantMatrix[attrValIndex][parseInt(selectedIndex)].quantity;
+
+                            option.disabled = quantity === 0;
+                            option.textContent = option.textContent.replace(" (Out of stock)", "");
+                            if (quantity === 0) {
+                                option.textContent += " (Out of stock)";
+                            }
+                        });
+                    } else {
+                        // If default option is selected, reset the other select
+                        updateOptions2(selects, productVariantMatrix);
                     }
                 });
             });
+
             break;
+        case 3:
+            function updateAvailability3(selects, productVariantMatrix) {
+                let selectedIndexes = Array.from(selects).map(select =>
+                  select.options[select.selectedIndex].getAttribute("data-attr-val-index"));
+
+                let [i, j, k] = selectedIndexes.map(index => index !== null ? parseInt(index) : null);
+
+                if (i !== null && j !== null && k !== null) {
+                    let productVariant = productVariantMatrix[i]?.[j]?.[k];
+                    if (productVariant) {
+                        let qty = productVariant.quantity;
+
+                        productVariantScriptEl.setAttribute('data-product-variant-id', productVariant.id);
+
+                        if (qty === 0) {
+                            disableQuantityToggle(minusButton, plusButton, quantityInput);
+                            quantitySpan.textContent = "None left";
+                        } else {
+                            enableQuantityToggle(minusButton, plusButton, quantityInput);
+                            quantitySpan.textContent = qty === 1 ? "Only one left" :
+                              qty < 10 ? qty + " left" :
+                                "More than 10 available";
+                        }
+                        quantityInput.max = qty;
+                    } else {
+                        disableQuantityToggle(minusButton, plusButton, quantityInput);
+                        quantitySpan.textContent = "Unavailable";
+                    }
+                } else {
+                    disableQuantityToggle(minusButton, plusButton, quantityInput);
+                    quantitySpan.textContent = "";
+                }
+            }
+
+            function updateOptions3(selects, productVariantMatrix) {
+                Array.from(selects).forEach((currentSelect, currentSelectIndex) => {
+                    const otherSelectIndexes = [0, 1, 2].filter(index => index !== currentSelectIndex);
+                    const otherSelects = otherSelectIndexes.map(index => selects[index]);
+
+                    const selectedOtherIndexes = otherSelects.map(select =>
+                      select.selectedIndex !== 0 ? parseInt(select.options[select.selectedIndex].getAttribute("data-attr-val-index")) : null);
+
+                    Array.from(currentSelect.options).forEach((option, optionIndex) => {
+                        if (optionIndex === 0) return; // Skip the default option
+
+                        const currentAttrValIndex = parseInt(option.getAttribute("data-attr-val-index"));
+
+                        let outOfStock = true;
+
+                        if (selectedOtherIndexes.every(index => index !== null)) {
+                            // If both other selects have a selection
+                            let [otherIndex1, otherIndex2] = selectedOtherIndexes;
+                            let variant = getVariant(currentSelectIndex, currentAttrValIndex, otherIndex1, otherIndex2, productVariantMatrix);
+                            outOfStock = !variant || variant.quantity === 0;
+                        } else {
+                            // Check all combinations
+                            for (let i = 1; i < otherSelects[0].options.length; i++) {
+                                for (let j = 1; j < otherSelects[1].options.length; j++) {
+                                    const index1 = parseInt(otherSelects[0].options[i].getAttribute("data-attr-val-index"));
+                                    const index2 = parseInt(otherSelects[1].options[j].getAttribute("data-attr-val-index"));
+
+                                    let variant = getVariant(currentSelectIndex, currentAttrValIndex, index1, index2, productVariantMatrix);
+
+                                    if (variant && variant.quantity > 0) {
+                                        outOfStock = false;
+                                        break;
+                                    }
+                                }
+                                if (!outOfStock) break;
+                            }
+                        }
+
+                        option.disabled = outOfStock;
+                        option.textContent = option.textContent.replace(" (Out of stock)", "");
+                        if (outOfStock) {
+                            option.textContent += " (Out of stock)";
+                        }
+                    });
+                });
+            }
+
+            function getVariant(currentSelectIndex, currentAttrValIndex, index1, index2, productVariantMatrix) {
+                switch(currentSelectIndex) {
+                    case 0:
+                        return productVariantMatrix[currentAttrValIndex]?.[index1]?.[index2];
+                    case 1:
+                        return productVariantMatrix[index1]?.[currentAttrValIndex]?.[index2];
+                    case 2:
+                        return productVariantMatrix[index1]?.[index2]?.[currentAttrValIndex];
+                }
+            }
+
+                // Initial update
+                updateOptions3(selects, productVariantMatrix);
+
+                selects.forEach((select, selectIndex) => {
+                    select.addEventListener('change', function(evt) {
+                        // Hide select error message
+                        if (evt.target.selectedIndex !== 0) {
+                            const invalidFeedback = evt.target.nextElementSibling;
+                            if (invalidFeedback && invalidFeedback.classList.contains('invalid-feedback')) {
+                                invalidFeedback.classList.remove('show');
+                            }
+                        }
+
+                        updateAvailability3(selects, productVariantMatrix);
+
+                        // Update options for the other selects
+                        updateOptions3(selects, productVariantMatrix);
+                    });
+                });
+
+                break;
         default:
             console.log("no attributes of this product")
     }
@@ -1157,10 +1048,10 @@ window.addEventListener('DOMContentLoaded', (evt) => {
     if (window.location.pathname.includes("/products/")) {
         loadImageSlider(evt, "image slider loaded after DOM content loaded");
 
-        document.body.addEventListener("anor:incrementCartItemCount", incrementCartItemCount);
+        document.addEventListener("anor:incrementCartItemCount", incrementCartItemCount);
         console.log("anor:incrementCartItemCount listener added after DOM content loaded");
 
-        document.body.addEventListener("anor:showCartItemAlert", showStackedAlert);
+        document.addEventListener("anor:showCartItemAlert", showStackedAlert);
         console.log("anor:showCartItemAlert listener added after DOM content loaded");
 
         setupProductVariantSelectOptions();
@@ -1177,14 +1068,14 @@ window.addEventListener('DOMContentLoaded', (evt) => {
     }
 });
 
-document.body.addEventListener("htmx:afterSettle", (evt) => {
+document.addEventListener("htmx:afterSettle", (evt) => {
     if (evt.detail.requestConfig.path.includes("/products/")) {
         loadImageSlider(evt, "image slider loaded after after htmx settled");
 
-        document.body.addEventListener("anor:incrementCartItemCount", incrementCartItemCount);
+        document.addEventListener("anor:incrementCartItemCount", incrementCartItemCount);
         console.log("anor:incrementCartItemCount listener loaded after after htmx settled");
 
-        document.body.addEventListener("anor:showCartItemAlert", showStackedAlert);
+        document.addEventListener("anor:showCartItemAlert", showStackedAlert);
         console.log("anor:showCartItemAlert listener loaded after after htmx settled");
 
         setupProductVariantSelectOptions();
@@ -1201,13 +1092,13 @@ document.body.addEventListener("htmx:afterSettle", (evt) => {
     }
 });
 
-document.body.addEventListener("anor:showCartItemAlert", showStackedAlert);
+document.addEventListener("anor:showCartItemAlert", showStackedAlert);
 
-document.body.addEventListener("anor:incrementCartItemCount", incrementCartItemCount)
+document.addEventListener("anor:incrementCartItemCount", incrementCartItemCount)
 
-document.body.addEventListener("anor:decrementCartItemCount", decrementCartItemCount)
+document.addEventListener("anor:decrementCartItemCount", decrementCartItemCount)
 
-document.body.addEventListener("anor:refreshCart", refreshCart);
+document.addEventListener("anor:refreshCart", refreshCart);
 
 async function refreshCart() {
     // htmx.trigger("#cart" , "refreshCart");
@@ -1276,10 +1167,10 @@ window.addEventListener('htmx:historyRestore', (evt) => {
     if (evt.detail.path.includes('/products/')) {
         loadImageSlider(evt, "image slider loaded after history restored");
 
-        document.body.addEventListener("anor:incrementCartItemCount", incrementCartItemCount);
+        document.addEventListener("anor:incrementCartItemCount", incrementCartItemCount);
         console.log("anor:incrementCartItemCount listener added after history restored");
 
-        document.body.addEventListener("anor:showCartItemAlert", showStackedAlert);
+        document.addEventListener("anor:showCartItemAlert", showStackedAlert);
         console.log("anor:showCartItemAlert listener added after history restored");
 
         setupProductVariantSelectOptions();
@@ -1353,3 +1244,16 @@ function loadImageSlider(evt, msg) {
         console.log(msg);
     }
 }
+
+function showFullAddress(id) {
+    var address = document.getElementById('address' + id);
+    var btn = document.getElementById('viewFullBtn' + id);
+
+    // Simply add the 'full' class to show the address as-is
+    address.classList.add('full');
+
+    // Remove the button
+    btn.remove();
+}
+
+

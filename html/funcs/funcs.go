@@ -23,6 +23,7 @@ var FuncMap = map[string]interface{}{
 
 	// formatting
 	"humanizeNum": HumanizeNum,
+	"pluralize":   Pluralize,
 
 	// application specific.
 	"splitMap":                   SplitMap, // if size is odd then first half gets the remainder
@@ -33,4 +34,11 @@ var FuncMap = map[string]interface{}{
 	"isBrandChecked":             IsBrandChecked,
 	"formatProductQty":           FormatProductQty,
 	"getRootCategoryAlias":       GetRootCategoryAlias,
+	"formatAddress":              FormatAddress,
+	"stepperClass":               StepperClass,
+	"addressesEmpty":             AddressesEmpty,
+	"formatDate":                 FormatDate,
+	"formatDateTime":             FormatDateTime,
+	"formatTimeForJS":            FormatTimeForJS,
+	"containsPath":               ContainsPath,
 }

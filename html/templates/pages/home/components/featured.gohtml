@@ -1,38 +1,22 @@
 {{ define "featured" }}
     {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/home/components.Featured*/ -}}
+    {{ $featuredSelections := .Selections }}
     <main class="card p-0 rounded-3">
         <div id="carouselMain" class="carousel-main carousel slide rounded-3" data-bs-ride="carousel">
             <div class="carousel-inner rounded-3">
-                {{  range $index, $promotion := .Promotions }}
+                {{  range $index, $featured := $featuredSelections }}
                 <article class="carousel-item {{ if eq $index 0 }} active {{ end }}">
-                    {{ if eq $promotion.Type "category"}}
-                        <a href="/categories/{{ $promotion.Category.Handle}}-{{ $promotion.TargetID }}"
-                           hx-get="/categories/{{ $promotion.Category.Handle}}-{{ $promotion.TargetID }}"
-                           hx-target="#content"
-                           hx-push-url="true"
-                        >
-                            <img src="{{ $promotion.ImageUrl }}"
-                                 class="responsive-banner" alt="Banner">
-                        </a>
-                    {{ else }}
-                        <a href="/categories/{{ $promotion.Collection.Handle}}-{{ $promotion.TargetID }}?is_collection=true"
-                           hx-get="/categories/{{ $promotion.Collection.Handle}}-{{ $promotion.TargetID }}is_collection=true"
-                           hx-target="#content"
-                           hx-push-url="true"
-                        >
-                            <img src="{{ $promotion.ImageUrl }}"
-                                 class="responsive-banner" alt="Banner">
-                        </a>
-                    {{ end }}
+                    <a href="{{ $featured.ResourcePath }}"
+                       hx-get="{{ $featured.ResourcePath }}"
+                       hx-target="#content"
+                       hx-push-url="true"
+                    >
+                        <img src="{{ $featured.ImageUrl }}"
+                             class="responsive-banner" alt="Banner">
+                    </a>
 
                 </article>
                 {{ end }}
-                <article class="carousel-item">
-                    <a href="#">
-                        <img src="static/images/banners/main-phone.png"
-                             class="responsive-banner" alt="Banner">
-                    </a>
-                </article>
             </div>
 
             <button class="carousel-control-prev" type="button" data-bs-target="#carouselMain" data-bs-slide="prev">

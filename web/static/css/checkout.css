@@ -1,3 +1,4 @@
+/*Checkout - Confirm page*/
 form#payment-form {
     width: 25vw;
     min-width: 400px;
@@ -12,7 +13,7 @@ form#payment-form {
     display: none;
 }
 
-#payment-message {
+#paymentMessage {
     color: rgb(105, 115, 134);
     font-size: 16px;
     line-height: 20px;
@@ -20,7 +21,7 @@ form#payment-form {
     text-align: center;
 }
 
-#payment-element {
+#paymentElement {
     margin-bottom: 24px;
 }
 
@@ -124,3 +125,165 @@ button.stripe-payment-btn:disabled {
         min-width: initial;
     }
 }
+
+/*Checkout - Confirm page end*/
+
+/*Checkout - Address page*/
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 40px 0;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 17px;  /* Adjusted for 36px circles */
+    left: calc(50% + 23px);  /* Adjusted for 36px circles */
+    right: calc(-50% + 23px);  /* Adjusted for 36px circles */
+    height: 1px;
+    background: #ccc;
+    z-index: -1;
+}
+
+.step.completed:not(:last-child)::after {
+    background: #000;
+}
+
+.step-circle {
+    width: 36px;  /* Changed to 36px */
+    height: 36px;  /* Changed to 36px */
+    border-radius: 50%;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    color: #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 5px;
+    font-weight: bold;
+    font-size: 15px;  /* Slightly reduced for 36px circles */
+}
+
+.step.completed .step-circle {
+    background-color: #f0f0f0;
+    border-color: #000;
+    color: #000;
+}
+
+.step.active .step-circle {
+    border-color: #000;
+    color: #000;
+}
+
+.step-label {
+    font-size: 14px;
+    color: #ccc;
+}
+
+.step.completed .step-label,
+.step.active .step-label {
+    color: #000;
+}
+.phone-input-container {
+    display: flex;
+    flex-direction: column;
+    margin-top: 15px;
+}
+
+.phone-input-container label {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.phone-input-container input {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.phone-input-container input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+}
+
+.clickable-card {
+    cursor: pointer;
+    transition: box-shadow 0.3s;
+}
+.clickable-card:hover {
+    box-shadow: 0 0 11px rgba(33,33,33,.2);
+}
+.clickable-card.selected {
+    border-bottom-color: #27b14c;
+}
+.clickable-card.selected i {
+    color: #27b14c;
+}
+.form-check {
+    padding-left: 2rem;
+}
+.custom-radio {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: -2rem;
+    background-color: #fff;
+    border: 2px solid #000;
+}
+.custom-radio:checked {
+    background-color: #000;
+    border-color: #000;
+}
+.custom-radio:checked::after {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+}
+.edit-shipping-icon,
+.shipping-collapse-icon,
+.default-shipping-collapse-icon,
+.billing-collapse-icon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: #000;
+}
+address {
+    font-style: normal;
+    margin-bottom: 0;
+}
+.form-label {
+    font-size: 0.9rem;
+}
+
+/* Checkout - Address page end */
+
+/* Checkout - Payment page */
+.payment-option {
+    padding-bottom: 1rem;
+}
+.payment-divider {
+    border: 0;
+    border-top: 1px solid #cfcfcf; /* Lighter color */
+    margin-top: 1rem;
+    margin-bottom: 0;
+    opacity: 0.5; /* Reduces the opacity for subtlety */
+}
+.error-message-subtle {
+    font-size: 0.825rem;
+    color: #dc3545;
+    background-color: transparent;
+    border: none;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+}
+/* Checkout - Payment page end */

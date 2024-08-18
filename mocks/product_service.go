@@ -27,19 +27,19 @@ var _ anor.ProductService = &ProductServiceMock{}
 //				panic("mock out the GetNewArrivals method")
 //			},
 //			GetProductFunc: func(ctx context.Context, id int64) (*anor.Product, error) {
-//				panic("mock out the GetProduct method")
+//				panic("mock out the Get method")
 //			},
 //			GetProductBrandsByCategoryFunc: func(ctx context.Context, category anor.Category) ([]string, error) {
-//				panic("mock out the GetProductBrandsByCategory method")
+//				panic("mock out the ListAllBrandsByCategory method")
 //			},
-//			GetProductsByCategoryFunc: func(ctx context.Context, category anor.Category, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error) {
-//				panic("mock out the GetProductsByCategory method")
+//			GetProductsByCategoryFunc: func(ctx context.Context, category anor.Category, params anor.ListByCategoryParams) ([]anor.Product, int64, error) {
+//				panic("mock out the ListByCategory method")
 //			},
-//			GetProductsByLeafCategoryIDFunc: func(ctx context.Context, categoryID int32, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error) {
-//				panic("mock out the GetProductsByLeafCategoryID method")
+//			GetProductsByLeafCategoryIDFunc: func(ctx context.Context, categoryID int32, params anor.ListByCategoryParams) ([]anor.Product, int64, error) {
+//				panic("mock out the ListByLeafCategoryID method")
 //			},
-//			GetProductsByNonLeafCategoryIDFunc: func(ctx context.Context, categoryID int32, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error) {
-//				panic("mock out the GetProductsByNonLeafCategoryID method")
+//			GetProductsByNonLeafCategoryIDFunc: func(ctx context.Context, categoryID int32, params anor.ListByCategoryParams) ([]anor.Product, int64, error) {
+//				panic("mock out the ListByNonLeafCategoryID method")
 //			},
 //		}
 //
@@ -61,13 +61,13 @@ type ProductServiceMock struct {
 	GetProductBrandsByCategoryFunc func(ctx context.Context, category anor.Category) ([]string, error)
 
 	// GetProductsByCategoryFunc mocks the GetProductsByCategory method.
-	GetProductsByCategoryFunc func(ctx context.Context, category anor.Category, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error)
+	GetProductsByCategoryFunc func(ctx context.Context, category anor.Category, params anor.ListByCategoryParams) ([]anor.Product, int64, error)
 
 	// GetProductsByLeafCategoryIDFunc mocks the GetProductsByLeafCategoryID method.
-	GetProductsByLeafCategoryIDFunc func(ctx context.Context, categoryID int32, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error)
+	GetProductsByLeafCategoryIDFunc func(ctx context.Context, categoryID int32, params anor.ListByCategoryParams) ([]anor.Product, int64, error)
 
 	// GetProductsByNonLeafCategoryIDFunc mocks the GetProductsByNonLeafCategoryID method.
-	GetProductsByNonLeafCategoryIDFunc func(ctx context.Context, categoryID int32, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error)
+	GetProductsByNonLeafCategoryIDFunc func(ctx context.Context, categoryID int32, params anor.ListByCategoryParams) ([]anor.Product, int64, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -106,7 +106,7 @@ type ProductServiceMock struct {
 			// Category is the category argument value.
 			Category anor.Category
 			// Params is the params argument value.
-			Params anor.GetProductsByCategoryParams
+			Params anor.ListByCategoryParams
 		}
 		// GetProductsByLeafCategoryID holds details about calls to the GetProductsByLeafCategoryID method.
 		GetProductsByLeafCategoryID []struct {
@@ -115,7 +115,7 @@ type ProductServiceMock struct {
 			// CategoryID is the categoryID argument value.
 			CategoryID int32
 			// Params is the params argument value.
-			Params anor.GetProductsByCategoryParams
+			Params anor.ListByCategoryParams
 		}
 		// GetProductsByNonLeafCategoryID holds details about calls to the GetProductsByNonLeafCategoryID method.
 		GetProductsByNonLeafCategoryID []struct {
@@ -124,7 +124,7 @@ type ProductServiceMock struct {
 			// CategoryID is the categoryID argument value.
 			CategoryID int32
 			// Params is the params argument value.
-			Params anor.GetProductsByCategoryParams
+			Params anor.ListByCategoryParams
 		}
 	}
 	lockGetMinMaxPricesByCategory      sync.RWMutex
@@ -211,7 +211,7 @@ func (mock *ProductServiceMock) GetNewArrivalsCalls() []struct {
 // GetProduct calls GetProductFunc.
 func (mock *ProductServiceMock) GetProduct(ctx context.Context, id int64) (*anor.Product, error) {
 	if mock.GetProductFunc == nil {
-		panic("ProductServiceMock.GetProductFunc: method is nil but ProductService.GetProduct was just called")
+		panic("ProductServiceMock.GetProductFunc: method is nil but ProductService.Get was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -247,7 +247,7 @@ func (mock *ProductServiceMock) GetProductCalls() []struct {
 // GetProductBrandsByCategory calls GetProductBrandsByCategoryFunc.
 func (mock *ProductServiceMock) GetProductBrandsByCategory(ctx context.Context, category anor.Category) ([]string, error) {
 	if mock.GetProductBrandsByCategoryFunc == nil {
-		panic("ProductServiceMock.GetProductBrandsByCategoryFunc: method is nil but ProductService.GetProductBrandsByCategory was just called")
+		panic("ProductServiceMock.GetProductBrandsByCategoryFunc: method is nil but ProductService.ListAllBrandsByCategory was just called")
 	}
 	callInfo := struct {
 		Ctx      context.Context
@@ -281,14 +281,14 @@ func (mock *ProductServiceMock) GetProductBrandsByCategoryCalls() []struct {
 }
 
 // GetProductsByCategory calls GetProductsByCategoryFunc.
-func (mock *ProductServiceMock) GetProductsByCategory(ctx context.Context, category anor.Category, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error) {
+func (mock *ProductServiceMock) GetProductsByCategory(ctx context.Context, category anor.Category, params anor.ListByCategoryParams) ([]anor.Product, int64, error) {
 	if mock.GetProductsByCategoryFunc == nil {
-		panic("ProductServiceMock.GetProductsByCategoryFunc: method is nil but ProductService.GetProductsByCategory was just called")
+		panic("ProductServiceMock.GetProductsByCategoryFunc: method is nil but ProductService.ListByCategory was just called")
 	}
 	callInfo := struct {
 		Ctx      context.Context
 		Category anor.Category
-		Params   anor.GetProductsByCategoryParams
+		Params   anor.ListByCategoryParams
 	}{
 		Ctx:      ctx,
 		Category: category,
@@ -307,12 +307,12 @@ func (mock *ProductServiceMock) GetProductsByCategory(ctx context.Context, categ
 func (mock *ProductServiceMock) GetProductsByCategoryCalls() []struct {
 	Ctx      context.Context
 	Category anor.Category
-	Params   anor.GetProductsByCategoryParams
+	Params   anor.ListByCategoryParams
 } {
 	var calls []struct {
 		Ctx      context.Context
 		Category anor.Category
-		Params   anor.GetProductsByCategoryParams
+		Params   anor.ListByCategoryParams
 	}
 	mock.lockGetProductsByCategory.RLock()
 	calls = mock.calls.GetProductsByCategory
@@ -321,14 +321,14 @@ func (mock *ProductServiceMock) GetProductsByCategoryCalls() []struct {
 }
 
 // GetProductsByLeafCategoryID calls GetProductsByLeafCategoryIDFunc.
-func (mock *ProductServiceMock) GetProductsByLeafCategoryID(ctx context.Context, categoryID int32, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error) {
+func (mock *ProductServiceMock) GetProductsByLeafCategoryID(ctx context.Context, categoryID int32, params anor.ListByCategoryParams) ([]anor.Product, int64, error) {
 	if mock.GetProductsByLeafCategoryIDFunc == nil {
-		panic("ProductServiceMock.GetProductsByLeafCategoryIDFunc: method is nil but ProductService.GetProductsByLeafCategoryID was just called")
+		panic("ProductServiceMock.GetProductsByLeafCategoryIDFunc: method is nil but ProductService.ListByLeafCategoryID was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
 		CategoryID int32
-		Params     anor.GetProductsByCategoryParams
+		Params     anor.ListByCategoryParams
 	}{
 		Ctx:        ctx,
 		CategoryID: categoryID,
@@ -347,12 +347,12 @@ func (mock *ProductServiceMock) GetProductsByLeafCategoryID(ctx context.Context,
 func (mock *ProductServiceMock) GetProductsByLeafCategoryIDCalls() []struct {
 	Ctx        context.Context
 	CategoryID int32
-	Params     anor.GetProductsByCategoryParams
+	Params     anor.ListByCategoryParams
 } {
 	var calls []struct {
 		Ctx        context.Context
 		CategoryID int32
-		Params     anor.GetProductsByCategoryParams
+		Params     anor.ListByCategoryParams
 	}
 	mock.lockGetProductsByLeafCategoryID.RLock()
 	calls = mock.calls.GetProductsByLeafCategoryID
@@ -361,14 +361,14 @@ func (mock *ProductServiceMock) GetProductsByLeafCategoryIDCalls() []struct {
 }
 
 // GetProductsByNonLeafCategoryID calls GetProductsByNonLeafCategoryIDFunc.
-func (mock *ProductServiceMock) GetProductsByNonLeafCategoryID(ctx context.Context, categoryID int32, params anor.GetProductsByCategoryParams) ([]anor.Product, int64, error) {
+func (mock *ProductServiceMock) GetProductsByNonLeafCategoryID(ctx context.Context, categoryID int32, params anor.ListByCategoryParams) ([]anor.Product, int64, error) {
 	if mock.GetProductsByNonLeafCategoryIDFunc == nil {
-		panic("ProductServiceMock.GetProductsByNonLeafCategoryIDFunc: method is nil but ProductService.GetProductsByNonLeafCategoryID was just called")
+		panic("ProductServiceMock.GetProductsByNonLeafCategoryIDFunc: method is nil but ProductService.ListByNonLeafCategoryID was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
 		CategoryID int32
-		Params     anor.GetProductsByCategoryParams
+		Params     anor.ListByCategoryParams
 	}{
 		Ctx:        ctx,
 		CategoryID: categoryID,
@@ -387,12 +387,12 @@ func (mock *ProductServiceMock) GetProductsByNonLeafCategoryID(ctx context.Conte
 func (mock *ProductServiceMock) GetProductsByNonLeafCategoryIDCalls() []struct {
 	Ctx        context.Context
 	CategoryID int32
-	Params     anor.GetProductsByCategoryParams
+	Params     anor.ListByCategoryParams
 } {
 	var calls []struct {
 		Ctx        context.Context
 		CategoryID int32
-		Params     anor.GetProductsByCategoryParams
+		Params     anor.ListByCategoryParams
 	}
 	mock.lockGetProductsByNonLeafCategoryID.RLock()
 	calls = mock.calls.GetProductsByNonLeafCategoryID

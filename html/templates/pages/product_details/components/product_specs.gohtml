@@ -1,5 +1,6 @@
-{{ define "product-specs" }}
-    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/product-details/components.ProductSpecs*/ -}}
+{{ define "product_specs" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/product_details/components.ProductSpecs*/ -}}
+    {{ $product := .Product }}
     <div class="row">
         <main class="col-xl-12 col-lg-12">
             <div class="card mb-4 border-0">
@@ -23,7 +24,7 @@
                     <article class="tab-pane px-4 active" id="details" role="tabpanel">
                         <h5 class="mt-2">Item specifics</h5>
                         <div class="row mt-4">
-                            {{ $splitSpecs := splitMap .Product.BaseProduct.Specifications }}
+                            {{ $splitSpecs := splitMap $product.Specifications }}
                             <div class="col-lg-6">
                                 <dl class="row">
                                     {{ range $key, $val := $splitSpecs.First }}

@@ -1,29 +1,46 @@
-{{ define "cart-summary" }}
-    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/cart/components.CartSummary*/ -}}
-    <div class="card-body" id="cart-summary" {{ if (ne .HxSwapOOB "") }} hx-swap-oob="{{ .HxSwapOOB }}"  {{ end }}>
-        <dl class="row">
-            <dt class="col-7 fw-normal text-muted">Subtotal: </dt>
-            <dd class="col-5 text-end">{{ currencySymbol .CurrencyCode }}{{ .TotalAmount }}</dd>
+{{ define "cart_summary" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/cart/components.CartSummary*/ -}}
+    {{ $hxSwapOOB := .HxSwapOOB }}
+    {{ $cartItemsCount := .CartItemsCount }}
+    {{ $totalAmount := .TotalAmount }}
+    {{ $currency := .Currency }}
+    <div id="cart-summary"  {{ if $hxSwapOOB }} hx-swap-oob="{{ $hxSwapOOB }}" {{ end }}>
+        <div class="card mb-3 rounded-0 border-0" style="background-color: #efeff0;">
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-7 fw-normal">Subtotal: </dt>
+                    <dd class="col-5 text-end">${{ $totalAmount }}</dd>
 
-            <dt class="col-7 fw-normal text-muted">Shipping:</dt>
-            <dd class="col-5 text-end">{{ currencySymbol .CurrencyCode }}0.00</dd>
-        </dl>
-        <hr>
-        <dl class="row">
-            <dt class="col-7 h5 text-muted">Total:</dt>
-            <dd class="col-5 h5 text-end ">{{ currencySymbol .CurrencyCode }}{{ .TotalAmount }}</dd>
-        </dl>
+                    <dt class="col-7 fw-normal">Shipping:</dt>
+                    <dd class="col-5 text-end">$0.00</dd>
+                </dl>
+                <hr>
+                <dl class="row">
+                    <dt class="col-7 h5">Total:</dt>
+                    <dd class="col-5 h5 text-end ">${{ $totalAmount }}</dd>
+                </dl>
 
-        <div class="my-3">
-            <a href="" class="btn btn-lg p-3 btn-success w-100 {{ if eq .CartItemsCount 0 }} disabled {{ end }}"
-               hx-get="/checkout"
-               hx-target="#content"
-               hx-push-url="true"
-            > Go to Checkout </a>
+                <div class="my-3">
+                    <a href="/checkout/confirm" class="btn btn-lg p-3 w-100 custom-checkout-btn {{ if eq $cartItemsCount 0 }} disabled {{ end }}">
+                        <i class="bi bi-lock-fill me-2"></i> Go to Checkout
+                    </a>
+                </div>
+                <p class="mt-3" style="color: rgb(26,26,26); font-size: 14px">We accept</p>
+                <p class="text-center mt-3">
+                    <img src="static/images/misc/payments-extended.png" height="82">
+                </p>
+            </div> <!-- card-body.// -->
         </div>
-        <p class="text-center mt-3">
-            <img src="static/images/misc/payments.png" height="24">
-        </p>
-
-    </div> <!-- card-body.// -->
+        <div class="card p-3">
+            <form>
+                <div>
+                    <label class="form-label">Have coupon?</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="" placeholder="Add coupon">
+                        <button class="btn btn-light">Apply</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 {{ end }}

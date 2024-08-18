@@ -1,0 +1,17 @@
+{{ define "wishlist_nav_item" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/shared/header/components.WishlistNavItem*/ -}}
+    {{ $hxSwapOOB := .HxSwapOOB }}
+    {{ $wishlistItemsCount := .WishlistItemsCount }}
+    <div class="widget-header mx-2 text-center menu-item my-0" id="wishlist-nav-item"
+         {{ if $hxSwapOOB }} hx-swap-oob="{{ $hxSwapOOB }}" {{ end }}>
+        <a href="#" class="d-inline-block align-middle">
+            <span class="fs-5 d-inline-block position-relative">
+                <i class="bi bi-heart" style="font-size: 22px;"></i>
+                {{ if ne $wishlistItemsCount 0  }}
+                    <span class="notify">{{ $wishlistItemsCount }}</span>
+                {{ end }}
+            </span>
+            <small class="d-block text-truncate"> Wishlist </small>
+        </a>
+    </div>
+{{ end }}

@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/postgres/repository/cart"
@@ -11,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/samber/oops"
+	"log/slog"
+	mrand "math/rand"
 )
 
 // Ensure service implements interface.
@@ -30,12 +34,50 @@ func NewUserService(us user.Repository, cs cart.Repository, os order.Repository)
 	}
 }
 
-func (s UserService) CreateUser(ctx context.Context, u anor.User) error {
-	err := s.userRepository.ExecTx(ctx, func(tx pgx.Tx) error {
-		err := s.userRepository.WithTx(tx).CreateUser(ctx, u.Email, u.Password, u.FullName)
-		if err != nil {
-			return err
+func (s UserService) Create(ctx context.Context, params anor.UserCreateParams) (anor.User, error) {
+	if params.Provider == anor.ProviderBuiltin && params.Password == "" {
+		return anor.User{}, oops.Errorf("password is required")
+	}
+
+	if params.Provider == anor.ProviderGoogle {
+		params.Password = "google_" + generateRandomPassword(12)
+		params.Status = anor.UserStatusActive
+	}
+
+	var (
+		newUser *user.User
+		err     error
+	)
+	err = s.userRepository.ExecTx(ctx, func(tx pgx.Tx) error {
+		if params.Status != "" && params.PhoneNumber != "" {
+			newUser, err = s.userRepository.WithTx(tx).CreateUserWithStatusAndPhone(ctx,
+				params.Email,
+				params.Password,
+				params.Name,
+				user.UserStatus(params.Status),
+				&params.PhoneNumber,
+			)
+		} else if params.Status != "" {
+			newUser, err = s.userRepository.WithTx(tx).CreateUserWithStatus(ctx,
+				params.Email,
+				params.Password,
+				params.Name,
+				user.UserStatus(params.Status),
+			)
+		} else if params.PhoneNumber != "" {
+			newUser, err = s.userRepository.WithTx(tx).CreateUserWithPhone(ctx,
+				params.Email,
+				params.Password,
+				params.Name,
+				&params.PhoneNumber,
+			)
+		} else {
+			newUser, err = s.userRepository.WithTx(tx).CreateUser(ctx, params.Email, params.Password, params.Name)
 		}
+		if err != nil {
+			return oops.Wrap(err)
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -43,17 +85,39 @@ func (s UserService) CreateUser(ctx context.Context, u anor.User) error {
 		if errors.As(err, &pgErr) {
 			switch pgErr.Code {
 			case pgerrcode.UniqueViolation:
-				return anor.ErrUserExists
+				return anor.User{}, anor.ErrUserExists
 			}
 		}
 
-		return oops.Errorf("failed to create user: %v", err)
+		return anor.User{}, oops.Errorf("failed to create user: %v", err)
 	}
 
-	return nil
+	u := anor.User{
+		ID:        newUser.ID,
+		Email:     newUser.Email,
+		Password:  newUser.Password,
+		FullName:  newUser.FullName,
+		Status:    anor.UserStatus(newUser.Status),
+		CreatedAt: newUser.CreatedAt.Time,
+		UpdatedAt: newUser.UpdatedAt.Time,
+	}
+
+	return u, nil
 }
 
-func (s UserService) GetUser(ctx context.Context, id int64) (anor.User, error) {
+func generateRandomPassword(length int) string {
+	randomBytes := make([]byte, length)
+	if _, err := rand.Read(randomBytes); err != nil {
+		slog.Warn("Error generating token", "error", err)
+		for i := range randomBytes {
+			randomBytes[i] = byte(mrand.Int())
+		}
+	}
+	token := base64.URLEncoding.EncodeToString(randomBytes)
+	return token
+}
+
+func (s UserService) Get(ctx context.Context, id int64) (anor.User, error) {
 	ru, err := s.userRepository.GetUser(ctx, id) // retrieved user
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -79,13 +143,13 @@ func (s UserService) GetUser(ctx context.Context, id int64) (anor.User, error) {
 	return u, nil
 }
 
-func (s UserService) GetUserByEmail(ctx context.Context, email string) (anor.User, error) {
+func (s UserService) GetByEmail(ctx context.Context, email string) (anor.User, error) {
 	ru, err := s.userRepository.GetUserByEmail(ctx, email) // retrieved user
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return anor.User{}, anor.ErrNotFound
+			return anor.User{}, anor.ErrUserNotFound
 		}
-		return anor.User{}, oops.Errorf("failed to get user by email: %v", err)
+		return anor.User{}, oops.Wrap(err)
 	}
 
 	u := anor.User{
@@ -105,7 +169,7 @@ func (s UserService) GetUserByEmail(ctx context.Context, email string) (anor.Use
 	return u, nil
 }
 
-func (s UserService) UpdateUserStatusByEmail(ctx context.Context, status anor.UserStatus, email string) error {
+func (s UserService) UpdateStatusByEmail(ctx context.Context, status anor.UserStatus, email string) error {
 	err := s.userRepository.UpdateUserStatusByEmail(ctx, user.UserStatus(status), email)
 	if err != nil {
 		return oops.Errorf("failed to update user status: %v", err)
@@ -114,7 +178,7 @@ func (s UserService) UpdateUserStatusByEmail(ctx context.Context, status anor.Us
 	return nil
 }
 
-func (s UserService) UpdateUserPassword(ctx context.Context, id int64, password string) error {
+func (s UserService) UpdatePassword(ctx context.Context, id int64, password string) error {
 	err := s.userRepository.UpdateUserPassword(ctx, password, id)
 	if err != nil {
 		return oops.Errorf("failed to update user password: %v", err)
@@ -122,22 +186,22 @@ func (s UserService) UpdateUserPassword(ctx context.Context, id int64, password 
 	return nil
 }
 
-func (s UserService) GetUserActivityCounts(ctx context.Context, id int64) (anor.UserActivityCounts, error) {
-	cartItemCount, err := s.cartRepository.CountCartItems(ctx, &id)
+func (s UserService) GetActivityCounts(ctx context.Context, id int64) (anor.UserActivityCounts, error) {
+	cartItemCount, err := s.cartRepository.CountCartItemsByUserIdAndCartStatus(ctx, &id, cart.CartStatusOpen)
 	if err != nil {
 		return anor.UserActivityCounts{}, oops.Errorf("failed to get user cart item counts: %v", err)
 	}
 
-	orderCount, err := s.orderRepository.CountActiveOrders(ctx, &id)
-	if err != nil {
-		return anor.UserActivityCounts{}, oops.Errorf("failed to get user order counts: %v", err)
-	}
+	//orderCount, err := s.orderRepository.CountActiveOrders(ctx, &id)
+	//if err != nil {
+	//	return anor.UserActivityCounts{}, oops.Errorf("failed to get user order counts: %v", err)
+	//}
 
 	// TODO: count wishlist items here
 
 	return anor.UserActivityCounts{
 		CartItemsCount:     int(cartItemCount),
 		WishlistItemsCount: 0, // FIX: Remove hardcoded value
-		ActiveOrdersCount:  int(orderCount),
+		//ActiveOrdersCount:  int(orderCount),
 	}, nil
 }

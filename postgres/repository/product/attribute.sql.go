@@ -14,14 +14,14 @@ INSERT INTO product_attributes (
     product_id, attribute
 ) VALUES (
     $1, $2
-) RETURNING id
+) RETURNING id, product_id, attribute
 `
 
-func (q *Queries) CreateProductAttribute(ctx context.Context, productID int64, attribute string) (int64, error) {
+func (q *Queries) CreateProductAttribute(ctx context.Context, productID int64, attribute string) (*ProductAttribute, error) {
 	row := q.db.QueryRow(ctx, createProductAttribute, productID, attribute)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+	var i ProductAttribute
+	err := row.Scan(&i.ID, &i.ProductID, &i.Attribute)
+	return &i, err
 }
 
 const createProductVariantAttributeValues = `-- name: CreateProductVariantAttributeValues :exec

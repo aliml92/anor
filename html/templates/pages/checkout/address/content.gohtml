@@ -1,0 +1,49 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/checkout/address.Content*/ -}}
+    {{ $sAddr := .ShippingInfo.ShippingAddress }}
+    {{ $bAddr := .BillingInfo.BillingAddress }}
+    <section style="min-height:81vh">
+        <div class="container" style="max-width: 1000px;">
+            <!-- Checkout Steps -->
+            {{ template "stepper" .Stepper }}
+
+            <!-- Two-column layout -->
+            <div class="d-flex justify-content-center">
+                {{ if .ShippingAddressKindSelector.NoUserAddresses }}
+                    {{ template "shipping_address_kind_selector" .ShippingAddressKindSelector }}
+                {{ else }}
+                    <div class="row">
+                        <div class="col-md-6 px-4">
+                            <!-- shipping address information -->
+                            <div id="shippingInfo">
+                               {{ template "shipping_info" .ShippingInfo }}
+                            </div>
+                            <!-- shipping address information end -->
+
+                            <!-- contact details -->
+                            <div id="contactDetails">
+                                <h4 class="mt-4" style="font-weight: 600; font-size: 20px; line-height: 24px;">Contact Details</h4>
+                                <hr class="mt-1">
+                                <p style="font-size: 14px">If you've selected delivery to a pick-up point, we'll contact you via
+                                    SMS when your parcel is ready for collection, so please leave us your best contact number.
+                                    Don't forget to take your ID with you
+                                </p>
+                                <div class="phone-input-container">
+                                    <label for="phone-number">Phone:</label>
+                                    <input type="tel" id="phoneNumber" name="phone-number" placeholder="+1 (555) 123-4567" pattern="\+1 \(\d{3}\) \d{3}-\d{4}">
+                                </div>
+                            </div>
+                            <!-- contact details end -->
+                        </div>
+
+                        <!-- billing address information -->
+                        <div class="col-md-6 px-4" id="billingInfo">
+                            {{ template "billing_info" .BillingInfo }}
+                        </div>
+                        <!-- billing address information end -->
+                    </div>
+                {{ end }}
+            </div>
+        </div>
+    </section>
+{{ end }}

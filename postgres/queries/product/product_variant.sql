@@ -17,8 +17,8 @@ SELECT
     pv.qty,
     pv.is_custom_priced,
     pv.image_identifiers,
-    pv.created_at AS sku_created_at,
-    pv.updated_at AS sku_updated_at,
+    pv.created_at AS created_at,
+    pv.updated_at AS updated_at,
     jsonb_object_agg(pa.attribute, pva.attribute_value) FILTER (WHERE pa.attribute IS NOT NULL) AS attributes
 FROM
     product_variants pv

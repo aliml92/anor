@@ -10,8 +10,10 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/samber/oops"
 	"strconv"
+	"time"
 )
 
 var _ anor.CartService = (*CartService)(nil)
@@ -28,125 +30,82 @@ func NewCartService(cr cart.Repository, pr product.Repository) *CartService {
 	}
 }
 
-func (cs *CartService) GetGuestCartItems(ctx context.Context, cartID int64) ([]*anor.CartItem, error) {
-	cartItems, err := cs.cartRepository.GetCartItemsByCartID(ctx, cartID)
-	if err != nil {
-		return nil, oops.Errorf("failed to get cart items: %v", err)
+func (s *CartService) Create(ctx context.Context, params anor.CartCreateParams) (anor.Cart, error) {
+	if params.UserID == 0 && params.ExpiresAt.IsZero() {
+		return anor.Cart{}, oops.Errorf("UserID and ExpiresAt cannot be nil at the same time")
 	}
 
-	items := make([]*anor.CartItem, len(cartItems))
-	variantIds := make([]int64, len(cartItems))
-	for index, item := range cartItems {
-		it := &anor.CartItem{
-			ID:           item.ID,
-			CartID:       item.CartID,
-			VariantID:    item.VariantID,
-			Qty:          item.Qty,
-			Price:        item.Price,
-			CurrencyCode: item.CurrencyCode,
-			Thumbnail:    item.Thumbnail,
-			ProductName:  item.ProductName,
-			ProductPath:  item.ProductPath,
-			CreatedAt:    item.CreatedAt.Time,
-			UpdatedAt:    item.UpdatedAt.Time,
-		}
-
-		attrs := make(map[string]string)
-		if err := json.Unmarshal(item.VariantAttributes, &attrs); err != nil {
-			return nil, oops.Wrap(err)
-		}
-		it.VariantAttributes = attrs
-		items[index] = it
-
-		variantIds[index] = item.VariantID
-	}
-
-	if len(variantIds) > 0 {
-		ph, err := cs.productRepository.GetProductVariantQtyInBulk(ctx, variantIds)
-		if err != nil {
-			return nil, oops.Errorf("failed to get product variamt qty in bulk: %v", err)
-		}
-
-		for index := range items {
-			items[index].AvailableQty = ph[index].Qty
-		}
-	}
-
-	return items, nil
-}
-
-func (cs *CartService) CreateCart(ctx context.Context, userID int64) (anor.Cart, error) {
 	var (
 		c   *cart.Cart
 		err error
 	)
-	if userID > 0 {
-		c, err = cs.cartRepository.CreateCart(ctx, &userID)
+	if params.UserID != 0 {
+		c, err = s.cartRepository.CreateCart(ctx, anor.Int64(params.UserID))
 		if err != nil {
-			return anor.Cart{}, oops.Errorf("failed to create cart: %v", err)
+			return anor.Cart{}, oops.Wrap(err)
 		}
-	} else {
-		c, err = cs.cartRepository.CreateGuestCart(ctx)
+	}
+
+	if !params.ExpiresAt.IsZero() {
+		if time.Now().After(params.ExpiresAt) {
+			return anor.Cart{}, oops.Errorf("invalid expiration time")
+		}
+		c, err = s.cartRepository.CreateGuestCart(ctx, convertToPgTimestamptz(params.ExpiresAt))
 		if err != nil {
-			return anor.Cart{}, oops.Errorf("failed to create guest cart: %v", err)
+			return anor.Cart{}, oops.Wrap(err)
 		}
 	}
 
 	ac := anor.Cart{
 		ID:        c.ID,
+		UserID:    anor.Int64Value(c.UserID),
 		Status:    anor.CartStatus(c.Status),
+		ExpiresAt: c.ExpiresAt.Time,
 		CreatedAt: c.CreatedAt.Time,
-		DeletedAt: c.DeletedAt.Time,
-	}
-
-	if c.UserID != nil {
-		ac.UserID = *c.UserID
+		UpdatedAt: c.UpdatedAt.Time,
 	}
 
 	return ac, nil
 }
 
-func (cs *CartService) GetCart(ctx context.Context, userID int64, includeCartItems bool) (anor.Cart, error) {
-	c, err := cs.cartRepository.GetCartByUserID(ctx, &userID)
+func (s *CartService) Get(ctx context.Context, id int64, includeItems bool) (anor.Cart, error) {
+	c, err := s.cartRepository.GetCartByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return anor.Cart{}, anor.ErrNotFound
+			return anor.Cart{}, anor.ErrCartNotFound
 		}
-		return anor.Cart{}, oops.Errorf("failed to get cart: %v", err)
+		return anor.Cart{}, oops.Wrap(err)
 	}
 
 	ac := anor.Cart{
 		ID:        c.ID,
-		UserID:    *c.UserID,
+		UserID:    anor.Int64Value(c.UserID),
 		Status:    anor.CartStatus(c.Status),
 		CreatedAt: c.CreatedAt.Time,
-		DeletedAt: c.DeletedAt.Time,
+		UpdatedAt: c.UpdatedAt.Time,
 	}
 
-	if c.PiClientSecret != nil {
-		ac.PIClientSecret = *c.PiClientSecret
-	}
-
-	if includeCartItems {
-		cartItems, err := cs.cartRepository.GetCartItemsByCartID(ctx, c.ID)
+	if includeItems {
+		cartItems, err := s.cartRepository.GetCartItemsByCartID(ctx, c.ID)
 		if err != nil {
-			return anor.Cart{}, oops.Errorf("failed to get cart items: %v", err)
+			return anor.Cart{}, oops.Wrap(err)
 		}
 
 		items := make([]*anor.CartItem, len(cartItems))
 		variantIds := make([]int64, len(cartItems))
 		for index, item := range cartItems {
 			it := &anor.CartItem{
-				ID:           item.ID,
-				CartID:       item.CartID,
-				VariantID:    item.VariantID,
-				Qty:          item.Qty,
-				Price:        item.Price,
-				CurrencyCode: item.CurrencyCode,
-				Thumbnail:    item.Thumbnail,
-				ProductName:  item.ProductName,
-				CreatedAt:    item.CreatedAt.Time,
-				UpdatedAt:    item.UpdatedAt.Time,
+				ID:          item.ID,
+				CartID:      item.CartID,
+				VariantID:   item.VariantID,
+				Qty:         item.Qty,
+				Price:       item.Price,
+				Currency:    item.Currency,
+				Thumbnail:   item.Thumbnail,
+				ProductName: item.ProductName,
+				ProductPath: item.ProductPath,
+				CreatedAt:   item.CreatedAt.Time,
+				UpdatedAt:   item.UpdatedAt.Time,
 			}
 
 			attrs := make(map[string]string)
@@ -160,9 +119,9 @@ func (cs *CartService) GetCart(ctx context.Context, userID int64, includeCartIte
 		}
 
 		if len(variantIds) > 0 {
-			ph, err := cs.productRepository.GetProductVariantQtyInBulk(ctx, variantIds)
+			ph, err := s.productRepository.GetProductVariantQtyInBulk(ctx, variantIds)
 			if err != nil {
-				return anor.Cart{}, oops.Errorf("failed to get product variamt qty in bulk: %v", err)
+				return anor.Cart{}, oops.Wrap(err)
 			}
 
 			for index := range items {
@@ -176,12 +135,156 @@ func (cs *CartService) GetCart(ctx context.Context, userID int64, includeCartIte
 	return ac, nil
 }
 
-func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.AddCartItemParam) (anor.CartItem, error) {
-	var ci anor.CartItem
-	cd, err := cs.productRepository.CollectCartData(ctx, p.VariantID)
+func (s *CartService) GetByUserID(ctx context.Context, userID int64, includeItems bool) (anor.Cart, error) {
+	c, err := s.cartRepository.GetCartByUserID(ctx, &userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return anor.CartItem{}, anor.ErrNotFound
+			return anor.Cart{}, anor.ErrCartNotFound
+		}
+		return anor.Cart{}, oops.Wrap(err)
+	}
+
+	ac := anor.Cart{
+		ID:        c.ID,
+		UserID:    anor.Int64Value(c.UserID),
+		Status:    anor.CartStatus(c.Status),
+		CreatedAt: c.CreatedAt.Time,
+		UpdatedAt: c.UpdatedAt.Time,
+	}
+
+	if includeItems {
+		cartItems, err := s.cartRepository.GetCartItemsByCartID(ctx, c.ID)
+		if err != nil {
+			return anor.Cart{}, oops.Wrap(err)
+		}
+
+		items := make([]*anor.CartItem, len(cartItems))
+		variantIds := make([]int64, len(cartItems))
+		for index, item := range cartItems {
+			it := &anor.CartItem{
+				ID:          item.ID,
+				CartID:      item.CartID,
+				VariantID:   item.VariantID,
+				Qty:         item.Qty,
+				Price:       item.Price,
+				Currency:    item.Currency,
+				Thumbnail:   item.Thumbnail,
+				ProductName: item.ProductName,
+				ProductPath: item.ProductPath,
+				CreatedAt:   item.CreatedAt.Time,
+				UpdatedAt:   item.UpdatedAt.Time,
+			}
+
+			attrs := make(map[string]string)
+			if err := json.Unmarshal(item.VariantAttributes, &attrs); err != nil {
+				return anor.Cart{}, oops.Wrap(err)
+			}
+			it.VariantAttributes = attrs
+			items[index] = it
+
+			variantIds[index] = item.VariantID
+		}
+
+		if len(variantIds) > 0 {
+			ph, err := s.productRepository.GetProductVariantQtyInBulk(ctx, variantIds)
+			if err != nil {
+				return anor.Cart{}, oops.Wrap(err)
+			}
+
+			for index := range items {
+				items[index].AvailableQty = ph[index].Qty
+			}
+		}
+
+		ac.CartItems = items
+	}
+
+	return ac, nil
+}
+
+func (s *CartService) Update(ctx context.Context, id int64, params anor.CartUpdateParams) error {
+	rowsAffected, err := s.cartRepository.UpdateCartStatus(ctx, id, cart.CartStatus(params.Status))
+	if err != nil {
+		return oops.Wrap(err)
+	}
+
+	if rowsAffected == 0 {
+		return anor.ErrCartNotFound
+	}
+
+	return nil
+}
+
+func (s *CartService) Merge(ctx context.Context, params anor.CartMergeParams) (anor.Cart, error) {
+	userID := anor.Int64(params.UserID)
+	c, err := s.cartRepository.GetCartByUserID(ctx, userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		c, err = s.cartRepository.CreateCart(ctx, userID)
+		if err != nil {
+			return anor.Cart{}, oops.Wrap(err)
+		}
+	}
+	if err != nil {
+		return anor.Cart{}, oops.Wrap(err)
+	}
+	err = s.cartRepository.MergeGuestCartWithUserCart(ctx, params.GuestCartID, c.ID)
+	if err != nil {
+		return anor.Cart{}, oops.Wrap(err)
+	}
+
+	_, err = s.cartRepository.UpdateCartStatus(ctx, params.GuestCartID, cart.CartStatusMerged)
+	if err != nil {
+		return anor.Cart{}, oops.Wrap(err)
+	}
+
+	return anor.Cart{
+		ID:        c.ID,
+		UserID:    anor.Int64Value(c.UserID),
+		Status:    anor.CartStatus(c.Status),
+		CreatedAt: c.CreatedAt.Time,
+		UpdatedAt: c.UpdatedAt.Time,
+	}, nil
+}
+
+func (s *CartService) ListItems(ctx context.Context, params anor.CartItemListParams) ([]anor.CartItem, error) {
+	cartItems, err := s.cartRepository.GetCartItemsByCartID(ctx, params.CartID)
+	if err != nil {
+		return nil, oops.Wrap(err)
+	}
+
+	items := make([]anor.CartItem, len(cartItems))
+	for index, item := range cartItems {
+		it := anor.CartItem{
+			ID:          item.ID,
+			CartID:      item.CartID,
+			VariantID:   item.VariantID,
+			Qty:         item.Qty,
+			Price:       item.Price,
+			Currency:    item.Currency,
+			Thumbnail:   item.Thumbnail,
+			ProductName: item.ProductName,
+			ProductPath: item.ProductPath,
+			CreatedAt:   item.CreatedAt.Time,
+			UpdatedAt:   item.UpdatedAt.Time,
+		}
+
+		attrs := make(map[string]string)
+		if err := json.Unmarshal(item.VariantAttributes, &attrs); err != nil {
+			return nil, oops.Wrap(err)
+		}
+		it.VariantAttributes = attrs
+		items[index] = it
+	}
+
+	return items, nil
+}
+
+func (s *CartService) AddItem(ctx context.Context, params anor.CartItemAddParams) (anor.CartItem, error) {
+	var ci anor.CartItem
+	cd, err := s.productRepository.CollectCartData(ctx, params.VariantID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return anor.CartItem{}, anor.ErrProductVariantNotFound
 		}
 	}
 
@@ -191,26 +294,26 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 	// change another customer already bought this product variant. We don't check remaining stock when
 	// we add this cart item to cart, Let's be optimistic.
 	if cd.IsCustomPriced {
-		pvPrice, err := cs.productRepository.GetProductVariantPricingByVariantID(ctx, p.VariantID)
+		pvPrice, err := s.productRepository.GetProductVariantPricingByVariantID(ctx, params.VariantID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ci, anor.ErrProductVariantPricingNotFound
 			}
-			return ci, oops.Errorf("failed to get product variant pricing: %v", err)
+			return ci, oops.Wrap(err)
 		}
 		ci.Price = pvPrice.DiscountedPrice
-		ci.CurrencyCode = pvPrice.CurrencyCode
+		ci.Currency = pvPrice.CurrencyCode
 
 	} else {
-		pPrice, err := cs.productRepository.GetProductPricingByProductID(ctx, cd.ProductID)
+		pPrice, err := s.productRepository.GetProductPricingByProductID(ctx, cd.ProductID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ci, anor.ErrProductPricingNotFound
 			}
-			return ci, oops.Errorf("failed to get product pricing: %v", err)
+			return ci, oops.Wrap(err)
 		}
 		ci.Price = pPrice.DiscountedPrice
-		ci.CurrencyCode = pPrice.CurrencyCode
+		ci.Currency = pPrice.CurrencyCode
 	}
 
 	// get thumbnail
@@ -221,9 +324,9 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 	}
 
 	ci.Thumbnail = cd.ProductImageUrls[imgId]
-	ci.CartID = cartID
-	ci.VariantID = p.VariantID
-	ci.Qty = int32(p.Qty)
+	ci.CartID = params.CartID
+	ci.VariantID = params.VariantID
+	ci.Qty = int32(params.Qty)
 	ci.ProductName = cd.ProductName
 	ci.ProductPath = cd.ProductHandle + "-" + strconv.FormatInt(cd.ProductID, 10)
 
@@ -233,12 +336,12 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 	}
 	ci.VariantAttributes = attr
 
-	newCartItem, err := cs.cartRepository.AddCartItem(ctx,
+	newCartItem, err := s.cartRepository.AddCartItem(ctx,
 		ci.CartID,
 		ci.VariantID,
 		ci.Qty,
 		ci.Price,
-		ci.CurrencyCode,
+		ci.Currency,
 		ci.Thumbnail,
 		ci.ProductName,
 		ci.ProductPath,
@@ -247,12 +350,12 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 
 	if err != nil {
 		if cartItemAlreadyExists(err) {
-			_, err := cs.cartRepository.IncrementCartItemQty(ctx, ci.CartID, ci.VariantID, ci.Qty)
+			_, err := s.cartRepository.IncrementCartItemQty(ctx, ci.CartID, ci.VariantID, ci.Qty)
 			if err != nil {
-				return ci, oops.Errorf("failed to increment cart item qty: %v", err)
+				return ci, oops.Wrap(err)
 			}
 		} else {
-			return ci, oops.Errorf("failed to add cart item: %v", err)
+			return ci, oops.Wrap(err)
 		}
 	}
 
@@ -263,57 +366,53 @@ func (cs *CartService) AddCartItem(ctx context.Context, cartID int64, p anor.Add
 	return ci, nil
 }
 
-func (cs *CartService) UpdateCart(ctx context.Context, c anor.Cart) error {
-	if c.ID == 0 || c.UserID == 0 {
-		return anor.ErrInvalidCart
+func (s *CartService) UpdateItem(ctx context.Context, itemID int64, params anor.CartItemUpdateParams) error {
+	rowsAffected, err := s.cartRepository.UpdateCartItemQty(ctx, itemID, int32(params.Qty))
+	if err != nil {
+		return oops.Wrap(err)
 	}
-	if c.PIClientSecret != "" {
-		if err := cs.cartRepository.UpdateCartClientSecret(ctx, c.ID, &c.UserID, &c.PIClientSecret); err != nil {
-			return oops.Errorf("failed to update cart client secret: %v", err)
-		}
+
+	if rowsAffected == 0 {
+		return anor.ErrCartItemNotFound
 	}
 
 	return nil
 }
 
-func (cs *CartService) UpdateCartItem(ctx context.Context, cartItemID int64, p anor.UpdateCartItemParam) error {
-	err := cs.cartRepository.UpdateCartItemQty(ctx, cartItemID, int32(p.Qty))
+func (s *CartService) DeleteItem(ctx context.Context, itemID int64) error {
+	rowsAffected, err := s.cartRepository.DeleteCartItem(ctx, itemID)
 	if err != nil {
-		return oops.Errorf("failed to update cart item qty: %v", err)
+		return oops.Wrap(err)
 	}
+
+	if rowsAffected == 0 {
+		return anor.ErrCartItemNotFound
+	}
+
 	return nil
 }
 
-func (cs *CartService) DeleteCartItem(ctx context.Context, cartItemID int64) error {
-	err := cs.cartRepository.DeleteCartItem(ctx, cartItemID)
+func (s *CartService) CountItems(ctx context.Context, cartID int64) (int64, error) {
+	count, err := s.cartRepository.CountCartItemsByCartID(ctx, cartID)
 	if err != nil {
-		return oops.Errorf("failed to delete cart item: %v", err)
-	}
-	return nil
-}
-
-func (cs *CartService) CountCartItems(ctx context.Context, cartID int64) (int64, error) {
-	count, err := cs.cartRepository.CountCartItemsByCartID(ctx, cartID)
-	if err != nil {
-		return 0, oops.Errorf("failed to count cart: %v", err)
+		return 0, oops.Wrap(err)
 	}
 	return count, nil
 }
 
-func (cs *CartService) IsCartItemOwner(ctx context.Context, userID int64, cartItemId int64) (bool, error) {
-	ok, err := cs.cartRepository.CartItemExistsByUserID(ctx, cartItemId, userID)
+func (s *CartService) IsMyItem(ctx context.Context, params anor.IsMyCartItemParams) (bool, error) {
+	ok, err := s.cartRepository.CartItemExistsByCartID(ctx, params.ItemID, params.CartID)
 	if err != nil {
-		return false, oops.Errorf("failed to check cart item owner: %v", err)
+		return false, oops.Wrap(err)
 	}
 	return ok, nil
 }
 
-func (cs *CartService) IsGuestCartItemOwner(ctx context.Context, cartID int64, cartItemId int64) (bool, error) {
-	ok, err := cs.cartRepository.CartItemExistsByCartID(ctx, cartID, cartItemId)
-	if err != nil {
-		return false, oops.Errorf("failed to check cart item owner: %v", err)
+func convertToPgTimestamptz(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{
+		Time:  t,
+		Valid: true,
 	}
-	return ok, nil
 }
 
 func cartItemAlreadyExists(err error) bool {

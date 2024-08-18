@@ -65,3 +65,13 @@ CREATE TABLE IF NOT EXISTS product_variant_attributes (
     
     PRIMARY KEY (variant_id, product_attribute_id)
 );
+
+
+-- +goose Down
+DROP TABLE IF EXISTS product_variant_attributes;
+DROP TABLE IF EXISTS product_attributes;
+DROP TABLE IF EXISTS product_variant_pricing;
+DROP TABLE IF EXISTS product_variants;
+DROP TYPE IF EXISTS product_pricing;
+DROP TYPE IF EXISTS products;
+DROP TYPE IF EXISTS product_status;

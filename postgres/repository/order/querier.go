@@ -11,9 +11,17 @@ import (
 )
 
 type Querier interface {
-	CountActiveOrders(ctx context.Context, userID *int64) (int64, error)
-	CreateOrder(ctx context.Context, cartID int64, userID *int64, totalAmount decimal.Decimal, paymentIntentID string, shippingAddress []byte, billingAddress []byte) (*Order, error)
+	Create(ctx context.Context, userID int64, cartID int64, paymentMethod PaymentMethod, paymentStatus PaymentStatus, status OrderStatus, shippingAddressID int64, isPickup bool, amount decimal.Decimal, currency string) (*Order, error)
 	CreateOrderItems(ctx context.Context, arg []CreateOrderItemsParams) (int64, error)
+	Get(ctx context.Context, id int64) (*Order, error)
+	GetItemByOrderIds(ctx context.Context, orderids []int64) ([]*OrderItem, error)
+	GetOrders(ctx context.Context, cartID int64) ([]*Order, error)
+	ListActiveByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*Order, error)
+	ListActiveWithPaymentAndAddressByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*ListActiveWithPaymentAndAddressByUserIDRow, error)
+	ListByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*Order, error)
+	ListUnpaidPaymentByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*Order, error)
+	ListUnpaidWithPaymentAndAddressByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*ListUnpaidWithPaymentAndAddressByUserIDRow, error)
+	ListWithPaymentAndAddressByUserID(ctx context.Context, userID int64, limit int32, offset int32) ([]*ListWithPaymentAndAddressByUserIDRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

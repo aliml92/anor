@@ -1,36 +1,53 @@
 {{ define "content" }}
-    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/cart.Content*/ -}}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/cart.Content*/ -}}
+    {{ $cartItems := .CartItems }}
+    {{ $cartSummary := .CartSummary }}
     <section class="py-4">
         <div class="container" >
-            <div class="row">
-                <main class="col-lg-9">
-                    {{ template "cart-items" .CartItems }}
-                </main>
-                <aside class="col-lg-3">
-                    <div class="card p-3 mb-3">
-                        <form>
-                            <div>
-                                <label class="form-label">Have coupon?</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="" placeholder="Add coupon">
-                                    <button class="btn btn-light">Apply</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="card shadow-lg">
-                        {{ template "cart-summary" .CartSummary }}
-                    </div>
-                </aside>
+            <div class="row" id="cart-content">
+                {{ if ne (len $cartItems.CartItems ) 0 }}
+                    <main class="col-lg-8">
+                        {{ template "cart_items" $cartItems }}
+                    </main>
+                    <aside class="col-lg-4 pt-4">
+                        {{ template "cart_summary" $cartSummary }}
+                    </aside>
+                {{ else }}
+                    {{ template "cart_empty" }}
+                {{ end }}
             </div>
         </div>
     </section>
 
     <section>
         <div class="container">
-            {{ template "related-products" . }}
+            {{ template "related_products" }}
         </div>
     </section>
 
+   <!-- special place used as hx-target value, when there is no target -->
     <script id="no-content"></script>
+{{/*    <script>*/}}
+{{/*      document.body.removeEventListener("anor:showToast", showToast);*/}}
+{{/*      document.body.addEventListener("anor:showToast", showToast);*/}}
+
+{{/*      function showToast(evt){*/}}
+{{/*        console.log("showToast fired");*/}}
+{{/*        const value = evt.detail.value;*/}}
+{{/*        Toastify({*/}}
+{{/*          text: value,*/}}
+{{/*          duration: 3000,*/}}
+{{/*          destination: "#",*/}}
+{{/*          newWindow: false,*/}}
+{{/*          close: true,*/}}
+{{/*          gravity: "bottom", // `top` or `bottom`*/}}
+{{/*          position: "right", // `left`, `center` or `right`*/}}
+{{/*          stopOnFocus: true, // Prevents dismissing of toast on hover*/}}
+{{/*          style: {*/}}
+{{/*            background: "linear-gradient(to right, #00b09b, #96c93d)",*/}}
+{{/*          },*/}}
+{{/*          onClick: function(){} // Callback after click*/}}
+{{/*        }).showToast();*/}}
+{{/*      }*/}}
+{{/*    </script>*/}}
 {{ end }}

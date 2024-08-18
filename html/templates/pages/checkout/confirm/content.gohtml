@@ -1,0 +1,261 @@
+{{ define "content" }}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/checkout/confirmn.Content*/ -}}
+    {{ $estimatedDelivery := .EstimatedDeliveryDate }}
+    {{ $shippingCost := .ShippingCost }}
+    {{ $cartItems := .CartItems }}
+    {{ $shippingAddr := .ShippingAddress }}
+    {{ $billingAddr := .BillingAddress }}
+    {{ $paymentMethod := .SelectedPaymentMethod }}
+    {{ $cartTotal := .CartTotal }}
+    <section style="min-height:81vh">
+        <div class="container" style="max-width: 1000px;">
+            <!-- Checkout Steps -->
+            {{ template "stepper" .Stepper }}
+
+            <!-- Two-column layout -->
+            <div class="row">
+                <!-- Left Column (7 cols) -->
+                <div class="col-md-7">
+                    <!-- Order Paid/Finalized SVG -->
+                    <div class="mb-4">
+                        <img src="/static/images/order-summary.svg" alt="Order Summary" class="mb-2" style="height: 4rem; width: auto;">
+                        <h2 style="font-size: 1.90rem; font-weight: 600; margin-bottom: 0;">Order Summary</h2>
+                    </div>
+
+                    <!-- Expected Delivery -->
+                    <div class="card mb-4 border-0 shadow-none">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-4">
+                                <i class="bi bi-calendar2-check" style="font-size: 28px; font-weight: 600; color: black"></i>
+                                <span class="ms-3" style="font-weight: 600; color: black">Expected Delivery</span>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input custom-radio" type="radio" name="deliveryOption" id="standardDelivery" checked>
+                                <label class="form-check-label" for="standardDelivery">
+                                    <p class="ms-2 mb-1 fw-bold">{{ $estimatedDelivery }}</p>
+                                    <p class="ms-2 mb-1" style="color: #6c6c6c">Standard Delivery</p>
+                                    <p class="ms-2 text-dark fw-bold" >${{ $shippingCost }}</p>
+                                </label>
+                            </div>
+                            <small class="text-muted d-block">Express delivery is not possible for this order.</small>
+                        </div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="card border-0 shadow-none">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-4">
+                                <i class="bi bi-cart3"  style="font-size: 28px; font-weight: 600; color: black"></i>
+                                <span class="ms-3" style="font-weight: 600; color: black">Order Items</span>
+                            </div>
+                            <!-- Repeat this block for each order item -->
+                            {{ range $index, $item := $cartItems }}
+                            <article class="row mb-4" id="item_{{ $item.ID }}">
+                                <figure class="d-flex align-items-start">
+                                    <div class="me-3 flex-shrink-0">
+                                        <img src="{{ modifyImgURL $item.Thumbnail 100 }}" class="cart-item-thumb img-thumbnail">
+                                    </div>
+                                    <figcaption class="info">
+                                        <a class="title mb-2 text-decoration-none" style="color: #1a1a1a"
+                                        >{{ $item.ProductName }}</a>
+                                        <div class="mt-2">
+                                            {{ range $attr, $attrVal := $item.VariantAttributes }}
+                                            <span class="d-block" style="color: #1a1a1a; font-size: 14px">{{ $attr }}: {{ $attrVal }}</span>
+                                            {{ end }}
+                                        </div>
+                                        <span class="d-block" style="color: #1a1a1a; font-size: 14px">Qty: {{ $item.Qty }}</span>
+                                        <span class="d-block mt-3 mb-2 fw-bold" style="color: black; font-size: 14px">${{ $item.Price }}</span>
+                                    </figcaption>
+                                </figure>
+                            </article> <!-- row.// -->
+                            {{ end }}
+                            <!-- End of order item block -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (5 cols) -->
+                <div class="col-md-5">
+                    <!-- Delivery Address -->
+                    <div class="card mb-2 border-0 shadow-none">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-house"  style="font-size: 28px; font-weight: 600; color: black"></i>
+                                <span class="ms-3" style="font-weight: 600; color: black">Shipping Address</span>
+                            </div>
+                            <address class="card-text" style="color: #1a1a1a">
+                               {{ formatAddress $shippingAddr }}
+                            </address>
+                        </div>
+                    </div>
+
+                    <!-- Billing Address -->
+                    <div class="card mb-2 border-0 shadow-none">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-mailbox"  style="font-size: 28px; font-weight: 600; color: black"></i>
+                                <span class="ms-3" style="font-weight: 600; color: black">Billing Address</span>
+                            </div>
+                            {{ if $billingAddr.Equals $shippingAddr }}
+                                <address class="card-text" style="color: #1a1a1a">
+                                    Same as shipping address
+                                </address>
+                            {{ else }}
+                                <address class="card-text" style="color: #1a1a1a">
+                                    {{ formatAddress $billingAddr }}
+                                </address>
+                            {{ end }}
+                        </div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="card mb-2 border-0 shadow-none">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-wallet2"  style="font-size: 28px; font-weight: 600; color: black"></i>
+                                <span class="ms-3" style="font-weight: 600; color: black">Payment Method</span>
+                            </div>
+                            <address class="card-text" style="color: #1a1a1a">
+                                {{ $paymentMethod.Type }} ending in {{ $paymentMethod.Last4 }}
+                            </address>
+                        </div>
+                    </div>
+
+                    <!-- Voucher -->
+                    <div class="card mb-2 border-0 shadow-none">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-ticket-perforated" style="font-size: 28px; font-weight: 600; color: black"></i>
+                                <span class="ms-3" style="font-weight: 600; color: black">
+                                    Coupon/Gift Card
+                                    <span class="text-muted" style="font-size: 14px; font-weight: normal">(optional)</span>
+                                </span>
+                            </div>
+                            <div class="form-group">
+                                <label for="couponCode" class="form-label small text-dark">Enter your code</label>
+                                <input type="text" class="form-control mt-2 border-dark rounded-0" id="couponCode">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Total -->
+                    <div class="card rounded-0 border-0 p-3" >
+                        <div class="card-body p-3" style="background-color: #efeff0;">
+                            <dl class="row" style="color: #1a1a1a">
+                                <dt class="col-7 fw-normal">Subtotal:</dt>
+                                <dd class="col-5 text-end">${{ $cartTotal }}</dd>
+                                <dt class="col-7 fw-normal">Shipping:</dt>
+                                <dd class="col-5 text-end">$0.00</dd>
+                            </dl>
+                            <hr>
+                            <dl class="row">
+                                <dt class="col-7 h5">Total:<span class="text-muted" style="font-size: 13px; font-weight: normal">VAT Included</span></dt>
+                                <dd class="col-5 h5 text-end ">${{ $cartTotal }}</dd>
+                            </dl>
+
+                            <div class="my-3 mb-2">
+                                <button  class="btn btn-lg p-3 w-100 fw-bold border-0 rounded-0 custom-checkout-btn"
+                                   id="payBtn"
+                                >
+                                    Confirm and pay with {{ $paymentMethod.Type }}
+                                </button>
+                            </div>
+                            <div id="errorMessage" class="alert alert-danger error-message-subtle animate__animated animate__shakeX" style="display: none;"></div>
+                        </div> <!-- card-body.// -->
+                    </div>
+
+                    <p style="color: #1a1a1a; font-size: 14px; padding: 0 20px; font-weight: 400; line-height: 20px">
+                        By ordering, you agree to Anor's Privacy Policy, Terms, and Cancellation Policy. This purchase is for personal use. We may send product recommendations; you can unsubscribe anytime.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script>
+      const payBtn = htmx.find('#payBtn');
+      const stripe = Stripe('pk_test_51PJ8DELIUpPV6l70peDt17AduGuAgw2HvatxDUMmEq87fQLmfOPUmXbpIicZx12g5Vg2CBQgrMWRmveuKoHWKEjl00daRXleZN');
+
+      const errorMessage = htmx.find('#errorMessage');
+
+      htmx.on('#payBtn', 'click', async function(evt) {
+        console.log("payBtn clicked")
+
+        console.log("payBtn.disabled: ", payBtn.disabled)
+        if (payBtn.disabled) {
+          return;
+        }
+
+        payBtn.disabled = true;
+
+        try {
+          const res = await fetch('/checkout/create-payment-intent', {
+            method: 'POST',
+            headers: {"Content-Type": "application/json"},
+          });
+
+          if (!res.ok) {
+            throw new Error('Failed to create payment intent');
+          }
+
+          const data = await res.json();
+          console.log("create payment intent response: ", data);
+
+          await handleServerResponse(data);
+        } catch (error) {
+          console.error("Error in payment process:", error);
+          errorMessage.textContent = "An error occurred during the payment process. Please try again.";
+          errorMessage.style.display = 'block';
+        } finally {
+          payBtn.disabled = false;
+        }
+      })
+
+      const handleServerResponse = async (response) => {
+        if (response.error) {
+          console.log("error creating payment intent: ", response.error);
+          errorMessage.textContent = response.error;
+          errorMessage.style.display = 'block';
+        } else if (response.status === "requires_action" || response.status === "requires_source_action") {
+          // Use Stripe.js to handle the required next action
+          const { error, paymentIntent } = await stripe.handleNextAction({
+            clientSecret: response.client_secret
+          });
+
+          if (error) {
+            console.error("Error handling next action:", error);
+            errorMessage.textContent = error.message;
+            errorMessage.style.display = 'block';
+          } else {
+            // Check the PaymentIntent's status after handling the action
+            const { error: fetchError, paymentIntent: updatedIntent } = await stripe.retrievePaymentIntent(response.client_secret);
+
+            if (fetchError) {
+              console.error("Error fetching payment intent:", fetchError);
+              errorMessage.textContent = fetchError.message;
+              errorMessage.style.display = 'block';
+            } else {
+              handlePaymentIntentStatus(updatedIntent, response.order_id);
+            }
+          }
+        } else {
+          // No additional action needed
+          handlePaymentIntentStatus(response, response.order_id);
+        }
+      };
+
+      const handlePaymentIntentStatus = (paymentIntent, orderID) => {
+        if (paymentIntent.status === "succeeded") {
+          console.log("Payment successful");
+          window.location.href = `/checkout/success?order_id=${orderID}`
+        } else if (paymentIntent.status === "requires_payment_method") {
+          console.log("Payment failed");
+          errorMessage.textContent = "Your payment was not successful, please try again.";
+          errorMessage.style.display = 'block';
+        } else {
+          console.log("Payment status:", paymentIntent.status);
+          errorMessage.textContent = "Something went wrong. Please try again.";
+          errorMessage.style.display = 'block';
+        }
+      };
+    </script>
+{{ end }}

@@ -2,9 +2,9 @@ package cart
 
 import (
 	"errors"
-	"fmt"
 	"github.com/aliml92/anor"
-	"github.com/aliml92/anor/html/dtos/pages/cart/components"
+	"github.com/aliml92/anor/html/templates/pages/cart/components"
+	"github.com/aliml92/anor/session"
 	"github.com/invopop/validation"
 	"net/http"
 	"strconv"
@@ -24,7 +24,6 @@ func (req *UpdateCartItemRequest) Bind(r *http.Request) error {
 	req.CartItemID = cartItemID
 
 	qty := r.FormValue("qty")
-	fmt.Println("qty:", qty)
 	req.Qty, err = strconv.Atoi(qty)
 	if err != nil {
 		return err
@@ -55,26 +54,26 @@ func (h *Handler) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	err = h.cartSvc.UpdateCartItem(ctx, req.CartItemID, anor.UpdateCartItemParam{Qty: req.Qty})
+	err = h.cartService.UpdateItem(ctx, req.CartItemID, anor.CartItemUpdateParams{Qty: req.Qty})
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
 	}
 
-	u := anor.UserFromContext(ctx)
-	c, err := h.cartSvc.GetCart(ctx, u.ID, true)
-	if err != nil && !errors.Is(err, anor.ErrNotFound) {
+	u := session.UserFromContext(ctx)
+	c, err := h.cartService.Get(ctx, u.CartID, true)
+	if err != nil && !errors.Is(err, anor.ErrCartNotFound) {
 		h.serverInternalError(w, err)
 		return
 	}
 
 	w.Header().Add("HX-Trigger-After-Settle", `{"anor:showToast":"item qty updated successfully"}`)
-	v := components.CartSummary{
-		HxSwapOOB:      r.Header.Get("Hx-Swap-OOB"),
+	cs := components.CartSummary{
+		HxSwapOOB:      true,
 		CartItemsCount: len(c.CartItems),
-		TotalAmount:    getTotalPrice(c.CartItems),
-		CurrencyCode:   getCurrency(c.CartItems),
+		TotalAmount:    calculateTotalAmount(c.CartItems),
+		Currency:       anor.DefaultCurrency,
 	}
 
-	h.view.RenderComponent(w, "pages/cart/components/cart-summary.gohtml", v)
+	h.Render(w, r, "pages/cart/components/cart_summary.gohtml", cs)
 }

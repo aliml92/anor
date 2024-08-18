@@ -3,156 +3,102 @@ package product
 import (
 	"context"
 	"fmt"
-	homepage "github.com/aliml92/anor/html/dtos/pages/home"
-	notfoundpage "github.com/aliml92/anor/html/dtos/pages/not_found"
-	productdetailspage "github.com/aliml92/anor/html/dtos/pages/product_details"
-	productlistings "github.com/aliml92/anor/html/dtos/pages/product_listings"
-	searchlistings "github.com/aliml92/anor/html/dtos/pages/search_listings"
-	"github.com/aliml92/anor/html/dtos/partials"
-	"github.com/aliml92/anor/redis/cache/session"
+	"github.com/aliml92/anor/html/templates/shared/header"
+
+	//"github.com/aliml92/anor/html/dtos/pages/home"
+	//notfound "github.com/aliml92/anor/html/dtos/pages/not_found"
+	//productdetails "github.com/aliml92/anor/html/dtos/pages/product_details"
+	//productlistings "github.com/aliml92/anor/html/dtos/pages/product_listings"
+	//searchlistings "github.com/aliml92/anor/html/dtos/pages/search_listings"
+	//"github.com/aliml92/anor/html/dtos/partials"
+	"github.com/aliml92/anor/html/templates"
+	"github.com/aliml92/anor/redis/session"
 	"github.com/aliml92/anor/search"
 	"log/slog"
 	"net/http"
-	"path"
+	"strings"
 
 	"github.com/aliml92/anor"
 	"github.com/aliml92/anor/html"
 )
 
+type HandlerConfig struct {
+	UserService             anor.UserService
+	ProductService          anor.ProductService
+	CategoryService         anor.CategoryService
+	FeatureSelectionService anor.FeaturedSelectionService
+	CartService             anor.CartService
+	Session                 *session.Manager
+	Searcher                search.Searcher
+	View                    *html.View
+	Logger                  *slog.Logger
+	GetHeaderDataFunc       func(ctx context.Context) (header.Base, error)
+}
+
 type Handler struct {
-	userSvc     anor.UserService
-	productSvc  anor.ProductService
-	categorySvc anor.CategoryService
-	featuredSvc anor.FeaturedPromotionService
-	cartSvc     anor.CartService
-	searcher    search.Searcher
-	view        *html.View
-	logger      *slog.Logger
-	session     *session.Manager
+	userService              anor.UserService
+	productService           anor.ProductService
+	categoryService          anor.CategoryService
+	featuredSelectionService anor.FeaturedSelectionService
+	cartService              anor.CartService
+	session                  *session.Manager
+	searcher                 search.Searcher
+	view                     *html.View
+	logger                   *slog.Logger
+	getHeaderDataFunc        func(ctx context.Context) (header.Base, error)
 }
 
-func NewHandler(
-	userSvc anor.UserService,
-	productSvc anor.ProductService,
-	categorySvc anor.CategoryService,
-	featuredSvc anor.FeaturedPromotionService,
-	cartSvc anor.CartService,
-	searcher search.Searcher,
-	view *html.View,
-	logger *slog.Logger,
-	session *session.Manager,
-) *Handler {
+func NewHandler(cfg *HandlerConfig) *Handler {
 	return &Handler{
-		userSvc:     userSvc,
-		productSvc:  productSvc,
-		categorySvc: categorySvc,
-		featuredSvc: featuredSvc,
-		cartSvc:     cartSvc,
-		searcher:    searcher,
-		view:        view,
-		logger:      logger,
-		session:     session,
+		userService:              cfg.UserService,
+		productService:           cfg.ProductService,
+		categoryService:          cfg.CategoryService,
+		featuredSelectionService: cfg.FeatureSelectionService,
+		cartService:              cfg.CartService,
+		session:                  cfg.Session,
+		searcher:                 cfg.Searcher,
+		view:                     cfg.View,
+		logger:                   cfg.Logger,
+		getHeaderDataFunc:        cfg.GetHeaderDataFunc,
 	}
 }
 
-func (h *Handler) Render(w http.ResponseWriter, r *http.Request, page string, data interface{}) {
-	ctx := r.Context()
-	if isHXRequest(r) {
-		v := path.Join(page, "content.gohtml")
-		h.view.Render(w, v, data)
-		return
+func (h *Handler) Render(w http.ResponseWriter, r *http.Request, templatePath string, td templates.TemplateData) {
+	s := strings.Split(templatePath, "/")
+	templateFilename := s[len(s)-1]
+
+	// TODO: remove on production
+	if templateFilename != td.GetTemplateFilename() {
+		panic(fmt.Sprintf("Template-DTO mismatch: Template '%s' does not match DTO for '%s'",
+			templateFilename, td.GetTemplateFilename()))
 	}
 
-	hc, err := h.headerContent(ctx)
-	if err != nil {
-		fmt.Println(err.Error())
-		h.serverInternalError(w, err)
-		return
-	}
-
-	v := path.Join(page, "base.gohtml")
-	switch data.(type) {
-	case homepage.Content:
-		c, _ := data.(homepage.Content)
-		base := homepage.Base{
-			Header:  hc,
-			Content: c,
+	switch templateFilename {
+	case "base.gohtml":
+		h.view.Render(w, templatePath, td)
+	case "content.gohtml":
+		if isHXRequest(r) {
+			h.view.Render(w, templatePath, td)
+			return
 		}
 
-		h.view.Render(w, v, base)
-	case productlistings.Content:
-		c, _ := data.(productlistings.Content)
-		base := productlistings.Base{
-			Header:  hc,
-			Content: c,
-		}
-		h.view.Render(w, v, base)
-	case productdetailspage.Content:
-		c, ok := data.(productdetailspage.Content)
-		if !ok {
-			slog.Warn("could not convert the content", "data", data)
-		}
-		base := productdetailspage.Base{
-			Header:  hc,
-			Content: c,
-		}
-		h.view.Render(w, v, base)
-	case searchlistings.Content:
-		c, _ := data.(searchlistings.Content)
-		base := searchlistings.Base{
-			Header:  hc,
-			Content: c,
-		}
-		h.view.Render(w, v, base)
-	case notfoundpage.Content:
-		c, _ := data.(notfoundpage.Content)
-		base := notfoundpage.Base{
-			Header:  hc,
-			Content: c,
-		}
-		h.view.Render(w, v, base)
-	default:
-		base := notfoundpage.Base{
-			Header: hc,
-			Content: notfoundpage.Content{
-				Message: "Page not found",
-			},
-		}
-		h.view.Render(w, v, base)
-	}
-}
-
-func (h *Handler) headerContent(ctx context.Context) (partials.Header, error) {
-	u := anor.UserFromContext(ctx)
-	header := partials.Header{User: u}
-	if u != nil {
-		ac, err := h.userSvc.GetUserActivityCounts(ctx, u.ID)
+		ctx := r.Context()
+		hc, err := h.getHeaderDataFunc(ctx)
 		if err != nil {
-			return partials.Header{}, err
+			h.serverInternalError(w, err)
+			return
 		}
 
-		header.CartNavItem = partials.CartNavItem{CartItemsCount: ac.CartItemsCount}
-		header.WishlistNavItem = partials.WishlistNavItem{WishlistItemsCount: ac.WishlistItemsCount}
-		header.OrdersNavItem = partials.OrdersNavItem{ActiveOrdersCount: ac.ActiveOrdersCount}
-
-	} else {
-		cartId := h.session.Guest.GetInt64(ctx, "guest_cart_id")
-		if cartId != 0 {
-			guestCartItemCount, err := h.cartSvc.CountCartItems(ctx, cartId)
-			if err != nil {
-				return partials.Header{}, err
-			}
-			header.CartNavItem = partials.CartNavItem{CartItemsCount: int(guestCartItemCount)}
+		base := templates.Base{
+			Header:  hc,
+			Content: td,
 		}
-	}
 
-	rc, err := h.categorySvc.GetRootCategories(ctx)
-	if err != nil {
-		return header, err
+		newTemplatePath := strings.ReplaceAll(templatePath, "content.gohtml", "base.gohtml")
+		h.view.Render(w, newTemplatePath, base)
+	default:
+		h.view.RenderComponent(w, templatePath, td)
 	}
-	header.RootCategories = rc
-
-	return header, nil
 }
 
 func (h *Handler) clientError(w http.ResponseWriter, err error, statusCode int) {

@@ -12,94 +12,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type CartStatus string
-
-const (
-	CartStatusActive    CartStatus = "Active"
-	CartStatusCheckout  CartStatus = "Checkout"
-	CartStatusCompleted CartStatus = "Completed"
-)
-
-func (e *CartStatus) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = CartStatus(s)
-	case string:
-		*e = CartStatus(s)
-	default:
-		return fmt.Errorf("unsupported scan type for CartStatus: %T", src)
-	}
-	return nil
-}
-
-type NullCartStatus struct {
-	CartStatus CartStatus
-	Valid      bool // Valid is true if CartStatus is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullCartStatus) Scan(value interface{}) error {
-	if value == nil {
-		ns.CartStatus, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.CartStatus.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullCartStatus) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.CartStatus), nil
-}
-
-type OrderStatus string
-
-const (
-	OrderStatusPending    OrderStatus = "Pending"
-	OrderStatusProcessing OrderStatus = "Processing"
-	OrderStatusShipped    OrderStatus = "Shipped"
-	OrderStatusDelivered  OrderStatus = "Delivered"
-	OrderStatusCanceled   OrderStatus = "Canceled"
-)
-
-func (e *OrderStatus) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = OrderStatus(s)
-	case string:
-		*e = OrderStatus(s)
-	default:
-		return fmt.Errorf("unsupported scan type for OrderStatus: %T", src)
-	}
-	return nil
-}
-
-type NullOrderStatus struct {
-	OrderStatus OrderStatus
-	Valid       bool // Valid is true if OrderStatus is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullOrderStatus) Scan(value interface{}) error {
-	if value == nil {
-		ns.OrderStatus, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.OrderStatus.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullOrderStatus) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.OrderStatus), nil
-}
-
 type ProductStatus string
 
 const (
@@ -143,146 +55,6 @@ func (ns NullProductStatus) Value() (driver.Value, error) {
 	return string(ns.ProductStatus), nil
 }
 
-type UserStatus string
-
-const (
-	UserStatusBlocked             UserStatus = "Blocked"
-	UserStatusRegistrationPending UserStatus = "RegistrationPending"
-	UserStatusActive              UserStatus = "Active"
-)
-
-func (e *UserStatus) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = UserStatus(s)
-	case string:
-		*e = UserStatus(s)
-	default:
-		return fmt.Errorf("unsupported scan type for UserStatus: %T", src)
-	}
-	return nil
-}
-
-type NullUserStatus struct {
-	UserStatus UserStatus
-	Valid      bool // Valid is true if UserStatus is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullUserStatus) Scan(value interface{}) error {
-	if value == nil {
-		ns.UserStatus, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.UserStatus.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullUserStatus) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.UserStatus), nil
-}
-
-type Cart struct {
-	ID             int64
-	UserID         *int64
-	Status         CartStatus
-	CreatedAt      pgtype.Timestamptz
-	DeletedAt      pgtype.Timestamptz
-	PiClientSecret *string
-}
-
-type CartItem struct {
-	ID                int64
-	CartID            int64
-	VariantID         int64
-	Qty               int32
-	Price             decimal.Decimal
-	Thumbnail         string
-	ProductName       string
-	VariantAttributes []byte
-	IsRemoved         bool
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-	CurrencyCode      string
-	ProductPath       string
-}
-
-type Category struct {
-	ID       int32
-	Category string
-	Handle   string
-	ParentID *int32
-}
-
-type Collection struct {
-	ID          int32
-	Name        string
-	Handle      string
-	Description *string
-}
-
-type Coupon struct {
-	ID             int32
-	Code           string
-	Description    *string
-	DiscountType   string
-	DiscountValue  decimal.Decimal
-	MaxUses        *int32
-	ExpirationDate pgtype.Date
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-}
-
-type CouponUsage struct {
-	ID         int64
-	CouponCode string
-	UserID     int64
-	CartID     int64
-	AppliedAt  pgtype.Timestamptz
-}
-
-type FeaturedPromotion struct {
-	ID           int64
-	Title        string
-	ImageUrl     string
-	Type         string
-	TargetID     *int32
-	FilterParams []byte
-	StartDate    pgtype.Date
-	EndDate      pgtype.Date
-	DisplayOrder *int32
-}
-
-type Order struct {
-	ID              int64
-	CartID          int64
-	UserID          *int64
-	Status          OrderStatus
-	TotalAmount     decimal.Decimal
-	PaymentIntentID string
-	ShippingAddress []byte
-	BillingAddress  []byte
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
-}
-
-type OrderItem struct {
-	ID                int64
-	OrderID           int64
-	VariantID         int64
-	Qty               int32
-	Price             decimal.Decimal
-	Thumbnail         string
-	ProductName       string
-	VariantAttributes []byte
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-}
-
 type Product struct {
 	ID               int64
 	StoreID          int32
@@ -304,11 +76,6 @@ type ProductAttribute struct {
 	Attribute string
 }
 
-type ProductCollection struct {
-	ProductID    int64
-	CollectionID int32
-}
-
 type ProductPricing struct {
 	ProductID       int64
 	BasePrice       decimal.Decimal
@@ -316,16 +83,6 @@ type ProductPricing struct {
 	Discount        decimal.Decimal
 	DiscountedPrice decimal.Decimal
 	IsOnSale        bool
-}
-
-type ProductRating struct {
-	ID        int64
-	ProductID int64
-	UserID    *int64
-	Rating    int16
-	Review    *string
-	ImageUrls []string
-	CreatedAt pgtype.Timestamptz
 }
 
 type ProductVariant struct {
@@ -339,12 +96,6 @@ type ProductVariant struct {
 	UpdatedAt        pgtype.Timestamptz
 }
 
-type ProductVariantAttribute struct {
-	VariantID          int64
-	ProductAttributeID int64
-	AttributeValue     string
-}
-
 type ProductVariantPricing struct {
 	VariantID       int64
 	BasePrice       decimal.Decimal
@@ -352,11 +103,6 @@ type ProductVariantPricing struct {
 	Discount        decimal.Decimal
 	DiscountedPrice decimal.Decimal
 	IsOnSale        bool
-}
-
-type Role struct {
-	ID   int16
-	Role string
 }
 
 type Store struct {
@@ -367,49 +113,4 @@ type Store struct {
 	Description string
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
-}
-
-type User struct {
-	ID          int64
-	Email       string
-	Password    string
-	PhoneNumber *string
-	FullName    string
-	Status      UserStatus
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-}
-
-type UserRole struct {
-	UserID int64
-	RoleID int16
-}
-
-type Wishlist struct {
-	ID        int64
-	UserID    int64
-	Name      string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	DeletedAt pgtype.Timestamptz
-}
-
-type WishlistItem struct {
-	ID                int64
-	WishlistID        int64
-	VariantID         int64
-	Price             decimal.Decimal
-	Thumbnail         string
-	ProductName       string
-	VariantAttributes []byte
-	IsRemoved         bool
-	AddedAt           pgtype.Timestamptz
-}
-
-type WishlistShare struct {
-	ID                   int64
-	WishlistID           int64
-	ShareToken           string
-	ShareTokenExpiration pgtype.Timestamptz
-	CreatedAt            pgtype.Timestamptz
 }

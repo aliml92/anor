@@ -3,11 +3,10 @@ package product
 import (
 	"errors"
 	"github.com/aliml92/anor/html"
-	productlistings "github.com/aliml92/anor/html/dtos/pages/product_listings"
-	"github.com/aliml92/anor/html/dtos/pages/product_listings/components"
-	"github.com/aliml92/anor/html/dtos/shared"
+	productlistings "github.com/aliml92/anor/html/templates/pages/product_listings"
+	"github.com/aliml92/anor/html/templates/pages/product_listings/components"
+	"github.com/aliml92/anor/html/templates/shared"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -17,7 +16,6 @@ import (
 type ListingsViewRequest struct {
 	CategoryHandle string      // path param
 	Query          QueryParams // common listings query params
-	IsCollection   bool
 }
 
 func (l *ListingsViewRequest) Bind(r *http.Request) error {
@@ -29,13 +27,6 @@ func (l *ListingsViewRequest) Bind(r *http.Request) error {
 		return err
 	}
 	l.Query = *q
-
-	values, err := url.ParseQuery(r.URL.RawQuery)
-	if err != nil {
-		return err
-	}
-	isCollection := values.Get("is_collection")
-	l.IsCollection = isCollection == "true"
 
 	return nil
 }
@@ -67,14 +58,10 @@ func (h *Handler) ProductListingsView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.IsCollection {
-		// TODO: handle product collection case
-	}
-
 	categoryID := int32(extractID(req.CategoryHandle))
 
 	// get category
-	category, err := h.categorySvc.GetCategory(ctx, categoryID)
+	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		if errors.Is(err, anor.ErrNotFound) {
 			h.renderNotFound(w, r, "Category not found")
@@ -84,13 +71,13 @@ func (h *Handler) ProductListingsView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	getProductsParams := anor.GetProductsByCategoryParams{
+	getProductsParams := anor.ListByCategoryParams{
 		Sort:   req.Query.SortParam,
 		Filter: req.Query.FilterParam,
 		Paging: req.Query.Paging,
 	}
 
-	products, count, err := h.productSvc.GetProductsByCategory(ctx, category, getProductsParams)
+	products, count, err := h.productService.ListByCategory(ctx, category, getProductsParams)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
@@ -113,21 +100,21 @@ func (h *Handler) ProductListingsView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.categorySvc.GetCategoryHierarchy(ctx, category)
+	ch, err := h.categoryService.GetCategoryHierarchy(ctx, category)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
 	}
 
 	// TODO: add filter params, price range, color, size, etc
-	brands, err := h.productSvc.GetProductBrandsByCategory(ctx, category)
+	brands, err := h.productService.ListAllBrandsByCategory(ctx, category)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
 	}
 
 	// TODO: add filter params, brand, color, size, etc
-	minmaxPrice, err := h.productSvc.GetMinMaxPricesByCategory(ctx, category)
+	minmaxPrice, err := h.productService.GetMinMaxPricesByCategory(ctx, category)
 	if err != nil {
 		h.serverInternalError(w, err)
 		return
@@ -182,7 +169,7 @@ func (h *Handler) ProductListingsView(w http.ResponseWriter, r *http.Request) {
 		Pagination:          pag,
 	}
 
-	h.Render(w, r, "pages/product_listings", plc)
+	h.Render(w, r, "pages/product_listings/content.gohtml", plc)
 }
 
 // extractID extracts id from handle
