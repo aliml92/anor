@@ -30,12 +30,12 @@ tasks:
 
   compose:clean-restart:
     cmds:
-      - task: compose-down
+      - task: compose:down
       - docker volume rm anor_anor_data
       - sudo rm -rf ./_typesense-data
-      - task: compose-up
+      - task: compose:up
       - sleep 5s
-      - task: goose-up
+      - task: goose:up
 
 
   goose:up:
