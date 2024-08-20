@@ -1,5 +1,5 @@
 {{ define "content" }}
-    {{- /*gotype: github.com/aliml92/anor/html/dtos/pages/home.Content*/ -}}
+    {{- /*gotype: github.com/aliml92/anor/html/templates/pages/home.Content*/ -}}
     {{ $featureds := .Featured.Selections }}
     {{ $popular := .Popular }}
     <div id="content">
@@ -31,7 +31,7 @@
                                    hx-target="#content"
                                    hx-swap="innerHTML show:window:top"
                                 >
-                                    Home Furniture <i class="bi bi-chevron-right" style="font-size: 20px;"></i>
+                                    {{ index $featured.BannerInfo "title" }} <i class="bi bi-chevron-right" style="font-size: 20px;"></i>
                                 </a>
                             </h3>
                         </header>
