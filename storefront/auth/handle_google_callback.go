@@ -8,6 +8,7 @@ import (
 	"github.com/aliml92/anor/session"
 	"github.com/markbates/goth/gothic"
 	"net/http"
+	"strings"
 )
 
 func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,11 @@ func (h *Handler) getRedirectURL(r *http.Request) string {
 	url := r.URL.Query().Get("redirect_url")
 	if url != "" {
 		return url
+	}
+
+	host := r.Host
+	if strings.HasSuffix(host, "anor.alisherm.dev") {
+		return "https://anor.alisherm.dev"
 	}
 
 	return "http://localhost:8008"
