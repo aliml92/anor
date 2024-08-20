@@ -1,6 +1,5 @@
 package checkout
 
-import "C"
 import (
 	"context"
 	"errors"
